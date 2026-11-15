@@ -1,0 +1,282 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---- Design tokens (light / dark) — "Bạc hà ấm" ----
+   Nền cát ấm, xanh lục đậm cho hành động, hổ phách cho khoảnh khắc vui (PR, streak).
+   Mọi cặp chữ/nền đạt WCAG AA; màu agent tách hẳn khỏi màu lỗi/cảnh báo. */
+:root {
+  --bg: #f7f5f0;
+  --surface: #fffefb;
+  --surface-2: #f3f0e9;
+  --surface-3: #e7e2d8;
+  --border: #e6e0d4;
+  --text: #1c1917;
+  --muted: #57534e;
+  --primary: #047857;
+  --primary-strong: #046c4e;
+  --primary-soft: #dcfce7;
+  --on-primary: #ffffff;
+  --energy: #d97706;
+  --energy-strong: #b45309;
+  --energy-soft: #fef3c7;
+  --danger: #dc2626;
+  --on-danger: #ffffff;
+  --warn: #d97706;
+  --warn-strong: #b45309;
+  --info: #0369a1;
+  --head: #6d28d9;
+  --coach: #be123c;
+  --nutri: #c2410c;
+  --data-carbs: #0369a1;
+  --data-fat: #a16207;
+  --muscle-0: #e9e4da;
+  --muscle-0-stroke: #d3ccbf;
+  --heat-1: #bbf7d0;
+  --heat-2: #4ade80;
+  --heat-3: #16a34a;
+  --heat-4: #14532d;
+  --shadow: 0 1px 2px rgb(41 37 36 / 0.05), 0 4px 16px rgb(41 37 36 / 0.06);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #12110f;
+  --surface: #1b1a17;
+  --surface-2: #24221e;
+  --surface-3: #312e29;
+  --border: #36322c;
+  --text: #f2efe9;
+  --muted: #b3ada5;
+  --primary: #34d399;
+  --primary-strong: #34d399;
+  --primary-soft: rgb(52 211 153 / 0.14);
+  --on-primary: #052e1f;
+  --energy: #fbbf24;
+  --energy-strong: #fbbf24;
+  --energy-soft: rgb(251 191 36 / 0.14);
+  --danger: #f87171;
+  --on-danger: #2a0a0a;
+  --warn: #fbbf24;
+  --warn-strong: #fbbf24;
+  --info: #7dd3fc;
+  --head: #a78bfa;
+  --coach: #fb7185;
+  --nutri: #fb923c;
+  --data-carbs: #7dd3fc;
+  --data-fat: #facc15;
+  --muscle-0: #2c2a25;
+  --muscle-0-stroke: #3d3a33;
+  --heat-1: #14532d;
+  --heat-2: #15803d;
+  --heat-3: #22c55e;
+  --heat-4: #86efac;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-energy: var(--energy);
+  --color-energy-strong: var(--energy-strong);
+  --color-energy-soft: var(--energy-soft);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-warn: var(--warn);
+  --color-warn-strong: var(--warn-strong);
+  --color-info: var(--info);
+  --color-head: var(--head);
+  --color-coach: var(--coach);
+  --color-nutri: var(--nutri);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+table {
+  font-variant-numeric: tabular-nums;
+}
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Màn hình cảm ứng (dùng một tay ở phòng gym): mọi nút cao tối thiểu 40px */
+@media (pointer: coarse) {
+  main button,
+  main [role="button"] {
+    min-height: 40px;
+  }
+}
+
+::selection {
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+@layer components {
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+}
+
+.prose-chat {
+  word-break: break-word;
+}
+.prose-chat p {
+  margin: 0.35rem 0;
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.35rem 0;
+  padding-left: 1.2rem;
+}
+.prose-chat ul {
+  list-style: disc;
+}
+.prose-chat ol {
+  list-style: decimal;
+}
+.prose-chat li {
+  margin: 0.15rem 0;
+}
+.prose-chat strong {
+  font-weight: 700;
+}
+.prose-chat a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.prose-chat table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.9em;
+}
+.prose-chat th,
+.prose-chat td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+}
+.prose-chat code {
+  background: var(--surface-2);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+}
+
+.typing-dot {
+  animation: blink 1.2s infinite both;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.muscle {
+  transition: fill 0.25s, opacity 0.2s, stroke 0.2s;
+}
+.muscle.clickable {
+  cursor: pointer;
+}
+.muscle.clickable:hover {
+  opacity: 0.8;
+  stroke: var(--text);
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease both;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* In báo cáo (Xuất PDF) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

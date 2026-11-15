@@ -1,0 +1,17 @@
+# Runtime
+fastapi==0.163.0
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.8
+pydantic==2.14.3
+pydantic-settings==2.16.3
+email-validator==2.4.0
+PyJWT==2.15.1
+httpx==0.28.1
+openai==3.51.0
+python-multipart==0.0.33
+pillow==13.0.0
+psycopg[binary]==3.3.9
+tzdata==2026.6
+
+# MCP server (mcp_server.py) — tuỳ chọn, chỉ cần khi kết nối Claude Desktop/Cursor
+mcp==2.3.0

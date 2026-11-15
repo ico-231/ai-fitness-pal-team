@@ -1,0 +1,15 @@
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+frontend/dist/
+backend/*.db
+backend/*.db-*
+.env
+*.log
+
+# Vercel / misc
+.vercel/
+backend/.env
+*.db
+*.db-*

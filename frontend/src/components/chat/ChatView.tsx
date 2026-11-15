@@ -1,0 +1,312 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import clsx from "clsx";
+import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Route, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useChat } from "../../lib/chat";
+import { AGENTS, TOOL_LABELS } from "../../lib/constants";
+import { createRecognizer, fileToDataUrl, voice } from "../../lib/media";
+import type { AgentKey, ChatMessage } from "../../lib/types";
+import { useAuth } from "../../lib/auth";
+import { AgentAvatar, AgentName } from "../AgentAvatar";
+import { Markdown } from "../Markdown";
+import { toast } from "../ui";
+import { ChatCards } from "./ChatCards";
+
+function Trace({ m }: { m: ChatMessage }) {
+  const [open, setOpen] = useState(false);
+  if (!m.trace.length) return null;
+  return (
+    <div className="mb-1.5">
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-xs text-muted hover:text-text">
+        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        <Wrench size={12} /> Đã dùng {m.trace.length} công cụ
+        {m.trace.some((t) => t.running) && <Loader2 size={12} className="animate-spin" />}
+      </button>
+      {open && (
+        <ul className="mt-1 space-y-0.5 border-l-2 border-border pl-3 text-xs text-muted">
+          {m.trace.map((t, i) => (
+            <li key={i}>
+              <span className="font-medium text-text">{TOOL_LABELS[t.tool] || t.tool}</span>
+              <code className="ml-1 text-[11px] opacity-70">{t.tool}</code>
+              {t.summary && <span> → {t.summary}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function CopyBtn({ text }: { text: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <button
+      className="text-muted opacity-60 hover:opacity-100"
+      title="Sao chép"
+      onClick={() => {
+        navigator.clipboard?.writeText(text);
+        setOk(true);
+        setTimeout(() => setOk(false), 1500);
+      }}
+    >
+      {ok ? <Check size={14} /> : <Copy size={14} />}
+    </button>
+  );
+}
+
+function Bubble({ m, onCardStatus, compact, onFollowup }: { m: ChatMessage; onCardStatus: (a: string, s: string) => void; compact?: boolean; onFollowup?: (q: string) => void }) {
+  if (m.role === "user")
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary-strong px-4 py-2.5 text-[14.5px] text-on-primary">
+          {m.image && <img src={m.image} alt="" className="mb-2 max-h-48 rounded-lg" />}
+          <p className="whitespace-pre-wrap">{m.content}</p>
+        </div>
+      </div>
+    );
+  const agent = (m.agent || "headbro") as AgentKey;
+  const showTyping = m.streaming && !m.content;
+  return (
+    <div className="fade-in flex gap-3">
+      <AgentAvatar agent={agent} />
+      <div className="min-w-0 flex-1">
+        <div className="mb-0.5 flex items-center gap-2">
+          <AgentName agent={agent} withTitle={!compact} />
+          {m.synthesis && <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-muted">TỔNG KẾT</span>}
+          {!m.streaming && m.content && (
+            <span className="ml-auto flex items-center gap-2">
+              <CopyBtn text={m.content} />
+              <button className="text-muted opacity-60 hover:opacity-100" title="Đọc to" onClick={() => voice.speak(m.content.replace(/[*#_>`-]/g, ""), { force: true })}>
+                <Volume2 size={14} />
+              </button>
+              {m.traceId && (
+                <Link to={`/ai-log?id=${m.traceId}`} className="text-muted opacity-60 hover:opacity-100" title="Chi tiết xử lý (Nhật ký AI)">
+                  <Activity size={14} />
+                </Link>
+              )}
+            </span>
+          )}
+        </div>
+        {m.route?.reason && !compact && (
+          <p className="mb-1 flex items-center gap-1 text-[11px] text-muted">
+            <Route size={11} /> Router: {m.route.reason}
+          </p>
+        )}
+        <Trace m={m} />
+        <div className={clsx("rounded-2xl rounded-tl-md px-4 py-2.5", agent === "guard" ? "border border-warn/40 bg-warn/10" : "bg-surface-2", m.error && "border border-danger/40")}>
+          {showTyping ? (
+            <span className="flex gap-1 py-1.5">
+              <span className="typing-dot h-2 w-2 rounded-full bg-muted" />
+              <span className="typing-dot h-2 w-2 rounded-full bg-muted" />
+              <span className="typing-dot h-2 w-2 rounded-full bg-muted" />
+            </span>
+          ) : (
+            <Markdown>{m.content}</Markdown>
+          )}
+        </div>
+        {!!m.safetyFlags?.length && (
+          <p className="mt-1 flex items-center gap-1 text-[11px] text-muted">
+            <ShieldCheck size={11} /> Lớp an toàn đã bổ sung lưu ý cho câu trả lời này
+          </p>
+        )}
+        <ChatCards cards={m.cards} onCardStatus={onCardStatus} compact={compact} />
+        {onFollowup && !!m.followups?.length && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {m.followups.map((q) => (
+              <button key={q} onClick={() => onFollowup(q)} className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-[13px] text-muted transition hover:border-primary/60 hover:text-text">
+                {q} <ArrowUpRight size={12} />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function RouteChip({ info }: { info: { agents: string[]; reason: string; method?: string } | null }) {
+  if (!info) return null;
+  return (
+    <div className="fade-in mx-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted">
+      <Route size={12} />
+      <span className="truncate">
+        {info.method === "guard" ? "Safety Guard" : "Router"} →{" "}
+        {info.agents.map((a) => AGENTS[a as AgentKey]?.name || a).join(" + ")}
+        {info.reason ? ` · ${info.reason}` : ""}
+      </span>
+    </div>
+  );
+}
+
+export interface ChatViewProps {
+  conversationId: string | null;
+  onConversation?: (id: string) => void;
+  compact?: boolean;
+  page?: string;
+  pageContext?: string;
+  initial?: { text: string; agent?: string; autoSend?: boolean } | null;
+  emptyState?: ReactNode;
+}
+
+export function ChatView({ conversationId, onConversation, compact, page, pageContext, initial, emptyState }: ChatViewProps) {
+  const { messages, loading, sending, send, stop, routeInfo, updateCard } = useChat(conversationId, onConversation);
+  const { config } = useAuth();
+  const [text, setText] = useState("");
+  const touch = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
+  const [agent, setAgent] = useState<string>("auto");
+  const [image, setImage] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const scroller = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const recRef = useRef<ReturnType<typeof createRecognizer>>(null);
+  const sentInitial = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!initial) return;
+    const key = `${initial.text}|${initial.agent}`;
+    if (sentInitial.current === key) return;
+    sentInitial.current = key;
+    if (initial.agent) setAgent(initial.agent);
+    if (initial.autoSend && initial.text) send({ text: initial.text, agent: initial.agent, page, pageContext });
+    else setText(initial.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
+
+  useEffect(() => {
+    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
+  }, [messages, routeInfo]);
+
+  const submit = () => {
+    if (!text.trim() && !image) return;
+    send({ text, image, agent, page, pageContext });
+    setText("");
+    setImage(null);
+  };
+
+  const toggleMic = () => {
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const r = createRecognizer();
+    if (!r) return toast("Trình duyệt chưa hỗ trợ nhập giọng nói (dùng Chrome/Edge)", "error");
+    recRef.current = r;
+    r.onresult = (e) => {
+      let t = "";
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setText(t);
+    };
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    setListening(true);
+    r.start();
+  };
+
+  const lastUserIdx = messages.map((m) => m.role).lastIndexOf("user");
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div ref={scroller} className={clsx("flex-1 overflow-y-auto", compact ? "px-3 py-3" : "px-4 py-5 sm:px-6")}>
+        <div className={clsx("mx-auto space-y-5", !compact && "max-w-3xl")}>
+          {loading && (
+            <div className="flex justify-center py-8 text-muted">
+              <Loader2 className="animate-spin" />
+            </div>
+          )}
+          {!loading && messages.length === 0 && emptyState}
+          {messages.map((m, i) => (
+            <div key={m.id} className="space-y-3">
+              <Bubble
+                m={m}
+                onCardStatus={updateCard}
+                compact={compact}
+                onFollowup={i === messages.length - 1 && !sending ? (q) => send({ text: q, agent, page, pageContext }) : undefined}
+              />
+              {i === lastUserIdx && sending && !messages.slice(i + 1).some((x) => x.role === "assistant") && <RouteChip info={routeInfo} />}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={clsx("border-t border-border bg-surface", compact ? "p-2.5" : "p-3 sm:p-4")}>
+        <div className={clsx("mx-auto", !compact && "max-w-3xl")}>
+          {!config?.ai_enabled && (
+            <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
+          )}
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            {(["auto", "headbro", "coachbro", "nutribro"] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => setAgent(a)}
+                className={clsx(
+                  "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                  agent === a ? "border-transparent text-surface" : "border-border text-muted hover:text-text",
+                )}
+                style={agent === a ? { background: a === "auto" ? "var(--primary-strong)" : AGENTS[a].color } : undefined}
+                title={a === "auto" ? "Router tự chọn agent phù hợp" : AGENTS[a].domain}
+              >
+                {a === "auto" ? "Tự động" : AGENTS[a].name}
+              </button>
+            ))}
+          </div>
+          {image && (
+            <div className="relative mb-2 inline-block">
+              <img src={image} className="h-20 rounded-lg border border-border" alt="" />
+              <button onClick={() => setImage(null)} className="absolute -right-2 -top-2 rounded-full bg-surface-3 p-0.5">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2 rounded-2xl border border-border bg-surface-2 p-1.5 focus-within:border-primary">
+            <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface-3 hover:text-text" title="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}>
+              <ImagePlus size={18} />
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) setImage(await fileToDataUrl(f));
+                e.target.value = "";
+              }}
+            />
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+              rows={1}
+              aria-label="Tin nhắn cho trợ lý FitBro"
+              placeholder={listening ? "Đang nghe..." : touch ? "Nhắn cho đội FitBro..." : "Nhắn cho đội FitBro... (Enter để gửi)"}
+              className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-[14.5px] outline-none focus-visible:outline-none"
+              style={{ fieldSizing: "content" } as React.CSSProperties}
+            />
+            <button className={clsx("grid h-9 w-9 shrink-0 place-items-center rounded-xl hover:bg-surface-3", listening ? "text-danger" : "text-muted")} title="Nói" onClick={toggleMic}>
+              {listening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+            {sending ? (
+              <button onClick={stop} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-surface-3 text-text" title="Dừng trả lời">
+                <Square size={15} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                disabled={!text.trim() && !image}
+                onClick={submit}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-strong text-on-primary disabled:opacity-40"
+                title="Gửi"
+              >
+                <Send size={17} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,31 @@
+# Chạy toàn bộ hệ thống: docker compose up -d --build  → mở http://localhost:8000
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Dùng Postgres trong compose (bỏ dòng này nếu muốn SQLite)
+      DATABASE_URL: postgresql+psycopg://fitbro:fitbro@db:5432/fitbro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fitbro
+      POSTGRES_PASSWORD: fitbro
+      POSTGRES_DB: fitbro
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitbro"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
