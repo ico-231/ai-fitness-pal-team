@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
-import { CalendarDays, Camera, ChevronDown, ChevronRight, Dumbbell, History, LayoutGrid, Loader2, PersonStanding, Play, Search, Sparkles, Trash2, Trophy } from "lucide-react";
+import { CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy } from "lucide-react";
 import { del, get, post } from "../lib/api";
 import { useAction, useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
@@ -12,17 +12,16 @@ import { BodyMap } from "../components/BodyMap";
 import { ExerciseCard, ExerciseImage, ExerciseModal, PlanCard } from "../components/Exercise";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { AddToDraftButton, BuilderHint, DraftTray, ScheduleTab, TodayAdviceCard } from "../components/WorkoutExtras";
+import { AddToDraftButton, BuilderModal, DraftTray, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Spinner, Tabs, Toggle, toast, confirmDialog } from "../components/ui";
 
-type Tab = "programs" | "schedule" | "bodymap" | "library" | "history";
+type Tab = "programs" | "custom" | "schedule" | "bodymap" | "library" | "history";
 
-function Programs() {
+function Programs({ setTab }: { setTab: (t: Tab) => void }) {
   const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
   const { data: mine } = useApi<Plan[]>(["plans"], "/api/workouts/plans");
   const { user } = useAuth();
   const ai = useAI();
-  const delPlan = useAction((id: string) => del(`/api/workouts/plans/${id}`), { success: "Đã xoá" });
   const eq = user?.profile?.equipment;
   const { data: sch } = useApi<{ today: { plan: { id: string } | null; done: boolean } }>(["schedule"], "/api/schedule");
   const todayId = sch?.today.done ? null : sch?.today.plan?.id;
@@ -34,7 +33,7 @@ function Programs() {
         <div className="flex items-center gap-2.5">
           <AgentAvatar agent="coachbro" size={30} />
           <div>
-            <p className="font-semibold">Nhờ CoachBro thiết kế buổi tập riêng</p>
+            <p className="font-semibold">Nhờ HeadBro thiết kế buổi tập riêng</p>
             <p className="text-xs text-muted">Dựa trên lịch sử tập, điểm sẵn sàng, dụng cụ và mục tiêu của bạn.</p>
           </div>
         </div>
@@ -47,20 +46,12 @@ function Programs() {
         </div>
       </Card>
 
-      <Card>
-        <BuilderHint />
-        <div className="pb-1" />
-      </Card>
-
       {mine && mine.length > 0 && (
-        <div>
-          <h2 className="mb-3 font-semibold">Buổi tập của tôi</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {mine.map((p) => (
-              <PlanCard key={p.id} plan={p} recommended={p.id === todayId} onDelete={async () => (await confirmDialog({ title: `Xoá "${p.name}"?`, text: "Buổi tập đã ghi trước đây vẫn được giữ.", confirmLabel: "Xoá buổi tập", danger: true })) && delPlan.mutate(p.id)} />
-            ))}
-          </div>
-        </div>
+        <Card className="flex flex-wrap items-center gap-3 p-4">
+          <ClipboardList size={18} className="text-primary-strong" />
+          <p className="flex-1 text-sm">Bạn có <b>{mine.length}</b> buổi Custom (tự soạn hoặc HeadBro tạo).</p>
+          <Button size="sm" variant="outline" onClick={() => setTab("custom")}>Mở tab Custom</Button>
+        </Card>
       )}
 
       <div>
@@ -75,6 +66,47 @@ function Programs() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CustomTab() {
+  const { data: mine } = useApi<Plan[]>(["plans"], "/api/workouts/plans");
+  const delPlan = useAction((id: string) => del(`/api/workouts/plans/${id}`), { success: "Đã xoá" });
+  const draft = useDraft();
+  const [builder, setBuilder] = useState<{ plan: Plan | null } | null>(null);
+  const { data: sch } = useApi<{ today: { plan: { id: string } | null; done: boolean } }>(["schedule"], "/api/schedule");
+  const todayId = sch?.today.done ? null : sch?.today.plan?.id;
+  return (
+    <div className="space-y-6">
+      <Card className="flex flex-wrap items-center gap-3 p-4">
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary-strong"><ClipboardList size={18} /></div>
+        <div className="min-w-48 flex-1">
+          <p className="font-semibold">Buổi tập Custom của bạn</p>
+          <p className="text-xs text-muted">Tạo bao nhiêu buổi tuỳ thích, đặt tên riêng, chọn bài và set/rep/nghỉ. Chương trình có sẵn khi tuỳ chỉnh cũng được lưu ở đây.</p>
+        </div>
+        <Button icon={<Plus size={16} />} onClick={() => setBuilder({ plan: null })}>
+          {draft.items.length ? `Tiếp tục soạn (${draft.items.length} bài)` : "Tạo buổi Custom"}
+        </Button>
+      </Card>
+      {!mine ? (
+        <Spinner />
+      ) : !mine.length ? (
+        <Card><Empty icon={<ClipboardList size={22} />} title="Chưa có buổi Custom nào" text="Bấm Tạo buổi Custom, hoặc mở một chương trình có sẵn rồi bấm Tuỳ chỉnh." /></Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mine.map((p) => (
+            <PlanCard
+              key={p.id}
+              plan={p}
+              recommended={p.id === todayId}
+              onEdit={() => setBuilder({ plan: p })}
+              onDelete={async () => (await confirmDialog({ title: `Xoá "${p.name}"?`, text: "Buổi tập đã ghi trước đây vẫn được giữ.", confirmLabel: "Xoá buổi tập", danger: true })) && delPlan.mutate(p.id)}
+            />
+          ))}
+        </div>
+      )}
+      <BuilderModal open={!!builder} plan={builder?.plan} onClose={() => setBuilder(null)} />
     </div>
   );
 }
@@ -127,7 +159,7 @@ function BodyMapTab() {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <Card className="p-5">
         <p className="font-semibold">Bấm vào nhóm cơ muốn tập</p>
-        <p className="mb-3 text-xs text-muted">CoachBro sẽ chọn bài phù hợp dựa trên lịch sử tập 7 ngày, điểm sẵn sàng, lượng đạm, cân nặng và trình độ của bạn.</p>
+        <p className="mb-3 text-xs text-muted">HeadBro sẽ chọn bài phù hợp dựa trên lịch sử tập 7 ngày, điểm sẵn sàng, lượng đạm, cân nặng và trình độ của bạn.</p>
         <BodyMap selected={muscle} onSelect={pick} />
         <div className="mt-3 flex flex-wrap justify-center gap-1.5">
           {Object.entries(MUSCLES).map(([k, v]) => (
@@ -145,7 +177,7 @@ function BodyMapTab() {
           <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted">
             <AgentAvatar agent="coachbro" />
             <span className="flex items-center gap-2">
-              <Loader2 size={16} className="animate-spin" /> CoachBro đang phân tích dữ liệu của bạn...
+              <Loader2 size={16} className="animate-spin" /> HeadBro đang phân tích dữ liệu của bạn...
             </span>
           </div>
         ) : sug ? (
@@ -352,18 +384,20 @@ export default function Workouts() {
         onChange={(v) => setSp({ tab: v })}
         tabs={[
           { value: "programs", label: "Chương trình", icon: <LayoutGrid size={16} /> },
+          { value: "custom", label: "Custom", icon: <ClipboardList size={16} /> },
           { value: "schedule", label: "Lịch tuần", icon: <CalendarDays size={16} /> },
           { value: "bodymap", label: "Bản đồ cơ (AI gợi ý)", icon: <Sparkles size={16} /> },
           { value: "library", label: "Thư viện bài tập", icon: <Dumbbell size={16} /> },
           { value: "history", label: "Lịch sử & PR", icon: <History size={16} /> },
         ]}
       />
-      {tab === "programs" && <Programs />}
+      {tab === "programs" && <Programs setTab={(t) => setSp({ tab: t })} />}
+      {tab === "custom" && <CustomTab />}
       {tab === "schedule" && <ScheduleTab />}
       {tab === "bodymap" && <BodyMapTab />}
       {tab === "library" && <Library />}
       {tab === "history" && <HistoryTab />}
-      <DraftTray />
+      {tab !== "custom" && <DraftTray />}
     </div>
   );
 }

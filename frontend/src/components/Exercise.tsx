@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Clock, Dumbbell, Flame, Play, Sparkles, Timer, Trash2, Trophy } from "lucide-react";
+import { Camera, Clock, Dumbbell, Flame, Play, SlidersHorizontal, Sparkles, Timer, Trash2, Trophy } from "lucide-react";
 import { useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
 import { exName, fmt } from "../lib/format";
@@ -129,7 +129,7 @@ export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClo
                   });
                 }}
               >
-                Hỏi CoachBro về kỹ thuật
+                Hỏi HeadBro về kỹ thuật
               </Button>
               {extra?.(data)}
             </div>
@@ -140,7 +140,7 @@ export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClo
   );
 }
 
-export function PlanCard({ plan, onDelete, compact, recommended }: { plan: Plan; onDelete?: () => void; compact?: boolean; recommended?: boolean }) {
+export function PlanCard({ plan, onDelete, onEdit, compact, recommended }: { plan: Plan; onDelete?: () => void; onEdit?: () => void; compact?: boolean; recommended?: boolean }) {
   const nav = useNavigate();
   const cover = plan.items[0]?.exercise;
   return (
@@ -159,7 +159,7 @@ export function PlanCard({ plan, onDelete, compact, recommended }: { plan: Plan;
             )}
             {plan.source === "ai" && (
               <Badge color="var(--coach)" className="bg-surface/90">
-                <Sparkles size={10} /> CoachBro
+                <Sparkles size={10} /> HeadBro
               </Badge>
             )}
           </div>
@@ -204,9 +204,12 @@ export function PlanCard({ plan, onDelete, compact, recommended }: { plan: Plan;
           ))}
         </ul>
         </details>
-        <div className="mt-auto pt-3">
-          <Button className="w-full" variant={recommended ? "primary" : "outline"} icon={<Play size={15} />} onClick={() => nav(`/workouts/session?plan=${plan.id}`)}>
+        <div className="mt-auto flex gap-2 pt-3">
+          <Button className="flex-1" variant={recommended ? "primary" : "outline"} icon={<Play size={15} />} onClick={() => nav(`/workouts/session?plan=${plan.id}`)}>
             Bắt đầu tập
+          </Button>
+          <Button variant="ghost" icon={<SlidersHorizontal size={15} />} onClick={onEdit || (() => nav(`/workouts/session?plan=${plan.id}`))} title="Chọn, đổi hoặc thêm bài liên quan">
+            {onEdit ? "Sửa" : "Tuỳ chỉnh"}
           </Button>
         </div>
       </div>

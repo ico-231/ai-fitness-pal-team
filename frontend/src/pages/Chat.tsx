@@ -24,33 +24,24 @@ function Welcome({ onPick }: { onPick: (t: string) => void }) {
   return (
     <div className="py-6 text-center sm:py-12">
       <div className="mx-auto flex w-fit -space-x-2">
-        {(["headbro", "coachbro", "nutribro"] as AgentKey[]).map((a) => (
-          <div key={a} className="rounded-xl ring-4 ring-bg">
-            <AgentAvatar agent={a} size={44} />
-          </div>
-        ))}
+        <AgentAvatar agent="headbro" size={52} />
       </div>
-      <h2 className="mt-4 text-2xl font-bold">Đội FitBro AI sẵn sàng</h2>
+      <h2 className="mt-4 text-2xl font-bold">HeadBro sẵn sàng</h2>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted">
-        Router tự chuyển câu hỏi tới đúng chuyên gia. Mỗi agent có công cụ riêng và đọc dữ liệu thật của bạn.
+        Hỏi gì cũng được: tập luyện, ăn uống, tiến độ. HeadBro tự nhờ chuyên gia phía sau xử lý và đọc dữ liệu thật của bạn.
       </p>
       <div className="mx-auto mt-6 grid max-w-2xl gap-3 text-left sm:grid-cols-3">
         {(["headbro", "coachbro", "nutribro"] as AgentKey[]).map((a) => (
           <div key={a} className="card p-3.5">
-            <div className="flex items-center gap-2">
-              <AgentAvatar agent={a} size={28} />
-              <span className="font-semibold" style={{ color: AGENTS[a].color }}>
-                {AGENTS[a].name}
-              </span>
-            </div>
-            <p className="mt-1.5 text-xs text-muted">{AGENTS[a].domain}</p>
+            <p className="font-semibold">{a === "headbro" ? "Tổng quan & mục tiêu" : a === "coachbro" ? "Tập luyện" : "Dinh dưỡng"}</p>
+            <p className="mt-1 text-xs text-muted">{AGENTS[a].domain}</p>
           </div>
         ))}
       </div>
       <div className="mx-auto mt-5 grid max-w-2xl gap-2 text-left sm:grid-cols-2">
         {STARTERS.map(([t, a]) => (
           <button key={t} onClick={() => onPick(t)} className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm hover:border-primary/60">
-            <AgentAvatar agent={a} size={22} />
+            <span className="text-muted" aria-hidden>{a === "coachbro" ? "🏋️" : a === "nutribro" ? "🥗" : "🎯"}</span>
             {t}
           </button>
         ))}
@@ -148,9 +139,14 @@ export default function Chat() {
         </div>
       )}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <button className="absolute left-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-lg border border-border bg-surface md:hidden" aria-label="Mở danh sách cuộc trò chuyện" onClick={() => setSide(true)}>
-          <PanelLeft size={17} />
-        </button>
+        <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-2 md:hidden">
+          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm text-muted hover:text-text" aria-label="Mở danh sách cuộc trò chuyện" onClick={() => setSide(true)}>
+            <PanelLeft size={16} /> Cuộc trò chuyện
+          </button>
+          <button className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="Cuộc trò chuyện mới" onClick={() => nav("/chat")}>
+            <MessageSquarePlus size={17} />
+          </button>
+        </div>
         <ChatView
           key={viewKey}
           conversationId={id || null}

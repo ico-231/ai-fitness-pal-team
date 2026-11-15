@@ -282,18 +282,27 @@ export function ScalePicker({ value, onChange, labels, low, high }: { value: num
             key={i}
             onClick={() => onChange(i + 1)}
             className={clsx(
-              "rounded-xl border py-2 text-lg transition",
+              "flex flex-col items-center rounded-xl border py-1.5 leading-tight transition",
               value === i + 1 ? "border-primary bg-primary-soft" : "border-border bg-surface-2 hover:border-primary/50",
             )}
+            aria-label={`Mức ${i + 1}`}
+            aria-pressed={value === i + 1}
           >
-            {l}
+            {l === String(i + 1) ? (
+              <span className="py-1 text-lg font-bold tabular-nums">{l}</span>
+            ) : (
+              <>
+                <span className="text-lg">{l}</span>
+                <span className={clsx("text-[11px] font-semibold tabular-nums", value === i + 1 ? "text-primary-strong" : "text-muted")}>{i + 1}</span>
+              </>
+            )}
           </button>
         ))}
       </div>
       {(low || high) && (
         <div className="mt-1 flex justify-between text-[11px] text-muted">
-          <span>{low}</span>
-          <span>{high}</span>
+          <span>1 · {low}</span>
+          <span>{high} · 5</span>
         </div>
       )}
     </div>

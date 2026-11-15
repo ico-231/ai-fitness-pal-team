@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Maximize2, MessageSquarePlus, Sparkles, X } from "lucide-react";
 import { ChatView } from "./chat/ChatView";
 import { AgentAvatar } from "./AgentAvatar";
-import { AGENTS } from "../lib/constants";
+
 import type { AgentKey } from "../lib/types";
 
 interface OpenOpts {
@@ -74,22 +74,10 @@ export function AIProvider({ children }: { children: ReactNode }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-              <div className="flex -space-x-2">
-                {(["headbro", "coachbro", "nutribro"] as AgentKey[]).map((a) => (
-                  <div key={a} className="rounded-xl ring-2 ring-surface">
-                    <AgentAvatar agent={a} size={28} />
-                  </div>
-                ))}
-              </div>
+              <AgentAvatar agent="headbro" size={30} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Đội FitBro AI</p>
-                <p className="truncate text-[11px] text-muted">
-                  {Object.values(AGENTS)
-                    .slice(0, 3)
-                    .map((a) => a.name)
-                    .join(" · ")}{" "}
-                  · đang ở trang {page}
-                </p>
+                <p className="text-sm font-semibold">HeadBro</p>
+                <p className="truncate text-[11px] text-muted">Trợ lý FitBro · đang ở trang {page}</p>
               </div>
               <button className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface-2" title="Cuộc trò chuyện mới" onClick={() => { setConv(null); setInitial(null); setContext(undefined); setNonce((n) => n + 1); }}>
                 <MessageSquarePlus size={17} />

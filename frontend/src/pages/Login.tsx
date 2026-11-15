@@ -87,9 +87,9 @@ export default function Login() {
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight">Huấn luyện viên cá nhân AI — cả một đội chuyên gia trong túi bạn.</h1>
           <div className="mt-8 space-y-4 text-[15px] text-white/80">
             {[
-              [Sparkles, "HeadBro", "Theo dõi tiến độ, điểm sẵn sàng, đặt mục tiêu"],
-              [Dumbbell, "CoachBro", "Giáo án cá nhân hoá, tăng tải lũy tiến"],
-              [Salad, "NutriBro", "Quét ảnh món Việt, tính calo & macro"],
+              [Sparkles, "HeadBro", "Một trợ lý duy nhất: hỏi gì cũng được, tự chuyển cho chuyên gia phía sau"],
+              [Dumbbell, "Tập luyện", "Giáo án cá nhân hoá, tăng tải lũy tiến"],
+              [Salad, "Dinh dưỡng", "Quét ảnh món Việt, tính calo & macro"],
               [Camera, "Camera AI", "Đếm rep, chấm điểm form theo thời gian thực"],
             ].map(([Icon, t, d]) => {
               const I = Icon as typeof Sparkles;

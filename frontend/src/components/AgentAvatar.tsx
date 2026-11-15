@@ -5,7 +5,13 @@ import type { AgentKey } from "../lib/types";
 // Mỗi agent có biểu tượng + màu riêng (không dùng chung 1 linh vật)
 const ICONS = { headbro: Crown, coachbro: Dumbbell, nutribro: Salad, guard: ShieldAlert } as const;
 
-export function AgentAvatar({ agent, size = 34 }: { agent: AgentKey; size?: number }) {
+// Người dùng chỉ trò chuyện với HeadBro. CoachBro/NutriBro vẫn chạy phía sau (Router chuyển việc),
+// nên giao diện hiển thị chúng dưới tên HeadBro kèm nhãn chuyên môn. `real` = hiện đúng agent (Hướng dẫn, Nhật ký AI).
+export const EXPERT: Partial<Record<AgentKey, string>> = { coachbro: "chuyên gia tập luyện", nutribro: "chuyên gia dinh dưỡng" };
+const persona = (agent: AgentKey, real?: boolean): AgentKey => (real || agent === "guard" ? agent : "headbro");
+
+export function AgentAvatar({ agent: raw, size = 34, real }: { agent: AgentKey; size?: number; real?: boolean }) {
+  const agent = persona(raw, real);
   const a = AGENTS[agent] || AGENTS.headbro;
   const Icon = ICONS[agent] || Crown;
   return (
@@ -15,14 +21,22 @@ export function AgentAvatar({ agent, size = 34 }: { agent: AgentKey; size?: numb
   );
 }
 
-export function AgentName({ agent, withTitle = true }: { agent: AgentKey; withTitle?: boolean }) {
+export function AgentName({ agent: raw, withTitle = true, real }: { agent: AgentKey; withTitle?: boolean; real?: boolean }) {
+  const agent = persona(raw, real);
   const a = AGENTS[agent] || AGENTS.headbro;
+  const expert = !real ? EXPERT[raw] : undefined;
   return (
     <span className="flex items-baseline gap-2">
       <span className="text-sm font-semibold" style={{ color: a.color }}>
         {a.name}
       </span>
-      {withTitle && <span className="text-xs text-muted">{a.title}</span>}
+      {expert ? (
+        <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted" title={`Câu này HeadBro nhờ ${AGENTS[raw].name} (${expert}) xử lý`}>
+          {expert}
+        </span>
+      ) : (
+        withTitle && <span className="text-xs text-muted">{a.title}</span>
+      )}
     </span>
   );
 }

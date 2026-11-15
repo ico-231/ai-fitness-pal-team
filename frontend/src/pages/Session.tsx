@@ -2,19 +2,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import {
-  ArrowLeft, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Minus, Pause, Play, Plus, SkipForward, Sparkles, Timer, Trophy, Volume2, VolumeX,
+  ArrowLeft, ArrowLeftRight, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Minus, Pause, Play, Plus, SkipForward, Sparkles, Timer, Trophy, Volume2, VolumeX, X, Save,
 } from "lucide-react";
-import { get, post } from "../lib/api";
+import { get, post, put } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useInvalidateAll } from "../lib/hooks";
 import { beep, voice } from "../lib/media";
 import { exName, fmt, mmss } from "../lib/format";
 import { EXERCISES } from "../lib/pose";
-import type { Plan, PlanItem, PR, WorkoutSession } from "../lib/types";
+import type { Exercise, Plan, PlanItem, PR, WorkoutSession } from "../lib/types";
 import { MUSCLES } from "../lib/constants";
 import { BodyMap } from "../components/BodyMap";
 import { CameraCoach, type CameraResult } from "../components/CameraCoach";
 import { ExerciseImage } from "../components/Exercise";
+import { ExercisePicker, itemFor } from "../components/ExercisePicker";
 import { useAI } from "../components/AIProvider";
 import { Badge, Button, Card, Ring, Spinner, toast, confirmDialog } from "../components/ui";
 
@@ -54,6 +55,9 @@ export default function Session() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [selected, setSelected] = useState<boolean[]>([]);
+  // Tuỳ chỉnh trước khi tập: đổi bài / thêm bài liên quan / bỏ bài. dirty = đã khác bản gốc.
+  const [dirty, setDirty] = useState(false);
+  const [picker, setPicker] = useState<{ index: number | null } | null>(null);
   const [phase, setPhase] = useState<Phase>("overview");
   const [qi, setQi] = useState(0); // vị trí trong danh sách bài đã chọn
   const [setIdx, setSetIdx] = useState(1);
@@ -220,11 +224,60 @@ export default function Session() {
     return () => window.clearTimeout(t);
   }, [count, phase, paused, timed, item, setIdx, go, logSet, nextExercise]);
 
+  const editItems = (items: PlanItem[], sel: boolean[]) => {
+    if (!plan) return;
+    setPlan({ ...plan, items });
+    setSelected(sel);
+    setDirty(true);
+  };
+  const pickExercise = (picked: Exercise) => {
+    if (!plan || !picker) return;
+    if (picker.index === null) {
+      editItems([...plan.items, itemFor(picked)], [...selected, true]);
+      toast(`Đã thêm "${exName(picked)}"`);
+    } else {
+      const i = picker.index;
+      editItems(plan.items.map((it, j) => (j === i ? itemFor(picked, it) : it)), selected.map((v, j) => (j === i ? true : v)));
+      toast(`Đã đổi sang "${exName(picked)}"`);
+    }
+  };
+  // Lưu bản tuỳ chỉnh: buổi của người dùng → cập nhật; chương trình có sẵn → lưu thành buổi Custom mới (bản gốc giữ nguyên).
+  const persist = async (): Promise<Plan> => {
+    if (!plan) throw new Error("Thiếu chương trình");
+    const tpl = plan.source === "template";
+    const body = {
+      name: tpl ? `${plan.name} (tuỳ chỉnh)` : plan.name,
+      focus: plan.focus,
+      description: plan.description,
+      items: plan.items.map((it) => ({ exercise_id: it.exercise_id, sets: it.sets, reps: it.reps, rest_sec: it.rest_sec, duration_sec: it.duration_sec, note: it.note || "" })),
+    };
+    const saved = tpl ? await post<Plan>("/api/workouts/plans", body) : await put<Plan>(`/api/workouts/plans/${plan.id}`, body);
+    setPlan(saved);
+    setDirty(false);
+    invalidate();
+    return saved;
+  };
+  const saveOnly = async () => {
+    setBusy(true);
+    try {
+      const tpl = plan?.source === "template";
+      const saved = await persist();
+      toast(tpl ? `Đã lưu "${saved.name}" vào tab Custom` : "Đã lưu thay đổi");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const begin = async () => {
     if (!plan || !queue.length) return;
     setBusy(true);
     try {
-      const s = await post<WorkoutSession>("/api/workouts/sessions", { plan_id: plan.id, name: plan.name });
+      const wasDirty = dirty;
+      const target = wasDirty ? await persist() : plan;
+      if (wasDirty) toast(`Đã lưu bản tuỳ chỉnh "${target.name}"`);
+      const s = await post<WorkoutSession>("/api/workouts/sessions", { plan_id: target.id, name: target.name });
       setSession(s);
       startedAt.current = Date.now();
       setQi(0);
@@ -323,7 +376,7 @@ export default function Session() {
               })
             }
           >
-            CoachBro nhận xét
+            HeadBro nhận xét
           </Button>
           <Button variant="outline" onClick={() => nav("/")}>Về Tổng quan</Button>
           <Button variant="outline" onClick={() => nav("/nutrition")}>Ghi bữa ăn sau tập</Button>
@@ -348,17 +401,18 @@ export default function Session() {
           </div>
           <p className="mt-4 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted">
             {plan.optional
-              ? "Bài phục hồi: bạn chỉ cần chọn 1–3 bài muốn tập, không bắt buộc tập hết."
-              : `Bỏ chọn bài bạn muốn bỏ qua. Trước mỗi bài có ${prepSeconds} giây đếm ngược để vào tư thế.`}
+              ? "Bài phục hồi: chỉ cần chọn 1–3 bài muốn tập. Bấm \"Đổi\" để thay bằng bài giãn cơ khác, hoặc thêm bài."
+              : `Bỏ chọn bài muốn bỏ qua, bấm "Đổi" để thay bằng bài cùng nhóm cơ, hoặc thêm bài liên quan. Trước mỗi bài có ${prepSeconds} giây đếm ngược.`}
           </p>
           <ul className="mt-4 space-y-2">
             {plan.items.map((it, i) => (
-              <li key={i}>
+              <li key={`${it.exercise_id}-${i}`} className="flex items-stretch gap-1.5">
                 <button
                   onClick={() => setSelected((s) => s.map((v, j) => (j === i ? !v : v)))}
-                  className={clsx("flex w-full items-center gap-3 rounded-xl border p-2 text-left transition", selected[i] ? "border-primary/60 bg-primary-soft/30" : "border-border opacity-60")}
+                  aria-pressed={selected[i]}
+                  className={clsx("flex min-w-0 flex-1 items-center gap-3 rounded-xl border p-2 text-left transition", selected[i] ? "border-primary/60 bg-primary-soft/30" : "border-border opacity-60")}
                 >
-                  <ExerciseImage ex={it.exercise} className="h-16 w-16 shrink-0 rounded-lg" />
+                  <ExerciseImage ex={it.exercise} className="h-12 w-12 shrink-0 rounded-lg sm:h-16 sm:w-16" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium first-letter:uppercase">{exName(it.exercise)}</p>
                     <p className="text-xs text-muted">
@@ -375,13 +429,38 @@ export default function Session() {
                     {selected[i] && <Check size={14} />}
                   </div>
                 </button>
+                <div className="flex flex-col gap-1">
+                  <button type="button" onClick={() => setPicker({ index: i })} className="flex flex-1 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted hover:border-primary/60 hover:text-text" title="Đổi sang bài liên quan" aria-label="Đổi sang bài liên quan">
+                    <ArrowLeftRight size={13} /> <span className="hidden sm:inline">Đổi</span>
+                  </button>
+                  <button type="button" disabled={plan.items.length <= 1} onClick={() => editItems(plan.items.filter((_, j) => j !== i), selected.filter((_, j) => j !== i))} className="flex flex-1 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted hover:border-danger/60 hover:text-danger disabled:opacity-40" title="Xoá bài khỏi buổi" aria-label="Xoá bài khỏi buổi">
+                    <X size={13} /> <span className="hidden sm:inline">Xoá</span>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => setPicker({ index: null })}>Thêm bài liên quan</Button>
+            {dirty && (
+              <Button size="sm" variant="ghost" icon={<Save size={14} />} loading={busy} onClick={saveOnly}>
+                {plan.source === "template" ? "Lưu thành buổi Custom" : "Lưu thay đổi"}
+              </Button>
+            )}
+          </div>
           <Button size="lg" className="mt-5 w-full" icon={<Play size={18} />} loading={busy} disabled={!queue.length} onClick={begin}>
             Bắt đầu ({queue.length} bài)
           </Button>
+          {dirty && plan.source === "template" && <p className="mt-2 text-center text-xs text-muted">Bản đã chỉnh sẽ được lưu vào tab Custom, chương trình gốc giữ nguyên.</p>}
         </Card>
+        <ExercisePicker
+          open={!!picker}
+          onClose={() => setPicker(null)}
+          onPick={pickExercise}
+          seed={picker?.index != null ? plan.items[picker.index]?.exercise : null}
+          focus={plan.focus}
+          exclude={plan.items.map((it) => it.exercise_id)}
+        />
       </div>
     );
   }

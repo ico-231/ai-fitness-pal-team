@@ -7,7 +7,7 @@ import { AGENTS, TOOL_LABELS } from "../../lib/constants";
 import { createRecognizer, fileToDataUrl, voice } from "../../lib/media";
 import type { AgentKey, ChatMessage } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
-import { AgentAvatar, AgentName } from "../AgentAvatar";
+import { AgentAvatar, AgentName, EXPERT } from "../AgentAvatar";
 import { Markdown } from "../Markdown";
 import { toast } from "../ui";
 import { ChatCards } from "./ChatCards";
@@ -89,7 +89,7 @@ function Bubble({ m, onCardStatus, compact, onFollowup }: { m: ChatMessage; onCa
         </div>
         {m.route?.reason && !compact && (
           <p className="mb-1 flex items-center gap-1 text-[11px] text-muted">
-            <Route size={11} /> Router: {m.route.reason}
+            <Route size={11} /> HeadBro{m.route.agents?.length ? ` → ${m.route.agents.map((a) => EXPERT[a as AgentKey] || "tự trả lời").join(" + ")}` : ""}: {m.route.reason}
           </p>
         )}
         <Trace m={m} />
@@ -130,8 +130,8 @@ export function RouteChip({ info }: { info: { agents: string[]; reason: string; 
     <div className="fade-in mx-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted">
       <Route size={12} />
       <span className="truncate">
-        {info.method === "guard" ? "Safety Guard" : "Router"} →{" "}
-        {info.agents.map((a) => AGENTS[a as AgentKey]?.name || a).join(" + ")}
+        {info.method === "guard" ? "Safety Guard" : "HeadBro"} →{" "}
+        {info.agents.map((a) => EXPERT[a as AgentKey] || (a === "headbro" ? "tự trả lời" : AGENTS[a as AgentKey]?.name || a)).join(" + ")}
         {info.reason ? ` · ${info.reason}` : ""}
       </span>
     </div>
@@ -233,22 +233,6 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
           {!config?.ai_enabled && (
             <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
           )}
-          <div className="mb-2 flex flex-wrap items-center gap-1.5">
-            {(["auto", "headbro", "coachbro", "nutribro"] as const).map((a) => (
-              <button
-                key={a}
-                onClick={() => setAgent(a)}
-                className={clsx(
-                  "rounded-full border px-2.5 py-1 text-xs font-medium transition",
-                  agent === a ? "border-transparent text-surface" : "border-border text-muted hover:text-text",
-                )}
-                style={agent === a ? { background: a === "auto" ? "var(--primary-strong)" : AGENTS[a].color } : undefined}
-                title={a === "auto" ? "Router tự chọn agent phù hợp" : AGENTS[a].domain}
-              >
-                {a === "auto" ? "Tự động" : AGENTS[a].name}
-              </button>
-            ))}
-          </div>
           {image && (
             <div className="relative mb-2 inline-block">
               <img src={image} className="h-20 rounded-lg border border-border" alt="" />
@@ -257,7 +241,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl border border-border bg-surface-2 p-1.5 focus-within:border-primary">
+          <div className="flex items-end gap-2 rounded-2xl border border-transparent bg-surface-2 p-1.5 shadow-sm">
             <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface-3 hover:text-text" title="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}>
               <ImagePlus size={18} />
             </button>
@@ -283,7 +267,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
               }}
               rows={1}
               aria-label="Tin nhắn cho trợ lý FitBro"
-              placeholder={listening ? "Đang nghe..." : touch ? "Nhắn cho đội FitBro..." : "Nhắn cho đội FitBro... (Enter để gửi)"}
+              placeholder={listening ? "Đang nghe..." : touch ? "Nhắn cho HeadBro..." : "Nhắn cho HeadBro... (Enter để gửi)"}
               className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-[14.5px] outline-none focus-visible:outline-none"
               style={{ fieldSizing: "content" } as React.CSSProperties}
             />

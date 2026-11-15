@@ -8,38 +8,133 @@ import type { Card as CardT, Food, MealPlanItem } from "../../lib/types";
 import { fmt } from "../../lib/format";
 import { Progress } from "../ui";
 import { ExerciseCard, ExerciseModal, PlanCard } from "../Exercise";
-import { Badge, Button, toast } from "../ui";
+import { Badge, Button, Modal, toast } from "../ui";
 
 export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
   const [err, setErr] = useState(false);
+  const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
-      {f.image && !err ? (
-        <img src={f.image} alt={f.name} loading="lazy" onError={() => setErr(true)} className="h-28 w-full object-cover" />
-      ) : (
-        <div className="grid h-28 w-full place-items-center bg-surface-2 text-muted" aria-hidden><Utensils size={28} /></div>
-      )}
-      <div className="flex flex-1 flex-col p-3">
-        <div className="flex items-start justify-between gap-1">
-          <p className="text-sm font-semibold leading-snug">{f.name}</p>
+      <button type="button" onClick={() => setOpen(true)} className="group flex flex-1 flex-col text-left" aria-label={`Xem chi tiết ${f.name}`}>
+        <div className="relative">
+          {f.image && !err ? (
+            <img src={f.image} alt={f.name} loading="lazy" onError={() => setErr(true)} className="h-28 w-full bg-surface-2 object-cover transition group-hover:opacity-90" />
+          ) : (
+            <div className="grid h-28 w-full place-items-center bg-surface-2 text-3xl" aria-hidden>{f.emoji || <Utensils size={28} />}</div>
+          )}
           {f.clean && (
-            <Badge color="var(--primary-strong)">
+            <Badge color="var(--primary-strong)" className="absolute left-2 top-2 bg-surface/90">
               <Leaf size={10} /> Clean
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted">{f.serving}</p>
-        <p className="mt-1 text-[13px]">
-          <b>{fmt(f.calories, 1)}</b> kcal · {fmt(f.protein, 1)}g đạm · {fmt(f.carbs, 1)}g carb · {fmt(f.fat, 1)}g béo
-        </p>
-        <p className="mt-1 line-clamp-2 text-xs text-muted">{f.summary}</p>
-        {onAdd && (
-          <Button size="sm" variant="secondary" className="mt-2" icon={<Plus size={14} />} onClick={onAdd}>
-            Ghi vào nhật ký
-          </Button>
-        )}
-      </div>
+        <div className="flex flex-1 flex-col p-3 pb-2">
+          <p className="text-sm font-semibold leading-snug group-hover:text-primary-strong">{f.name}</p>
+          <p className="text-xs text-muted">{f.serving}</p>
+          <p className="mt-1 text-[13px]">
+            <b>{fmt(f.calories, 1)}</b> kcal · {fmt(f.protein, 1)}g đạm · {fmt(f.carbs, 1)}g carb · {fmt(f.fat, 1)}g béo
+          </p>
+          <p className="mt-1 line-clamp-2 text-xs text-muted">{f.summary}</p>
+          <span className="mt-1 flex items-center gap-1 text-xs font-medium text-primary-strong">Xem chi tiết <ArrowRight size={12} /></span>
+        </div>
+      </button>
+      {onAdd && (
+        <div className="px-3 pb-2.5">
+          <button type="button" onClick={onAdd} className="flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-xs font-medium text-muted transition hover:border-primary/60 hover:text-primary-strong">
+            <Plus size={12} /> Ghi nhanh
+          </button>
+        </div>
+      )}
+      <FoodDetail f={f} open={open} onClose={() => setOpen(false)} />
     </div>
+  );
+}
+
+export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClose: () => void }) {
+  const [servings, setServings] = useState(1);
+  const [mealType, setMealType] = useState(guessMealType);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  const invalidate = useInvalidateAll();
+  const kcal = { p: f.protein * 4, c: f.carbs * 4, fa: f.fat * 9 };
+  const tot = Math.max(1, kcal.p + kcal.c + kcal.fa);
+  const pct = (v: number) => Math.round((v / tot) * 100);
+  const s = servings;
+  const log = async () => {
+    setBusy(true);
+    try {
+      await quickLogFood(f, mealType, s);
+      invalidate();
+      toast(`Đã ghi ${f.name}${s !== 1 ? ` ×${s}` : ""} vào ${MEAL_TYPES[mealType].toLowerCase()}`);
+      onClose();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open={open} onClose={onClose} title={f.name}
+      footer={<Button className="w-full sm:w-auto" icon={<Plus size={15} />} loading={busy} onClick={log} autoFocus>Ghi vào nhật ký · {fmt(f.calories * s)} kcal</Button>}>
+      <div className="space-y-4">
+        {f.image && !err ? (
+          <img src={f.image} alt={f.name} onError={() => setErr(true)} className="h-48 w-full rounded-xl object-cover" />
+        ) : (
+          <div className="grid h-32 w-full place-items-center rounded-xl bg-surface-2 text-5xl" aria-hidden>{f.emoji || "🍽️"}</div>
+        )}
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Badge color="var(--info)">{f.category_vi}</Badge>
+          {f.clean && <Badge color="var(--primary-strong)"><Leaf size={10} /> Clean eating</Badge>}
+          <span className="text-muted">1 khẩu phần: {f.serving} (~{f.grams} g)</span>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          {[
+            ["Calo", fmt(f.calories * s), "kcal", "var(--energy)"],
+            ["Đạm", fmt(f.protein * s, 1), "g", "var(--primary-strong)"],
+            ["Carb", fmt(f.carbs * s, 1), "g", "var(--info)"],
+            ["Béo", fmt(f.fat * s, 1), "g", "var(--warn)"],
+          ].map(([l, v, u, c]) => (
+            <div key={l} className="rounded-xl bg-surface-2 p-2">
+              <p className="text-[11px] text-muted">{l}</p>
+              <p className="text-lg font-bold" style={{ color: c }}>{v}</p>
+              <p className="text-[11px] text-muted">{u}</p>
+            </div>
+          ))}
+        </div>
+        <div>
+          <p className="mb-1 text-xs text-muted">Năng lượng đến từ: đạm {pct(kcal.p)}% · carb {pct(kcal.c)}% · béo {pct(kcal.fa)}%</p>
+          <div className="flex h-2 overflow-hidden rounded-full bg-surface-3">
+            <div style={{ width: `${pct(kcal.p)}%`, background: "var(--primary-strong)" }} />
+            <div style={{ width: `${pct(kcal.c)}%`, background: "var(--info)" }} />
+            <div style={{ width: `${pct(kcal.fa)}%`, background: "var(--warn)" }} />
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Nhận xét</p>
+          <p className="text-sm text-muted">{f.summary}</p>
+        </div>
+        <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-3">
+          <p className="text-sm font-semibold">Mẹo ăn clean</p>
+          <p className="text-sm">{f.tip}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs text-muted">Số khẩu phần</p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" aria-label="Bớt nửa phần" disabled={s <= 0.5} onClick={() => setServings(Math.max(0.5, s - 0.5))}>−</Button>
+              <span className="w-10 text-center font-semibold tabular-nums">{s}</span>
+              <Button size="sm" variant="outline" aria-label="Thêm nửa phần" disabled={s >= 4} onClick={() => setServings(Math.min(4, s + 0.5))}>+</Button>
+            </div>
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-muted">Bữa</p>
+            <select className="input h-9 text-sm" value={mealType} onChange={(e) => setMealType(e.target.value)} aria-label="Chọn bữa">
+              {Object.entries(MEAL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -69,7 +164,7 @@ function logPlanItem(it: MealPlanItem) {
     name: it.servings === 1 ? it.name : `${it.name} ×${it.servings}`,
     items: [{ name: it.name, grams: it.grams * it.servings, calories: it.calories, protein: it.protein, carbs: it.carbs, fat: it.fat, food_id: it.food_id, servings: it.servings }],
     calories: Math.round(it.calories), protein: it.protein, carbs: it.carbs, fat: it.fat,
-    image: it.image, analysis: "Từ thực đơn NutriBro gợi ý.", source: it.food_id ? "library" : "chat",
+    image: it.image, analysis: "Từ thực đơn HeadBro gợi ý.", source: it.food_id ? "library" : "chat",
   });
 }
 

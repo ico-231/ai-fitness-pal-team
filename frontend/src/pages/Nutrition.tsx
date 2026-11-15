@@ -171,7 +171,7 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
               {mode === "photo" && (
                 <div {...clickable(() => fileRef.current?.click())} aria-label="Chụp hoặc chọn ảnh món ăn" className="grid cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-surface-2 p-6 text-center hover:border-primary/60">
                   {img ? <img src={img} className="max-h-64 rounded-xl" alt="" /> : (
-                    <div className="text-sm text-muted"><Camera className="mx-auto mb-2" size={28} />Chụp hoặc chọn ảnh món ăn<br /><span className="text-xs">NutriBro sẽ nhận diện món, ước lượng khẩu phần & macro</span></div>
+                    <div className="text-sm text-muted"><Camera className="mx-auto mb-2" size={28} />Chụp hoặc chọn ảnh món ăn<br /><span className="text-xs">HeadBro sẽ nhận diện món, ước lượng khẩu phần & macro</span></div>
                   )}
                   <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setImg(await fileToDataUrl(f)); }} />
                 </div>
@@ -180,7 +180,7 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
                 <textarea className="input" rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Vd: 1 tô phở bò tái, thêm 1 quả trứng chần" />
               </Field>
               <Button className="w-full" icon={busy ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />} disabled={busy || (mode === "photo" ? !img : !text.trim())} onClick={analyze}>
-                {busy ? "NutriBro đang phân tích..." : "Phân tích bằng NutriBro"}
+                {busy ? "HeadBro đang phân tích..." : "Phân tích bằng AI"}
               </Button>
             </>
           )}
@@ -189,7 +189,7 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
               <div className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
                 <AgentAvatar agent="nutribro" size={30} />
                 <div className="flex-1 text-sm">
-                  <p className="font-semibold">Phân tích của NutriBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
+                  <p className="font-semibold">Phân tích của HeadBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
                   <p className="mt-1 text-muted">{res.analysis}</p>
                 </div>
               </div>
@@ -252,7 +252,7 @@ function MealDetail({ meal, onClose }: { meal: Meal | null; onClose: () => void 
           ) : (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" icon={<PencilLine size={14} />} onClick={() => setEdit({ name: meal.name, meal_type: meal.meal_type, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat })}>Sửa</Button>
-              <Button size="sm" variant="outline" icon={<Sparkles size={14} />} onClick={() => { onClose(); ai.open({ agent: "nutribro", text: `Đánh giá bữa "${meal.name}" của mình và gợi ý bữa tiếp theo nên ăn gì.`, context: `Bữa ăn: ${meal.name}, ${meal.calories} kcal, ${meal.protein}g đạm, ${meal.carbs}g carb, ${meal.fat}g béo, ngày ${meal.date}.` }); }}>Hỏi NutriBro</Button>
+              <Button size="sm" variant="outline" icon={<Sparkles size={14} />} onClick={() => { onClose(); ai.open({ agent: "nutribro", text: `Đánh giá bữa "${meal.name}" của mình và gợi ý bữa tiếp theo nên ăn gì.`, context: `Bữa ăn: ${meal.name}, ${meal.calories} kcal, ${meal.protein}g đạm, ${meal.carbs}g carb, ${meal.fat}g béo, ngày ${meal.date}.` }); }}>Hỏi HeadBro</Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -303,7 +303,7 @@ export default function Nutrition() {
         title="Dinh dưỡng"
         subtitle="Nhật ký bữa ăn theo ngày — mọi phân tích AI đều được lưu lại"
         actions={<>
-          <Button variant="outline" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." })}>NutriBro gợi ý thực đơn</Button>
+          <Button variant="outline" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." })}>HeadBro gợi ý thực đơn</Button>
           <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
         </>}
       />

@@ -14,8 +14,8 @@ const SECTIONS: { t: string; items: [string, string][] }[] = [
     t: "Bắt đầu nhanh (5 phút)",
     items: [
       ["1. Check-in buổi sáng (Hôm nay)", "Trả lời 5 câu hỏi về giấc ngủ, mệt mỏi, đau cơ, căng thẳng → ra Điểm sẵn sàng 0–100. Trang Tổng quan cập nhật ngay lập tức."],
-      ["2. Ghi bữa ăn (Dinh dưỡng)", "Chụp ảnh món ăn, gõ 1 câu mô tả, hoặc chọn từ thư viện món Việt. NutriBro tính calo/macro, bạn kiểm tra rồi bấm Lưu. Phân tích được lưu lại để xem bất cứ lúc nào."],
-      ["3. Tập luyện", "Chọn chương trình (Leg/Chest/Arm Workout...) hoặc nhờ CoachBro tạo buổi riêng. Bấm Bắt đầu tập: mỗi bài có 10 giây chuẩn bị, ghi từng set, đồng hồ nghỉ tự động."],
+      ["2. Ghi bữa ăn (Dinh dưỡng)", "Chụp ảnh món ăn, gõ 1 câu mô tả, hoặc chọn từ thư viện món Việt. HeadBro tính calo/macro, bạn kiểm tra rồi bấm Lưu. Phân tích được lưu lại để xem bất cứ lúc nào."],
+      ["3. Tập luyện", "Chọn chương trình (Leg/Chest/Arm Workout...) hoặc nhờ HeadBro tạo buổi riêng. Bấm Bắt đầu tập: mỗi bài có 10 giây chuẩn bị, ghi từng set, đồng hồ nghỉ tự động."],
       ["4. Nhập chỉ số cơ thể (InBody)", "Nhập cân nặng/số đo hoặc chụp phiếu InBody để HeadBro đọc. Sau đó đặt mục tiêu (tự nhập hoặc cùng HeadBro)."],
     ],
   },
@@ -32,8 +32,8 @@ const SECTIONS: { t: string; items: [string, string][] }[] = [
   {
     t: "Tập luyện & Camera AI",
     items: [
-      ["Chương trình tập", "10 chương trình 4–5 bài kiểu các app gym, kèm thời gian ước tính. Buổi do CoachBro tạo cũng xuất hiện ở mục 'Buổi tập của tôi'."],
-      ["Bản đồ cơ (AI gợi ý)", "Bấm vào một nhóm cơ → CoachBro chọn 3–4 bài phù hợp dựa trên số set nhóm cơ đó 7 ngày qua, điểm sẵn sàng, đạm đã ăn, cân nặng, trình độ, dụng cụ và chấn thương. Bấm 'Tập ngay' để vào buổi tập."],
+      ["Chương trình tập", "10 chương trình 4–5 bài kiểu các app gym, kèm thời gian ước tính. Buổi do HeadBro tạo cũng xuất hiện ở mục 'Buổi tập của tôi'."],
+      ["Bản đồ cơ (AI gợi ý)", "Bấm vào một nhóm cơ → HeadBro chọn 3–4 bài phù hợp dựa trên số set nhóm cơ đó 7 ngày qua, điểm sẵn sàng, đạm đã ăn, cân nặng, trình độ, dụng cụ và chấn thương. Bấm 'Tập ngay' để vào buổi tập."],
       ["Buổi tập trực tiếp", "Bỏ chọn bài muốn bỏ qua (bài phục hồi chỉ cần chọn 1–3 bài). Đếm ngược 10 giây trước mỗi bài, nhập tạ/rep, nghỉ có hẹn giờ (+/−15s), gợi ý tăng tải lũy tiến từ lần tập trước, báo PR ngay khi phá kỷ lục."],
       ["Tăng tải lũy tiến", "Nếu lần trước đạt đủ rep mục tiêu ở mọi set → tăng tạ (bài đa khớp như squat, đẩy ngực +2,5kg; bài đơn khớp +1kg). Chưa đủ → giữ tạ, cố thêm 1 rep."],
       ["Camera AI", "Hỗ trợ squat, lunge, push-up, curl, shoulder press, deadlift, plank, jumping jack. AI (MediaPipe) nhận diện 33 khớp, đo góc khớp để đếm rep và chấm điểm form, nhắc lỗi bằng giọng nói. Video chỉ xử lý trên máy bạn."],
@@ -44,7 +44,7 @@ const SECTIONS: { t: string; items: [string, string][] }[] = [
     t: "Hôm nay",
     items: [
       ["Công thức điểm sẵn sàng", "Ngủ 25% + chất lượng ngủ 15% + mệt mỏi 25% + đau cơ 20% + căng thẳng 15%. ≥80 tập nặng · 60–79 bình thường · 40–59 giảm 20–30% khối lượng · <40 nghỉ/phục hồi."],
-      ["CoachBro giúp gì ở đây?", "CoachBro đọc điểm sẵn sàng trước khi soạn buổi tập: thấp → bớt set hoặc chuyển sang Recovery & Mobility; cao → gợi ý tăng tạ. Bấm 'Hôm nay nên tập gì?' để hỏi trực tiếp."],
+      ["HeadBro giúp gì ở đây?", "HeadBro đọc điểm sẵn sàng trước khi soạn buổi tập: thấp → bớt set hoặc chuyển sang Recovery & Mobility; cao → gợi ý tăng tạ. Bấm 'Hôm nay nên tập gì?' để hỏi trực tiếp."],
       ["Streak & huy hiệu", "Streak tăng khi trong ngày có check-in, tập, ghi bữa ăn hoặc uống nước. Huy hiệu tính tự động từ dữ liệu thật."],
       ["Cardio / HIIT", "Bấm thẻ HIIT để vào buổi tập có đồng hồ 40s làm / 20s nghỉ và giọng PT đếm giờ."],
     ],
@@ -100,7 +100,7 @@ export default function Guide() {
           (Object.entries(data) as [AgentKey, AgentInfo][]).map(([k, a]) => (
             <Card key={k} className="p-5">
               <div className="flex items-center gap-2.5">
-                <AgentAvatar agent={k} />
+                <AgentAvatar agent={k} real />
                 <div>
                   <p className="font-semibold" style={{ color: a.color }}>{a.name}</p>
                   <p className="text-xs text-muted">{a.title}</p>

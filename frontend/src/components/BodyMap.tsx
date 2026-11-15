@@ -7,7 +7,7 @@ import type { MuscleVolume } from "../lib/types";
 /**
  * Bản đồ cơ thể 2D (mặt trước + mặt sau) vẽ bằng SVG.
  * - Dashboard: tô màu theo số set đã tập (nhạt = ít → đậm = nhiều).
- * - Workouts: bấm vào nhóm cơ để CoachBro gợi ý bài.
+ * - Workouts: bấm vào nhóm cơ để HeadBro gợi ý bài.
  */
 
 type Shape = { m: string; d: string };

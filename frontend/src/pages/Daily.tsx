@@ -152,9 +152,9 @@ export default function Daily() {
                 <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-surface-2 p-3">
                   <AgentAvatar agent="coachbro" size={30} />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">CoachBro hỗ trợ gì ở đây?</p>
+                    <p className="text-sm font-medium">HeadBro hỗ trợ gì ở đây?</p>
                     <p className="text-xs text-muted">
-                      CoachBro đọc điểm này trước khi soạn buổi tập: điểm thấp → giảm set, chuyển sang bài phục hồi; điểm cao → gợi ý tăng tạ. Bạn có thể hỏi trực tiếp:
+                      HeadBro đọc điểm này trước khi soạn buổi tập: điểm thấp → giảm set, chuyển sang bài phục hồi; điểm cao → gợi ý tăng tạ. Bạn có thể hỏi trực tiếp:
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button size="sm" icon={<Sparkles size={14} />} onClick={askCoach}>Hôm nay nên tập gì?</Button>
@@ -244,7 +244,7 @@ export default function Daily() {
         </div>
         <div className="px-4 pb-4">
           <Button size="sm" variant="ghost" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "coachbro", text: "Tư vấn cho mình một buổi cardio/HIIT phù hợp với thể trạng hôm nay, có thời gian từng hiệp." })}>
-            Nhờ CoachBro tư vấn cardio kỹ hơn
+            Nhờ HeadBro tư vấn cardio kỹ hơn
           </Button>
         </div>
       </Card>

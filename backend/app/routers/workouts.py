@@ -70,7 +70,7 @@ class PlanIn(BaseModel):
 
 def plan_out(p: WorkoutPlan) -> dict:
     return {"id": p.id, "name": p.name, "focus": p.focus, "description": p.description, "est_minutes": p.est_minutes,
-            "items": tplsvc.hydrate_items(p.items), "source": p.source, "created_at": p.created_at.isoformat(), "optional": False}
+            "items": tplsvc.hydrate_items(p.items), "source": p.source, "created_at": p.created_at.isoformat(), "optional": p.focus == "mobility"}
 
 
 @router.get("/workouts/templates")
@@ -103,6 +103,21 @@ def create_plan(body: PlanIn, user: User = Depends(get_current_user), db: Sessio
     p = WorkoutPlan(user_id=user.id, name=body.name, focus=body.focus, description=body.description, items=items,
                     est_minutes=tplsvc.estimate_minutes(items), source="custom")
     db.add(p)
+    db.commit()
+    return plan_out(p)
+
+
+@router.put("/workouts/plans/{plan_id}")
+def update_plan(plan_id: str, body: PlanIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Sửa buổi tập của người dùng (tên, nhóm, danh sách bài). Chương trình có sẵn thì không sửa được — lưu thành bản mới."""
+    p = db.get(WorkoutPlan, plan_id)
+    if not p or p.user_id != user.id:
+        raise HTTPException(404, "Không tìm thấy chương trình")
+    items = [i.model_dump() for i in body.items if exsvc.get_exercise(i.exercise_id)]
+    if not items:
+        raise HTTPException(400, "Chương trình cần ít nhất 1 bài tập hợp lệ")
+    p.name, p.focus, p.description, p.items = body.name, body.focus, body.description, items
+    p.est_minutes = tplsvc.estimate_minutes(items)
     db.commit()
     return plan_out(p)
 
