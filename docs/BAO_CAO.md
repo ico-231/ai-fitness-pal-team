@@ -134,11 +134,11 @@ MCP là giao thức mở chuẩn hoá cách ứng dụng cung cấp công cụ v
 |---|---|
 | Tài khoản | Đăng ký/đăng nhập email hoặc Google, nhớ đăng nhập 30 ngày; onboarding 4 bước tính mục tiêu calo/macro |
 | Hằng ngày | Check-in sáng (giấc ngủ, mệt mỏi, đau cơ, căng thẳng) → điểm sẵn sàng; nước uống; streak, huy hiệu |
-| Tập luyện | 10 chương trình mẫu, tự soạn buổi tập, lịch tuần; ghi set, hẹn giờ nghỉ, gợi ý tăng tải; PR; bản đồ nhiệt cơ |
-| Camera AI | Đếm rep, chấm điểm form cho 8 dạng bài, nhắc lỗi bằng giọng nói, không gửi video lên server |
+| Tập luyện | 10 chương trình mẫu, buổi Custom (nhiều buổi có tên, sửa được), tuỳ chỉnh chương trình có sẵn (đổi/xoá/thêm bài liên quan), lịch tuần; ghi set, hẹn giờ nghỉ, gợi ý tăng tải; PR; bản đồ nhiệt cơ |
+| Camera AI | Đếm rep, chấm điểm form cho 8 dạng bài, tự bật với bài hỗ trợ, nhắc lỗi bằng giọng nói, không gửi video lên server |
 | Dinh dưỡng | Ghi bữa qua ảnh, mô tả, thư viện món Việt, nhập tay, món gần đây; lưu phân tích AI; biểu đồ 14 ngày |
 | Cơ thể & mục tiêu | Nhập tay hoặc quét phiếu InBody bằng ảnh; giải thích chỉ số; đặt mục tiêu cùng HeadBro |
-| Trợ lý AI | Chat stream, chọn agent hoặc tự động, gửi ảnh, giọng nói, thẻ kết quả (bài tập, buổi tập, thực đơn, nguồn), xác nhận đề xuất ghi |
+| Trợ lý AI | Chat stream với một trợ lý duy nhất (HeadBro, tự giao việc cho chuyên gia phía sau), gửi ảnh, giọng nói, thẻ kết quả (bài tập, buổi tập, thực đơn, nguồn), xác nhận đề xuất ghi |
 | Quản trị dữ liệu | Trí nhớ AI (xem/thêm/xoá), xuất JSON, xoá sạch dữ liệu, xoá tài khoản |
 | Nhật ký AI | Xem trace từng lượt chat và thống kê độ trễ, lỗi, token |
 
@@ -197,6 +197,8 @@ Hệ thống gồm một server **FastAPI** phục vụ cả API (`/api/*`) và 
 | NutriBro | Bữa ăn, macro, món Việt, thực đơn | `search_food_library`, `propose_meal_log`, `create_meal_plan` |
 
 Mỗi công cụ khai báo danh sách agent được phép dùng; hàm `run_tool` từ chối nếu agent gọi công cụ ngoài quyền. Agent khác nhau ở **persona** (giọng, chuyên môn, điều không được làm), **bộ công cụ** và **quyền ghi dữ liệu**.
+
+**Giao diện một trợ lý.** Theo góp ý của nhóm khi dùng thử, người dùng chỉ trò chuyện với HeadBro và không phải chọn agent. Kiến trúc bên dưới giữ nguyên: Router vẫn giao việc cho CoachBro hoặc NutriBro; câu trả lời của chuyên gia hiển thị dưới tên HeadBro kèm nhãn "chuyên gia tập luyện" hoặc "chuyên gia dinh dưỡng". Trang Nhật ký AI vẫn ghi đúng agent nào đã xử lý, nên vẫn kiểm tra được hoạt động của từng agent.
 
 **Router** định tuyến theo hai bước: (1) nếu câu hỏi có từ khoá rõ ràng thuộc đúng một chuyên môn thì chọn ngay, không tốn lượt gọi mô hình; (2) ngược lại hỏi mô hình nhanh, trả về JSON danh sách 1–2 agent kèm lý do, có bước kiểm tra chéo để sửa cặp agent sai. Khi có hai agent, agent thứ hai đọc câu trả lời của agent thứ nhất và HeadBro viết phần tổng kết.
 
@@ -289,24 +291,25 @@ fitbro/
 
 | Trang | Chức năng chính |
 |---|---|
-| Dashboard | Thao tác nhanh, nhắc nhở chủ động của HeadBro, điểm sẵn sàng, báo cáo 6 chỉ số, bản đồ nhiệt cơ, PR, mục tiêu, nghe tóm tắt, xuất PDF |
-| Trợ lý AI | Chat kiểu ChatGPT, chọn agent hoặc tự động, gửi ảnh, giọng nói, thẻ kết quả, câu hỏi gợi ý tiếp theo, biểu tượng mở trace |
-| Workouts | Chương trình, lịch tuần, bản đồ cơ có AI gợi ý, thư viện 1.324 bài, lịch sử & PR, tự soạn buổi tập |
-| Buổi tập & Camera AI | Đếm ngược chuẩn bị, ghi set, hẹn giờ nghỉ, gợi ý tăng tải, tổng kết; Camera AI chấm form |
-| Daily | Check-in, giải thích điểm sẵn sàng, nước uống, streak, huy hiệu, buổi HIIT/Core/Giãn cơ nhanh |
-| Nutrition | 5 cách ghi bữa, phân tích ảnh, thanh calo/macro, biểu đồ 14 ngày, thư viện món Việt |
+| Tổng quan | Thao tác nhanh, nhắc nhở chủ động của HeadBro, điểm sẵn sàng, báo cáo 6 chỉ số, bản đồ nhiệt cơ, PR, mục tiêu, nghe tóm tắt, xuất PDF |
+| Trợ lý AI | Chat kiểu ChatGPT chỉ với HeadBro (nhãn chuyên gia cho từng câu trả lời), gửi ảnh, giọng nói, thẻ kết quả, câu hỏi gợi ý tiếp theo, biểu tượng mở trace |
+| Tập luyện | Chương trình, Custom (tạo/sửa nhiều buổi có tên), lịch tuần, bản đồ cơ có AI gợi ý, thư viện 1.324 bài, lịch sử & PR |
+| Buổi tập & Camera AI | Tuỳ chỉnh trước khi tập (bỏ chọn, đổi sang bài liên quan, xoá, thêm bài), đếm ngược chuẩn bị, ghi set, hẹn giờ nghỉ, gợi ý tăng tải, tổng kết; Camera AI tự bật và chấm form |
+| Hôm nay | Check-in theo thang 1–5, giải thích điểm sẵn sàng, nước uống, streak, huy hiệu, buổi HIIT/Core/Giãn cơ nhanh |
+| Dinh dưỡng | 5 cách ghi bữa, phân tích ảnh, thanh calo/macro, biểu đồ 14 ngày, thư viện món Việt có trang chi tiết từng món |
 | InBody & Mục tiêu | Nhập/quét phiếu, giải thích chỉ số, biểu đồ, mất cân đối trái/phải, mục tiêu |
 | Nhật ký AI | Thống kê và trace từng lượt chat |
-| Hướng dẫn, Cài đặt | Giải thích hệ thống; trí nhớ AI, giọng PT, giao diện sáng/tối, dữ liệu |
+| Hướng dẫn, Cài đặt | Giải thích hệ thống; trí nhớ AI, giọng PT, tự bật Camera AI, giao diện sáng/tối, dữ liệu |
 
-> [Chèn ảnh chụp màn hình các trang chính: Dashboard, Trợ lý AI (có thẻ nguồn), Workouts, Camera AI, Nutrition, Nhật ký AI.]
+> [Chèn ảnh chụp màn hình các trang chính: Tổng quan, Trợ lý AI (có thẻ nguồn), Tập luyện (tab Custom), Camera AI, Dinh dưỡng (chi tiết món), Nhật ký AI.]
 
 ## 5.4. Các điểm cài đặt đáng chú ý
 
-- **Đồng bộ dữ liệu**: mọi trang đọc từ cùng API; sau mỗi thao tác ghi, React Query làm mới toàn bộ dữ liệu, có test tự động kiểm tra check-in cập nhật Dashboard.
-- **Chống bịa số liệu**: id bài tập do AI đưa ra được kiểm tra với thư viện, id không tồn tại bị loại; phần cần chính xác tuyệt đối (công thức, PR, tóm tắt Dashboard) tính bằng code.
+- **Đồng bộ dữ liệu**: mọi trang đọc từ cùng API; sau mỗi thao tác ghi, React Query làm mới toàn bộ dữ liệu, có test tự động kiểm tra check-in cập nhật trang Tổng quan.
+- **Chống bịa số liệu**: id bài tập do AI đưa ra được kiểm tra với thư viện, id không tồn tại bị loại; phần cần chính xác tuyệt đối (công thức, PR, tóm tắt ở trang Tổng quan) tính bằng code.
 - **Làm sạch câu trả lời**: bỏ tiêu đề markdown, dấu `*` lẻ, giới hạn in đậm; chỉ giữ đoạn trả lời cuối khi mô hình viết cả trước và sau khi gọi công cụ.
-- **Camera AI**: máy trạng thái hai pha có ngưỡng trễ để đếm rep chống nhiễu; tự chọn bên cơ thể nhìn rõ hơn; mỗi lỗi form trừ 30 điểm.
+- **Camera AI**: máy trạng thái hai pha có ngưỡng trễ để đếm rep chống nhiễu; tự chọn bên cơ thể nhìn rõ hơn; mỗi lỗi form trừ 30 điểm. Ảnh camera và khung xương được vẽ trên **cùng một canvas** nên khung xương luôn khớp người, kể cả khi webcam trả khung 16:9 trong ô hiển thị 4:3 (bản trước vẽ trên hai lớp riêng nên có lúc lệch ngang).
+- **Tuỳ chỉnh buổi tập**: bộ chọn bài gợi ý bài cùng cơ chính với bài đang đổi (bài giãn cơ thì gợi ý bài giãn cơ, có lọc theo dụng cụ của người dùng). Chương trình có sẵn sau khi chỉnh được lưu thành buổi Custom mới, bản gốc giữ nguyên; buổi của người dùng thì cập nhật tại chỗ.
 - **Dữ liệu mẫu**: `seed_demo.py` tạo tài khoản demo 12 tuần có diễn biến thực tế (mới tập, chững cân, ốm, tuần giảm tải, ăn cỗ cưới) và 10 hội thoại mẫu kèm trace; mọi máy tạo ra cùng một bộ dữ liệu.
 
 \newpage

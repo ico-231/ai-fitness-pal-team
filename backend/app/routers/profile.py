@@ -21,6 +21,7 @@ DEFAULT_SETTINGS = {
     "voice_coach": True,
     "voice_rate": 1.0,
     "prep_seconds": 10,
+    "auto_camera": True,  # bài có Camera AI thì tự bật camera khi vào hiệp tập
     "theme": "system",
     "reminders": {"checkin": "07:30", "workout": "18:00", "water_every_min": 0, "enabled": False},
 }

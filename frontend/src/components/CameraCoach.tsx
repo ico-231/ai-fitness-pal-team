@@ -39,6 +39,8 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
     cancelAnimationFrame(rafRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    const c = canvasRef.current;
+    c?.getContext("2d")?.clearRect(0, 0, c.width, c.height);
     setStatus("idle");
   }, []);
 
@@ -50,10 +52,15 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
       if (v.readyState >= 2) {
         const now = performance.now();
         const res = lm.detectForVideo(v, now);
-        c.width = v.videoWidth;
-        c.height = v.videoHeight;
+        if (c.width !== v.videoWidth || c.height !== v.videoHeight) {
+          c.width = v.videoWidth;
+          c.height = v.videoHeight;
+        }
         const ctx = c.getContext("2d")!;
-        ctx.clearRect(0, 0, c.width, c.height);
+        // Vẽ chính khung hình camera vào canvas rồi vẽ khung xương lên CÙNG canvas đó:
+        // ảnh và điểm khớp dùng chung một hệ toạ độ nên không thể lệch nhau, dù trình duyệt
+        // co giãn/cắt khung (object-cover, webcam 16:9 trong khung 4:3) thế nào.
+        ctx.drawImage(v, 0, 0, c.width, c.height);
         const img = res.landmarks?.[0] as LM[] | undefined;
         const world = (res.worldLandmarks?.[0] as LM[] | undefined) || img;
         if (img && world) {
@@ -148,7 +155,8 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-black">
       <div className="relative aspect-[4/3] w-full">
-        <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
+        {/* video chỉ làm nguồn hình (ẩn); canvas hiển thị cả hình lẫn khung xương, lật gương như soi gương */}
+        <video ref={videoRef} playsInline muted aria-hidden className="pointer-events-none absolute left-0 top-0 h-px w-px opacity-0" />
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
         {status !== "running" && (
           <div className="absolute inset-0 grid place-items-center p-6 text-center text-white">

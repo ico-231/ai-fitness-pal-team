@@ -23,6 +23,7 @@
 14. [Phụ lục: danh sách API & cấu trúc thư mục](#14-phụ-lục)
 15. [Nhật ký thay đổi v3.1](#15-nhật-ký-thay-đổi-v31-cải-thiện-tính-năng-giao-diện-ai-agent)
 16. [Chất lượng AI: Guardrails, RAG, Observability, Eval, MCP](#16-chất-lượng-ai-guardrails-rag-observability-eval-mcp-v32)
+17. [Nhật ký thay đổi v3.3 — theo góp ý của nhóm](#17-nhật-ký-thay-đổi-v33--theo-góp-ý-của-nhóm)
 
 ---
 
@@ -72,7 +73,7 @@ Bản cũ **có** một backend LangGraph khá đầy đủ (`backend/app/agents
 | Đổi font, khó nhìn | Font **Be Vietnam Pro** (thiết kế cho tiếng Việt), cỡ 15px, hỗ trợ sáng/tối |
 | Bản đồ nhiệt chưa hoạt động, chỉ hiện cơ đã tập, có filter ngày/tháng/năm, đỏ = nhiều, xanh = ít, bỏ đề xuất bài | Bản đồ cơ SVG 16 nhóm cơ, tính từ **set thật** đã tập; filter 7 ngày/tháng/quý/năm; 5 mức màu với **tiêu chí số set rõ ràng**; không có đề xuất ở Dashboard |
 | Heat map ở Workouts: bấm bộ phận → AI đề xuất bài, kết hợp lịch sử tập, protein, cân nặng | Tab **"Bản đồ cơ (AI gợi ý)"**: bấm cơ → CoachBro đọc set 7 ngày, điểm sẵn sàng, đạm đã ăn, cân nặng, trình độ, dụng cụ, chấn thương → chọn 3–4 bài + lý do + gợi ý tăng tải → nút "Tập ngay" |
-| HeadBro/CoachBro/NutriBro chưa thể hiện multi-agent | Router thật chọn agent, mỗi agent có **công cụ riêng & quyền riêng**, giao diện hiện **"Router → CoachBro · lý do"** và **"Đã dùng N công cụ"** |
+| HeadBro/CoachBro/NutriBro chưa thể hiện multi-agent | Router thật chọn agent, mỗi agent có **công cụ riêng & quyền riêng**. Từ v3.3 người dùng chỉ trò chuyện với **HeadBro**; câu trả lời ghi nhãn **"chuyên gia tập luyện / dinh dưỡng"**, dòng **"HeadBro → chuyên gia ... · lý do"**, **"Đã dùng N công cụ"**, và trang Nhật ký AI hiện đúng agent nào đã chạy |
 | Hỏi AI không đưa vào bài tập | Agent trả về **thẻ bài tập có ảnh GIF**, **thẻ chương trình có nút "Bắt đầu tập"**, nút **"Mở bài tập: Tay"** dẫn thẳng sang Workouts đã lọc |
 | Câu trả lời nhiều dấu `*` | Quy tắc trình bày trong prompt + bộ lọc `sanitize()` (bỏ tiêu đề #, dấu * lẻ, tối đa 3 cặp in đậm) + giao diện **render markdown** (không hiện ký tự thô) |
 | "Tôi muốn tập tay" → lọc bài | CoachBro gọi `search_exercises(focus="arms")` → thẻ bài + nút xem toàn bộ trong Workouts |
@@ -144,7 +145,7 @@ flowchart TD
     M["Tin nhắn người dùng<br/>(+ ảnh, + ngữ cảnh trang)"] --> G{"① Safety Guard<br/>(luật, không gọi AI)"}
     G -- "Cấp cứu / khủng hoảng /<br/>rối loạn ăn uống / chất cấm" --> SAFE["Trả lời hướng dẫn an toàn (115...)<br/>DỪNG — không agent nào chạy"]
     G -- "An toàn hoặc 'thận trọng'" --> RT{"② Router (Supervisor)<br/>LLM phân loại → JSON"}
-    RT -- "người dùng chọn agent" --> A1
+    RT -- "nút gợi ý chỉ định sẵn chuyên gia" --> A1
     RT --> A1["③ Agent #1<br/>(vòng lặp ReAct + tools)"]
     A1 -- "nếu cần agent thứ 2" --> A2["③ Agent #2<br/>(đọc câu trả lời của #1)"]
     A2 --> SY["④ HeadBro tổng kết<br/>(2–4 câu)"]
@@ -191,6 +192,8 @@ Lý do định tuyến được **hiển thị cho người dùng** ("Router →
 | Không được làm | Soạn giáo án chi tiết | Thực đơn, đặt mục tiêu cơ thể | Giáo án tập |
 | Số công cụ | 19 | 21 | 13 |
 | Công cụ ghi dữ liệu | `propose_goal`, `propose_body_metric`, `remember` | `create_workout_plan`, `propose_weekly_schedule`, `remember` | `propose_meal_log`, `create_meal_plan`, `remember` |
+
+**Giao diện chỉ còn HeadBro (v3.3).** Theo góp ý của nhóm, người dùng chỉ thấy một trợ lý là HeadBro: không còn nút chọn agent, ô chat ghi "Nhắn cho HeadBro...". Kiến trúc bên dưới **không đổi**: Router vẫn phân loại và giao việc cho CoachBro/NutriBro với bộ công cụ và quyền riêng. Câu trả lời của chuyên gia hiển thị dưới tên HeadBro kèm nhãn nhỏ "chuyên gia tập luyện" hoặc "chuyên gia dinh dưỡng" (`frontend/src/components/AgentAvatar.tsx`, hằng `EXPERT`). Trang **Hướng dẫn** và **Nhật ký AI** vẫn hiện đủ 3 agent để giải thích và kiểm tra hệ thống.
 
 Mỗi agent nhận **system prompt** gồm:
 1. Persona & phạm vi chuyên môn (khác nhau hoàn toàn).
@@ -478,7 +481,10 @@ Dựa trên các set của **lần gần nhất** tập bài đó:
 | Plank | Thân (vai–hông–cổ chân) — tính **giây giữ đúng form** | Võng/nhô hông |
 | Jumping jack | Tay qua đầu + chân rộng | — |
 
-Kết quả (số rep, điểm form) được **ghi vào set** trong buổi tập → điểm form hiện ở Dashboard và lịch sử.
+6. **Vẽ chung một canvas (v3.3).** Mỗi khung hình, ảnh camera được vẽ vào canvas rồi khung xương vẽ đè lên **cùng canvas đó**; thẻ `<video>` chỉ làm nguồn hình và được ẩn. Trước đây video và lớp vẽ là 2 phần tử riêng, mỗi cái tự co giãn (`object-cover`), nên khi webcam trả khung 16:9 trong ô 4:3 hoặc trình duyệt co lớp vẽ khác video thì hình que bị **lệch ngang** so với người. Nay ảnh và điểm khớp dùng chung hệ toạ độ nên không thể lệch.
+7. **Tự bật camera (v3.3).** Bài có hỗ trợ Camera AI sẽ tự bật camera khi vào hiệp tập (trang Camera AI cũng tự bật khi mở). Lần đầu trình duyệt hỏi quyền camera. Tắt được bằng nút "Tắt Camera AI" hoặc trong **Cài đặt → "Tự bật Camera AI với bài hỗ trợ"** (`settings.auto_camera`, mặc định bật).
+
+Kết quả (số rep, điểm form) được **ghi vào set** trong buổi tập → điểm form hiện ở Tổng quan và lịch sử.
 
 ---
 
@@ -488,20 +494,20 @@ Kết quả (số rep, điểm form) được **ghi vào set** trong buổi tậ
 |---|---|---|
 | Đăng nhập | `/` (chưa đăng nhập) | Google hoặc email/mật khẩu; nhớ 30 ngày |
 | Onboarding | sau đăng ký | 4 bước: thông tin cơ bản → mục tiêu → trình độ/dụng cụ/chấn thương → xem mục tiêu dinh dưỡng được tính |
-| Dashboard | `/` | Thao tác nhanh (+nước, ghi cân nặng, ghi bữa, tập), **HeadBro nhắc bạn** (nhắc nhở chủ động), điểm sẵn sàng, tóm tắt hôm nay, báo cáo 6 chỉ số (bấm xem chi tiết), bản đồ nhiệt có filter, PR, mục tiêu, Nghe tóm tắt, Xuất PDF, "HeadBro phân tích" |
-| Trợ lý AI | `/chat` | Giao diện kiểu ChatGPT; chọn agent hoặc "Tự động"; gửi ảnh; nhập bằng giọng nói; đọc to / sao chép câu trả lời; **nút Dừng**; **câu hỏi gợi ý tiếp theo**; thẻ thực đơn, lịch tuần, ghi nhớ |
-| Workouts | `/workouts` | 5 tab: Chương trình (+ tự soạn buổi tập) · **Lịch tuần** · Bản đồ cơ (AI gợi ý) · Thư viện 1.324 bài (tên tiếng Việt cho ~100 bài phổ biến, tìm được bằng tiếng Việt) · Lịch sử & PR. Banner "Hôm nay theo lịch", điểm sẵn sàng, buổi đang tập dở. Khay **"Buổi tự soạn"**: thêm bài từ thư viện, chỉnh set/rep/nghỉ, sắp xếp, lưu & tập |
-| Buổi tập | `/workouts/session` | Chọn bài → 10s chuẩn bị → ghi set (tạ/rep, gợi ý tăng tải) → nghỉ có hẹn giờ → ... → tổng kết (PR, nhóm cơ, CoachBro nhận xét). Hỗ trợ tiếp tục buổi dở |
-| Camera AI | `/workouts/camera` | Tập tự do với camera, lưu set vào lịch sử |
-| Daily | `/daily` | Check-in → điểm sẵn sàng + giải thích công thức + CoachBro tư vấn; nước uống; streak + lịch 35 ngày; HIIT/Core/Giãn cơ nhanh; huy hiệu |
-| Nutrition | `/nutrition` | Ghi bữa ăn qua 5 cách: **Gần đây** (món hay ăn, 1 chạm) · Ảnh · Mô tả · Món Việt · Nhập tay; nút **"Ăn lại hôm nay"**; chọn ngày, thanh calo/macro vs mục tiêu, bữa theo Sáng/Trưa/Tối/Phụ, chi tiết bữa (ảnh + phân tích đã lưu, sửa, xoá, hỏi NutriBro), biểu đồ 14 ngày, thư viện món Việt |
+| Tổng quan | `/` | Thao tác nhanh (+nước, ghi cân nặng, ghi bữa, tập), **HeadBro nhắc bạn** (nhắc nhở chủ động), điểm sẵn sàng, tóm tắt hôm nay, báo cáo 6 chỉ số (bấm xem chi tiết), bản đồ nhiệt có filter, PR, mục tiêu, Nghe tóm tắt, Xuất PDF, "HeadBro phân tích" |
+| Trợ lý AI | `/chat` | Giao diện kiểu ChatGPT, **chỉ trò chuyện với HeadBro** (HeadBro tự nhờ chuyên gia phía sau, có nhãn "chuyên gia ..."); gửi ảnh; nhập bằng giọng nói; đọc to / sao chép câu trả lời; **nút Dừng**; **câu hỏi gợi ý tiếp theo**; thẻ thực đơn, lịch tuần, ghi nhớ |
+| Tập luyện | `/workouts` | 6 tab: Chương trình · **Custom** · **Lịch tuần** · Bản đồ cơ (AI gợi ý) · Thư viện 1.324 bài (tên tiếng Việt cho ~100 bài phổ biến, tìm được bằng tiếng Việt) · Lịch sử & PR. Banner "Hôm nay theo lịch", điểm sẵn sàng, buổi đang tập dở. Tab **Custom**: tạo nhiều buổi có tên riêng, nút **Sửa** (đổi tên, thêm/xoá/sắp xếp bài, set/rep/nghỉ), nút **Thêm bài** chọn ngay trong hộp soạn; buổi do HeadBro tạo và chương trình có sẵn đã tuỳ chỉnh cũng nằm ở đây. Mỗi thẻ chương trình có nút **Tuỳ chỉnh** |
+| Buổi tập | `/workouts/session` | Màn hình trước khi tập: bỏ chọn bài, **Đổi** sang bài liên quan (cùng cơ chính; bài giãn cơ thì gợi ý bài giãn cơ khác), **Xoá**, **Thêm bài liên quan**; bản chỉnh của chương trình có sẵn lưu thành buổi Custom, bản gốc giữ nguyên → 10s chuẩn bị → ghi set (tạ/rep, gợi ý tăng tải) → nghỉ có hẹn giờ → ... → tổng kết (PR, nhóm cơ, HeadBro nhận xét). Camera AI tự bật với bài hỗ trợ. Hỗ trợ tiếp tục buổi dở |
+| Camera AI | `/workouts/camera` | Tập tự do với camera (tự bật khi mở trang), lưu set vào lịch sử |
+| Hôm nay | `/daily` | Check-in (mỗi thang có **số 1–5** dưới biểu tượng) → điểm sẵn sàng + giải thích công thức + HeadBro tư vấn; nước uống; streak + lịch 35 ngày; HIIT/Core/Giãn cơ nhanh; huy hiệu |
+| Dinh dưỡng | `/nutrition` | Ghi bữa ăn qua 5 cách: **Gần đây** (món hay ăn, 1 chạm) · Ảnh · Mô tả · Món Việt · Nhập tay; nút **"Ăn lại hôm nay"**; chọn ngày, thanh calo/macro vs mục tiêu, bữa theo Sáng/Trưa/Tối/Phụ, chi tiết bữa (ảnh + phân tích đã lưu, sửa, xoá, hỏi HeadBro), biểu đồ 14 ngày, thư viện món Việt: **bấm vào món** để xem chi tiết (ảnh, calo/đạm/carb/béo, tỉ lệ năng lượng, nhận xét, mẹo ăn clean), chọn số khẩu phần và bữa rồi ghi; nút **Ghi nhanh** trên từng món |
 | InBody & Mục tiêu | `/inbody` | Thẻ chỉ số (bấm ⓘ để xem giải thích + liên hệ tập luyện), nhập tay / quét phiếu, biểu đồ, phân tích mất cân đối trái/phải, mục tiêu (cùng HeadBro hoặc tự nhập), lịch sử đo |
 | Hướng dẫn | `/guide` | Cách hệ thống agent hoạt động, công cụ của từng agent, giải thích mọi tính năng |
-| Cài đặt | `/settings` | **Trí nhớ của AI** (xem/thêm/xoá), hồ sơ & mục tiêu dinh dưỡng, giọng PT (bật/tắt, tốc độ, nghe thử), thời gian chuẩn bị, kiểm tra camera, theme sáng/tối, nhắc nhở, trạng thái AI, xuất dữ liệu, xoá sạch dữ liệu, xoá tài khoản |
+| Cài đặt | `/settings` | **Trí nhớ của AI** (xem/thêm/xoá), hồ sơ & mục tiêu dinh dưỡng, giọng PT (bật/tắt, tốc độ, nghe thử), **tự bật Camera AI**, thời gian chuẩn bị, kiểm tra camera, theme sáng/tối, nhắc nhở, trạng thái AI, xuất dữ liệu, xoá sạch dữ liệu, xoá tài khoản |
 
-Nút **"Hỏi AI"** nổi ở góc phải mọi trang: mở ngăn chat kèm **ngữ cảnh trang** và gợi ý câu hỏi phù hợp trang đó. Nhiều nút trong app (ví dụ "CoachBro nhận xét" sau buổi tập) mở ngăn chat với câu hỏi + dữ liệu đã điền sẵn.
+Nút **"Hỏi AI"** nổi ở góc phải mọi trang: mở ngăn chat kèm **ngữ cảnh trang** và gợi ý câu hỏi phù hợp trang đó. Nhiều nút trong app (ví dụ "HeadBro nhận xét" sau buổi tập) mở ngăn chat với câu hỏi + dữ liệu đã điền sẵn.
 
-Giao diện **responsive**: desktop có sidebar, điện thoại có thanh điều hướng dưới cùng.
+Giao diện **responsive**: desktop có sidebar, điện thoại có thanh điều hướng dưới cùng. Đã quét 15 trang ở bề ngang 375px: không trang nào bị tràn ngang.
 
 ---
 
@@ -711,7 +717,7 @@ cd frontend && npm run build     # kiểm tra kiểu TypeScript + build
 | Hồ sơ | `GET/PUT /api/profile` · `POST /api/profile/onboard` · `PUT /api/profile/settings` · `GET /api/profile/targets/preview` |
 | Daily | `GET /api/daily/today` · `POST/DELETE /api/daily/checkin` · `POST /api/daily/water` · `GET /api/daily/calendar` |
 | Bài tập | `GET /api/exercises` · `GET /api/exercises/meta` · `GET /api/exercises/{id}` |
-| Workouts | `GET /api/workouts/templates` · `GET/POST /api/workouts/plans` · `GET/DELETE /api/workouts/plans/{id}` · `GET /api/workouts/active` · `POST /api/workouts/sessions` · `POST /api/workouts/sessions/{id}/sets` · `POST /api/workouts/sessions/{id}/finish` · `GET /api/workouts/sessions` · `GET /api/workouts/prs` · `POST /api/workouts/suggest` |
+| Workouts | `GET /api/workouts/templates` · `GET/POST /api/workouts/plans` · `GET/PUT/DELETE /api/workouts/plans/{id}` · `GET /api/workouts/active` · `POST /api/workouts/sessions` · `POST /api/workouts/sessions/{id}/sets` · `POST /api/workouts/sessions/{id}/finish` · `GET /api/workouts/sessions` · `GET /api/workouts/prs` · `POST /api/workouts/suggest` |
 | Dinh dưỡng | `GET /api/nutrition/day` · `GET /api/nutrition/history` · `POST/GET/PUT/DELETE /api/nutrition/meals` · `POST /api/nutrition/analyze` · `GET /api/foods` |
 | Cơ thể & mục tiêu | `GET/POST /api/body/metrics` · `DELETE /api/body/metrics/{id}` · `POST /api/body/scan` · `GET /api/body/summary` · `GET/POST/PUT/DELETE /api/goals` |
 | Dashboard | `GET /api/dashboard` · `GET /api/dashboard/report?period=` · `GET /api/dashboard/heatmap?days=` · `GET /api/dashboard/briefing` |
@@ -892,3 +898,25 @@ Cấu hình Claude Desktop (`claude_desktop_config.json`):
 ### 16.6. Sửa lỗi phát hiện nhờ bộ test mới
 - Mẫu regex `\b...\b` trong `guard.py` và `exercises.py` bị lưu thành ký tự điều khiển (backspace) → Safety Guard **không bao giờ bắt được "sarms"/"steroid" dạng không dấu**, và một luật nhận diện bài tính giờ không khớp. Đã sửa, có test bảo vệ.
 - Gửi câu đầu tiên trong cuộc trò chuyện mới: khung chat bị dựng lại khi URL đổi nên câu trả lời không hiện trực tiếp (phải tải lại trang). Đã sửa.
+
+---
+
+## 17. Nhật ký thay đổi v3.3 — theo góp ý của nhóm
+
+Nhóm gửi bản tổng hợp nhận xét sau khi dùng thử. Bảng dưới ghi ý nào đã làm, làm thế nào, và ý nào cân nhắc lại.
+
+| Góp ý | Đã làm | Ghi chú |
+|---|---|---|
+| Chỉ giữ một trợ lý HeadBro | Giao diện chỉ còn HeadBro, bỏ nút chọn agent; câu trả lời của chuyên gia có nhãn "chuyên gia tập luyện / dinh dưỡng" | **Không xoá** CoachBro/NutriBro ở backend: hệ thống đa tác tử (Router + chuyên gia có công cụ riêng) là phần cốt lõi của đồ án. Người dùng thấy gọn, kiến trúc giữ nguyên (mục 4.4) |
+| Bỏ viền xanh ô chat | Bỏ viền khi bấm vào ô nhập | |
+| Bỏ ghi âm ở "Hôm nay" | Không đổi | Trang Hôm nay không có nút ghi âm riêng; nút micro nằm trong khung chat "Hỏi AI" |
+| Giọng đọc tiếng Việt theo file mẫu | Chưa làm | Đang dùng giọng có sẵn của trình duyệt (Web Speech API). Muốn giọng ổn định cần dịch vụ đọc chữ (TTS) bên ngoài |
+| Tab Custom, nhiều buổi tự soạn có tên | Tab **Custom** trong Tập luyện, tạo/sửa/xoá nhiều buổi, thêm bài ngay trong hộp soạn | API mới `PUT /api/workouts/plans/{id}` |
+| Tuỳ chỉnh chương trình có sẵn / AI đề xuất (cả Giãn cơ phục hồi) | Màn hình trước khi tập có **Đổi** (bài liên quan), **Xoá**, **Thêm bài liên quan**; lưu thành buổi Custom, bản gốc giữ nguyên | Bộ chọn bài: `frontend/src/components/ExercisePicker.tsx` |
+| Thu nhỏ "Ghi vào nhật ký" | Nút trên từng món thành **Ghi nhanh** nhỏ gọn | |
+| Không bấm được vào món (Phở bò) | Bấm món mở hộp chi tiết đầy đủ, chọn khẩu phần và bữa | |
+| Check-in thang 1–5 | Mỗi thang có số 1–5 dưới biểu tượng, hai đầu ghi "1 · ..." và "... · 5" | |
+| Thêm "Mức độ mệt mỏi" vào điểm sẵn sàng | Đã có sẵn (25%, mục 8.2) | Lượng nước **không** đưa vào điểm sẵn sàng buổi sáng vì lúc check-in chưa uống bao nhiêu, điểm sẽ luôn bị kéo thấp |
+| Kiểm tra responsive, thành phần bị mất | Quét 15 trang ở 375px, không tràn ngang; nút mở danh sách chat trên điện thoại không còn đè nội dung; màn hình tuỳ chỉnh bài gọn trên điện thoại | |
+| (Phát hiện khi tự test) Hình que Camera AI lệch về một bên | Vẽ ảnh camera và khung xương trên cùng canvas | Mục 9, điểm 6 |
+| (Câu hỏi của nhóm) Bài có Camera AI có tự bật không | Có, từ v3.3; tắt được trong Cài đặt | Mục 9, điểm 7 |

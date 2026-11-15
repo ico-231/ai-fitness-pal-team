@@ -12,6 +12,7 @@ export interface Settings {
   voice_coach: boolean;
   voice_rate: number;
   prep_seconds: number;
+  auto_camera: boolean;
   theme: "system" | "light" | "dark";
   reminders: { checkin: string; workout: string; water_every_min: number; enabled: boolean };
 }

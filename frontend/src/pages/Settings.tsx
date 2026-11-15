@@ -110,6 +110,7 @@ export default function Settings() {
             <Field label={`Tốc độ đọc: ${s.voice_rate}x`}>
               <input type="range" min={0.7} max={1.5} step={0.1} value={s.voice_rate} className="w-full accent-[var(--primary)]" onChange={(e) => { voice.rate = +e.target.value; setSetting({ voice_rate: +e.target.value }); }} />
             </Field>
+            <Toggle checked={s.auto_camera ?? true} onChange={(v) => setSetting({ auto_camera: v })} label="Tự bật Camera AI với bài hỗ trợ (đếm rep, chấm form)" />
             <Field label="Thời gian chuẩn bị trước mỗi bài">
               <Segmented value={String(s.prep_seconds)} onChange={(v) => setSetting({ prep_seconds: +v })} options={["5", "10", "15", "20"].map((x) => ({ value: x, label: `${x}s` }))} />
             </Field>

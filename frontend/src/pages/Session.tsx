@@ -51,6 +51,7 @@ export default function Session() {
   const invalidate = useInvalidateAll();
   const { user } = useAuth();
   const prepSeconds = user?.profile?.settings?.prep_seconds ?? 10;
+  const autoCam = user?.profile?.settings?.auto_camera ?? true;
 
   const [plan, setPlan] = useState<Plan | null>(null);
   const [session, setSession] = useState<WorkoutSession | null>(null);
@@ -127,7 +128,8 @@ export default function Session() {
   useEffect(() => {
     if (!ex) return;
     setDetail(null);
-    setUseCam(false);
+    // Bài hỗ trợ Camera AI thì tự bật camera (tắt được trong Cài đặt hoặc bằng nút "Tắt Camera AI")
+    setUseCam(autoCam && !!(ex.camera && EXERCISES[ex.camera]));
     get<ExDetail>(`/api/exercises/${ex.id}`).then((d) => {
       setDetail(d);
       const doneSets = logged[ex.id];
