@@ -72,7 +72,7 @@ def _lock_supabase_rest() -> None:
             conn.execute(text(f'ALTER TABLE "{t.name}" ENABLE ROW LEVEL SECURITY'))
 
 
-# Cột thêm sau khi bảng đã tồn tại (create_all không tự thêm cột vào bảng cũ, kể cả trên Neon).
+# Cột thêm sau khi bảng đã tồn tại (create_all không tự thêm cột vào bảng cũ, kể cả trên Supabase).
 # Mỗi dòng: (bảng, cột, kiểu SQL kèm mặc định). Chạy lại nhiều lần vẫn an toàn.
 _LATE_COLUMNS = [
     ("workout_sets", "is_warmup", "BOOLEAN NOT NULL DEFAULT FALSE"),

@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     # --- Database ---
     # SQLite mặc định (chạy ngay không cần cài gì). Khi deploy dùng Postgres:
     # DATABASE_URL=postgresql+psycopg://user:pass@host:5432/dbname
-    # SUPABASE_DB_URL (nếu có) được ưu tiên hơn DATABASE_URL — trên Vercel, DATABASE_URL do tích hợp Neon
-    # tự quản lý nên không sửa được; đặt SUPABASE_DB_URL để chuyển sang Supabase mà không đụng tới Neon.
+    # Production dùng Supabase qua SUPABASE_DB_URL (Transaction pooler, cổng 6543); biến này được ưu tiên
+    # hơn DATABASE_URL, nên một tích hợp database khác tự thêm DATABASE_URL cũng không ghi đè được.
     database_url: str = Field(
         default=f"sqlite:///{BASE_DIR / 'fitbro.db'}",
         validation_alias=AliasChoices("SUPABASE_DB_URL", "DATABASE_URL", "database_url"),

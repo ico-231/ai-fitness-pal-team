@@ -967,7 +967,7 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 | Hạng mục | Thay đổi |
 |---|---|
 | Sửa / xoá set trong buổi tập | Danh sách "Đã ghi ở bài này" dưới nút ghi set: bút chì để sửa số, thùng rác để xoá. API `PUT`/`DELETE /api/workouts/sessions/{sid}/sets/{set_id}`; buổi đã xong thì tự tính lại tổng khối lượng. Xoá set thì app quay lại làm đúng set còn thiếu. |
-| Set khởi động | Ô "Set khởi động" trước set chính đầu tiên của bài. Cột mới `workout_sets.is_warmup`; set khởi động không tính vào số set, khối lượng, kỷ lục, gợi ý tăng tải và bản đồ cơ. Database cũ (kể cả Neon) được tự thêm cột khi khởi động (`db._add_missing_columns`). |
+| Set khởi động | Ô "Set khởi động" trước set chính đầu tiên của bài. Cột mới `workout_sets.is_warmup`; set khởi động không tính vào số set, khối lượng, kỷ lục, gợi ý tăng tải và bản đồ cơ. Database cũ (kể cả Supabase) được tự thêm cột khi khởi động (`db._add_missing_columns`). |
 | Gợi ý tăng tải đúng mốc | `GET /api/exercises/{id}?target_reps=&target_sec=` lấy mục tiêu của chương trình đang tập (trước đây luôn so với 10 rep). Bài giữ (plank): gợi ý thêm 5 giây khi đã giữ đủ. |
 | Đồng hồ khi tắt màn hình | Đếm ngược theo thời điểm kết thúc thay vì đếm từng giây, nên chuyển app hay khoá máy rồi quay lại vẫn đúng. Giữ màn hình sáng trong lúc tập (Screen Wake Lock), xin lại khi quay về tab. |
 | Kỷ lục bài không tạ | Kỷ lục có 3 loại: `weight` (1RM ước tính), `reps` (bài không tạ), `time` (bài giữ). API trả `kind`, `value`, `unit`; `e1rm` chỉ có với loại tạ. |
@@ -999,10 +999,10 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 
 ### 17.7. Chuyển database sang Supabase
 - Project Supabase **fitbro** (vùng us-east-1, gần server Vercel; gói Free): https://supabase.com/dashboard/project/inssdzhbyjalopgwdodt
-- App đọc `SUPABASE_DB_URL` trước, không có mới dùng `DATABASE_URL` (trên Vercel biến này do tích hợp Neon quản lý).
+- App đọc `SUPABASE_DB_URL` trước, không có mới dùng `DATABASE_URL`. Trên Vercel chỉ đặt `SUPABASE_DB_URL` (Sensitive). Tích hợp Neon cũ đã gỡ (16/11/2026).
 - Kết nối qua Supabase pooler (cổng 6543): app tự tắt prepared statement và không giữ pool riêng (`app/db.py`).
 - Khi chạy trên Supabase, app tự bật RLS cho mọi bảng để chặn REST API công khai của Supabase; backend vẫn truy cập bình thường.
 - Chuyển dữ liệu: `backend/scripts/migrate_db.py` — hỏi chuỗi kết nối nguồn/đích bằng ô nhập ẩn, tạo bảng, chép theo thứ tự khoá ngoại, so số dòng. Đích phải trống (hoặc `--force`).
-- Bảng đã được tạo sẵn trên Supabase (migration `fitbro_schema`, RLS bật cho cả 16 bảng). Database bắt đầu trống, không chuyển dữ liệu từ Neon.
+- Bảng đã được tạo sẵn trên Supabase (migration `fitbro_schema`, RLS bật cho cả 16 bảng). Database bắt đầu trống (không chuyển dữ liệu từ database cũ); demo tự tạo khi server khởi động — chỉ 1 tiến trình được tạo nhờ khoá `app_locks`.
 - Tài khoản demo (demo@fitbro.vn / demo123, ~12 tuần dữ liệu chi tiết) tự tạo khi server kết nối lần đầu và **tự làm mới mỗi ngày**: khi demo chưa có check-in hôm nay, server tạo lại để dữ liệu luôn kết thúc đúng hôm nay (lúc khởi động và ở request đầu tiên của ngày mới). Id tài khoản giữ nguyên nên người đang đăng nhập demo không bị đăng xuất. Tắt bằng `SEED_DEMO=false`. Code: `seed_demo.ensure_fresh()`, `refresh_demo_if_stale()` trong `app/main.py`.
 

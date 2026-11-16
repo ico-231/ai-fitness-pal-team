@@ -1,4 +1,4 @@
-"""Chuyển toàn bộ dữ liệu FitBro từ database này sang database khác (vd Neon → Supabase).
+"""Chuyển toàn bộ dữ liệu FitBro từ database này sang database khác (vd Postgres cũ → Supabase).
 
 Cách chạy (trong thư mục backend):
     .venv/Scripts/python.exe scripts/migrate_db.py
@@ -75,7 +75,7 @@ def main() -> None:
     ap.add_argument("--yes", action="store_true", help="Không hỏi xác nhận")
     a = ap.parse_args()
 
-    src_url = ask("SOURCE_DATABASE_URL", "Chuỗi kết nối database NGUỒN (Neon)")
+    src_url = ask("SOURCE_DATABASE_URL", "Chuỗi kết nối database NGUỒN")
     dst_url = ask("TARGET_DATABASE_URL", "Chuỗi kết nối database ĐÍCH (Supabase)")
     if normalize(src_url) == normalize(dst_url):
         sys.exit("Nguồn và đích trùng nhau.")
