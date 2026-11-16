@@ -582,17 +582,72 @@ def is_stale(db) -> bool:
                                                     DailyLog.readiness.is_not(None))).first()
 
 
+LOCK = "demo_seed"
+LOCK_TTL = dt.timedelta(minutes=5)
+
+
+def acquire_lock(name: str = LOCK, ttl: dt.timedelta = LOCK_TTL) -> bool:
+    """Giành khoá trong database. Chỉ 1 tiến trình thắng; khoá hết hạn sau ttl (phòng tiến trình chết giữa chừng)."""
+    from sqlalchemy import update
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import AppLock, _now
+
+    now = _now()
+    db = SessionLocal()
+    try:
+        try:
+            db.add(AppLock(name=name, until=now + ttl))
+            db.commit()
+            return True
+        except IntegrityError:
+            db.rollback()
+        # Khoá đã có: chỉ giành được nếu đã hết hạn (UPDATE có điều kiện → chỉ 1 tiến trình đổi được)
+        res = db.execute(update(AppLock).where(AppLock.name == name, AppLock.until < now).values(until=now + ttl))
+        db.commit()
+        return res.rowcount == 1
+    finally:
+        db.close()
+
+
+def release_lock(name: str = LOCK) -> None:
+    from sqlalchemy import delete
+
+    from app.models import AppLock
+
+    db = SessionLocal()
+    try:
+        db.execute(delete(AppLock).where(AppLock.name == name))
+        db.commit()
+    finally:
+        db.close()
+
+
 def ensure_fresh() -> bool:
-    """Tạo lại demo nếu đã cũ → demo luôn "kết thúc ở hôm nay" dù mở app vào ngày nào. Trả về True nếu đã tạo lại."""
+    """Tạo lại demo nếu đã cũ → demo luôn "kết thúc ở hôm nay" dù mở app vào ngày nào. Trả về True nếu đã tạo lại.
+
+    Vercel có thể khởi động nhiều tiến trình cùng lúc: chỉ tiến trình giành được khoá mới tạo dữ liệu,
+    các tiến trình khác bỏ qua (tránh deadlock / trùng email / dữ liệu dở dang).
+    """
     init_db()
     db = SessionLocal()
     try:
         stale = is_stale(db)
     finally:
         db.close()
-    if stale:
-        main()
-    return stale
+    if not stale or not acquire_lock():
+        return False
+    try:
+        db = SessionLocal()
+        try:
+            stale = is_stale(db)  # kiểm tra lại: tiến trình khác có thể vừa tạo xong
+        finally:
+            db.close()
+        if stale:
+            main()
+        return stale
+    finally:
+        release_lock()
 
 
 def main() -> None:

@@ -329,3 +329,16 @@ class AiUsage(Base):
     day: Mapped[dt.date] = mapped_column(Date)
     kind: Mapped[str] = mapped_column(String(20))  # meal | inbody | suggest
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AppLock(Base):
+    """Khoá dùng chung giữa các tiến trình (Vercel chạy nhiều tiến trình song song).
+
+    Vd "demo_seed": chỉ 1 tiến trình được tạo lại tài khoản demo tại một thời điểm.
+    Khoá tự hết hạn (until) nên tiến trình chết giữa chừng không giữ khoá mãi.
+    """
+
+    __tablename__ = "app_locks"
+
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    until: Mapped[dt.datetime] = mapped_column(DateTime)
