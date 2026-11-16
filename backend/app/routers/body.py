@@ -11,7 +11,7 @@ from ..agents import analyzers, llm
 from ..db import get_db
 from ..models import BodyMetric, Goal, User
 from ..security import get_current_user
-from ..services import formulas, stats
+from ..services import formulas, quota, stats
 from ..utils import prepare_image
 
 router = APIRouter(prefix="/api", tags=["body"])
@@ -97,12 +97,42 @@ def add_metric(body: MetricIn, user: User = Depends(get_current_user), db: Sessi
     if not any(data.get(k) is not None for k in _KEYS):
         raise HTTPException(400, "Nhập ít nhất 1 chỉ số")
     data["date"] = data["date"] or stats.today()
+    if data["date"] > stats.today():
+        raise HTTPException(400, "Không nhập số đo cho ngày trong tương lai")
     m = BodyMetric(user_id=user.id, **data)
     db.add(m)
+    if body.weight_kg:
+        _sync_profile_weight(db, user)
+    db.commit()
+    return metric_out(m)
+
+
+def _sync_profile_weight(db: Session, user: User) -> None:
+    """Cân nặng hồ sơ = lần cân mới nhất còn lại → calo/đạm mục tiêu luôn khớp dữ liệu thật."""
+    db.flush()
+    last = db.scalars(select(BodyMetric).where(BodyMetric.user_id == user.id, BodyMetric.weight_kg.is_not(None))
+                      .order_by(BodyMetric.date.desc(), BodyMetric.created_at.desc())).first()
     p = stats.get_profile(db, user)
-    if body.weight_kg and m.date >= stats.today() - dt.timedelta(days=1):
-        p.weight_kg = body.weight_kg
+    if last and last.weight_kg != p.weight_kg:
+        p.weight_kg = last.weight_kg
         stats.recompute_targets(p)
+
+
+@router.put("/body/metrics/{mid}")
+def update_metric(mid: str, body: MetricIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Sửa một lần đo đã nhập (thay toàn bộ giá trị bằng giá trị gửi lên)."""
+    m = db.get(BodyMetric, mid)
+    if not m or m.user_id != user.id:
+        raise HTTPException(404, "Không tìm thấy")
+    data = body.model_dump()
+    if not any(data.get(k) is not None for k in _KEYS):
+        raise HTTPException(400, "Nhập ít nhất 1 chỉ số")
+    data["date"] = data["date"] or m.date
+    if data["date"] > stats.today():
+        raise HTTPException(400, "Không nhập số đo cho ngày trong tương lai")
+    for k, v in data.items():
+        setattr(m, k, v)
+    _sync_profile_weight(db, user)
     db.commit()
     return metric_out(m)
 
@@ -113,16 +143,20 @@ def delete_metric(mid: str, user: User = Depends(get_current_user), db: Session 
     if not m or m.user_id != user.id:
         raise HTTPException(404, "Không tìm thấy")
     db.delete(m)
+    _sync_profile_weight(db, user)
     db.commit()
     return {"ok": True}
 
 
 @router.post("/body/scan")
-async def scan(body: ScanIn, user: User = Depends(get_current_user)):
+async def scan(body: ScanIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    quota.check(db, user.id)
     try:
-        return await analyzers.scan_inbody(prepare_image(body.image, max_side=1600, quality=88))
+        res = await analyzers.scan_inbody(prepare_image(body.image, max_side=1600, quality=88))
     except llm.LLMError as e:
         raise HTTPException(503, str(e)) from e
+    quota.consume(db, user.id, "inbody")
+    return res
 
 
 def _latest_values(rows: list[BodyMetric]) -> dict:
@@ -174,7 +208,12 @@ def goal_progress(db: Session, user: User, g: Goal, latest: dict) -> dict:
         else:
             pct = 100
     days_left = (g.deadline - stats.today()).days if g.deadline else None
-    return {"id": g.id, "title": g.title, "metric": g.metric, "start_value": g.start_value, "target_value": g.target_value,
+    # Đạt 100% → tự chuyển "Đã đạt" (trừ mục tiêu số buổi/tuần: lặp lại mỗi tuần nên không "xong" hẳn)
+    just_achieved = False
+    if pct == 100 and g.status == "active" and g.metric not in ("workouts_per_week", "custom") and g.start_value != g.target_value:
+        g.status = "achieved"
+        just_achieved = True
+    return {"just_achieved": just_achieved,"id": g.id, "title": g.title, "metric": g.metric, "start_value": g.start_value, "target_value": g.target_value,
             "current_value": cur, "progress_pct": pct, "deadline": g.deadline.isoformat() if g.deadline else None,
             "days_left": days_left, "status": g.status, "plan": g.plan, "source": g.source}
 
@@ -196,6 +235,8 @@ def summary(user: User = Depends(get_current_user), db: Session = Depends(get_db
     changes = {k: round(latest[k]["value"] - first[k], 1) for k in first if k in latest and len(rows) > 1}
     seg = next((m.segmental for m in reversed(rows) if m.segmental), {})
     goals = [goal_progress(db, user, g, latest) for g in db.scalars(select(Goal).where(Goal.user_id == user.id).order_by(Goal.created_at.desc()))]
+    if any(x["just_achieved"] for x in goals):
+        db.commit()
     return {"latest": latest, "changes": changes, "count": len(rows), "info": METRIC_INFO, "segmental": seg,
             "imbalance": _imbalance(seg), "goals": goals, "height_cm": p.height_cm}
 
@@ -204,7 +245,10 @@ def summary(user: User = Depends(get_current_user), db: Session = Depends(get_db
 def list_goals(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     rows = list(db.scalars(select(BodyMetric).where(BodyMetric.user_id == user.id).order_by(BodyMetric.date)))
     latest = _latest_values(rows)
-    return [goal_progress(db, user, g, latest) for g in db.scalars(select(Goal).where(Goal.user_id == user.id).order_by(Goal.created_at.desc()))]
+    out = [goal_progress(db, user, g, latest) for g in db.scalars(select(Goal).where(Goal.user_id == user.id).order_by(Goal.created_at.desc()))]
+    if any(x["just_achieved"] for x in out):
+        db.commit()
+    return out
 
 
 @router.post("/goals")

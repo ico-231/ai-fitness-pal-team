@@ -6,7 +6,7 @@ import { get, post } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import type { Targets } from "../lib/types";
-import { Logo } from "../components/Layout";
+import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field } from "../components/ui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -129,9 +129,9 @@ export default function Onboarding() {
               ["Nước", `${fmt(preview.water_ml / 1000, 1)} L`],
               ["TDEE", `${preview.tdee} kcal`],
             ].map(([k, v]) => (
-              <div key={k} className="rounded-xl bg-surface-2 p-3">
+              <div key={k} className="rounded-[18px] bg-surface-2 p-3.5">
                 <p className="text-xs text-muted">{k}</p>
-                <p className="text-lg font-bold">{v}</p>
+                <p className="num num-accent text-[22px] font-semibold">{v}</p>
               </div>
             ))}
           </div>
@@ -159,8 +159,9 @@ export default function Onboarding() {
 
   const s = steps[step];
   return (
-    <div className="flex min-h-full items-center justify-center p-4">
-      <div className="card w-full max-w-lg p-6 sm:p-8">
+    <div className="immersive relative flex min-h-full items-center justify-center p-4">
+      <Backdrop />
+      <div className="card rise relative z-10 w-full max-w-lg rounded-[30px] p-6 sm:p-9">
         <div className="mb-6 flex items-center justify-between">
           <Logo />
           <button className="text-xs text-muted hover:text-text" onClick={signOut}>
@@ -169,10 +170,10 @@ export default function Onboarding() {
         </div>
         <div className="mb-5 flex gap-1.5">
           {steps.map((_, i) => (
-            <div key={i} className={clsx("h-1.5 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-surface-3")} />
+            <div key={i} className={clsx("h-1.5 flex-1 rounded-full transition-colors duration-500", i <= step ? "bg-volt" : "bg-surface-3")} />
           ))}
         </div>
-        <h2 className="mb-4 text-xl font-bold">{s.title}</h2>
+        <h2 className="mb-5 text-[26px] font-bold leading-tight tracking-[-0.03em]">{s.title}</h2>
         {s.body}
         {err && <p className="mt-3 text-sm text-danger">{err}</p>}
         <div className="mt-6 flex justify-between">

@@ -38,6 +38,23 @@ export function weekday(iso: string): string {
   return WD[new Date(y, m - 1, d).getDay()];
 }
 
+/** Kỷ lục dạng chữ: "82,5 kg" (1RM ước tính) · "15 rep" · "60 giây". */
+export function prValue(p: { kind?: string; value?: number; e1rm?: number | null; unit?: string }, v?: number): string {
+  const n = v ?? p.value ?? p.e1rm ?? 0;
+  if (p.kind === "reps") return `${fmt(n)} rep`;
+  if (p.kind === "time") return `${fmt(n)} giây`;
+  return `${fmt(n, 1)} kg`;
+}
+
+/** Chi tiết set làm nên kỷ lục: "60kg × 8", "15 rep", "60 giây". */
+export function prDetail(p: { kind?: string; weight_kg: number; reps: number; duration_sec?: number }): string {
+  if (p.kind === "reps") return "không tạ";
+  if (p.kind === "time") return "giữ liên tục";
+  return `${fmt(p.weight_kg, 1)}kg × ${p.reps}`;
+}
+
+export const prLabel = (kind?: string) => (kind === "reps" ? "Nhiều rep nhất" : kind === "time" ? "Giữ lâu nhất" : "1RM ước tính");
+
 export function mmss(sec: number): string {
   const s = Math.max(0, Math.round(sec));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;

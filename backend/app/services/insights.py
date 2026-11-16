@@ -10,7 +10,7 @@ import datetime as dt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import BodyMetric, User
+from ..models import BodyMetric, Goal, User
 from . import schedule as schedsvc
 from . import stats
 
@@ -118,6 +118,23 @@ def build(db: Session, user: User) -> list[dict]:
         if p.goal == "muscle" and delta < -0.5:
             add("warn", f"Cân nặng giảm {_vn(-delta)}kg trong 2 tuần", "Khi tăng cơ nên tăng 0.25–0.5kg/tuần.",
                 ask={"agent": "nutribro", "text": "Mình đang tăng cơ nhưng lại sụt cân, cần ăn thêm thế nào?"}, priority=3)
+
+    # Mục tiêu sắp hết hạn / đã quá hạn mà chưa đạt (mục tiêu đạt rồi đã tự chuyển "Đã đạt")
+    for g in db.scalars(select(Goal).where(Goal.user_id == uid, Goal.status == "active", Goal.deadline.is_not(None))
+                        .order_by(Goal.deadline)):
+        left = (g.deadline - t).days
+        if left < 0:
+            add("info", f"Mục tiêu \"{g.title}\" đã quá hạn {-left} ngày",
+                "Đặt lại hạn chót thực tế hơn, hoặc cùng HeadBro xem vì sao chưa đạt.",
+                action={"label": "Xem mục tiêu", "to": "/inbody"},
+                ask={"agent": "headbro", "text": f"Mục tiêu \"{g.title}\" của mình đã quá hạn mà chưa đạt. Phân tích lý do và giúp mình đặt lại hạn chót thực tế."},
+                priority=4)
+            break
+        if left <= 7:
+            add("warn", f"Còn {left} ngày cho mục tiêu \"{g.title}\"" if left else f"Hôm nay là hạn chót mục tiêu \"{g.title}\"",
+                "Xem tiến độ hiện tại và việc cần làm trong mấy ngày cuối.",
+                action={"label": "Xem mục tiêu", "to": "/inbody"}, priority=3)
+            break
 
     # Tin vui
     prs = stats.pr_events(db, uid, t - dt.timedelta(days=6), t)

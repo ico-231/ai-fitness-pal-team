@@ -27,9 +27,51 @@ async def lifespan(_: FastAPI):
     yield
 
 
+_demo_checked: str | None = None
+
+
+def refresh_demo_if_stale() -> None:
+    """Làm mới tài khoản demo tối đa 1 lần mỗi ngày mỗi tiến trình (chỉ khi DEMO_AUTO_REFRESH=true)."""
+    global _demo_checked
+    import os
+
+    if os.environ.get("DEMO_AUTO_REFRESH", "").lower() != "true":
+        return
+    from .services import stats
+
+    today = stats.today().isoformat()
+    if _demo_checked == today:
+        return
+    _demo_checked = today
+    try:
+        import sys
+        from pathlib import Path
+
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        import seed_demo
+
+        if seed_demo.ensure_fresh():
+            log.info("Đã làm mới dữ liệu tài khoản demo cho ngày %s", today)
+    except Exception:  # hai tiến trình cùng làm mới một lúc → một bên lỗi, bên kia vẫn xong
+        log.exception("Không làm mới được tài khoản demo")
+
+
 app = FastAPI(title="FitBro AI API", version="3.0.0", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+@app.middleware("http")
+async def _demo_daily_refresh(request, call_next):
+    # Vercel giữ tiến trình sống qua nửa đêm → kiểm tra lại ở request đầu tiên của ngày mới
+    if _demo_checked is not None and request.url.path.startswith("/api/"):
+        from starlette.concurrency import run_in_threadpool
+
+        from .services import stats
+
+        if _demo_checked != stats.today().isoformat():
+            await run_in_threadpool(refresh_demo_if_stale)
+    return await call_next(request)
+
 
 for r in (auth, profile, daily, workouts, nutrition, body, dashboard, chat, data, extras, observability):
     app.include_router(r.router)

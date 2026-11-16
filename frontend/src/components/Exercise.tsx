@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Camera, Clock, Dumbbell, Flame, Play, SlidersHorizontal, Sparkles, Timer, Trash2, Trophy } from "lucide-react";
 import { useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
-import { exName, fmt } from "../lib/format";
-import type { Exercise, Plan } from "../lib/types";
+import { exName, prDetail, prLabel, prValue } from "../lib/format";
+import type { Exercise, Plan, PR } from "../lib/types";
 import { Badge, Button, Card, Modal, Spinner } from "./ui";
 import { useAI } from "./AIProvider";
 
@@ -17,7 +17,7 @@ export function ExerciseImage({ ex, className }: { ex: Pick<Exercise, "gif" | "n
         <Dumbbell size={28} />
       </div>
     );
-  return <img src={ex.gif} alt={ex.name} loading="lazy" onError={() => setErr(true)} className={`bg-white object-contain ${className}`} />;
+  return <img src={ex.gif} alt={ex.name} loading="lazy" onError={() => setErr(true)} className={`ex-img object-contain ${className}`} />;
 }
 
 export function ExerciseCard({ ex, onClick, compact }: { ex: Exercise; onClick?: () => void; compact?: boolean }) {
@@ -47,8 +47,8 @@ export function ExerciseCard({ ex, onClick, compact }: { ex: Exercise; onClick?:
 
 interface Detail extends Exercise {
   last: { set_index: number; weight_kg: number; reps: number; duration_sec: number; date: string }[];
-  pr: { e1rm: number; weight_kg: number; reps: number; date: string } | null;
-  overload: { weight_kg: number; reps: number; reason: string } | null;
+  pr: PR | null;
+  overload: { weight_kg: number; reps: number; duration_sec?: number; reason: string } | null;
 }
 
 export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClose: () => void; extra?: (ex: Exercise) => ReactNode }) {
@@ -82,11 +82,11 @@ export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClo
                 {data.pr && (
                   <div className="rounded-xl bg-surface-2 p-3">
                     <div className="flex items-center gap-1 text-xs text-muted">
-                      <Trophy size={12} /> PR (1RM ước tính)
+                      <Trophy size={12} /> PR ({prLabel(data.pr.kind).toLowerCase()})
                     </div>
-                    <div className="text-lg font-bold">{fmt(data.pr.e1rm, 1)} kg</div>
+                    <div className="text-lg font-bold">{prValue(data.pr)}</div>
                     <div className="text-xs text-muted">
-                      {fmt(data.pr.weight_kg, 1)}kg × {data.pr.reps} · {data.pr.date}
+                      {prDetail(data.pr)} · {data.pr.date}
                     </div>
                   </div>
                 )}
@@ -96,7 +96,7 @@ export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClo
                       <Flame size={12} /> Gợi ý hôm nay
                     </div>
                     <div className="text-lg font-bold">
-                      {data.overload.weight_kg ? `${data.overload.weight_kg}kg × ${data.overload.reps}` : `${data.overload.reps} rep`}
+                      {data.overload.duration_sec ? `${data.overload.duration_sec} giây` : data.overload.weight_kg ? `${data.overload.weight_kg}kg × ${data.overload.reps}` : `${data.overload.reps} rep`}
                     </div>
                     <div className="text-xs text-muted">{data.overload.reason}</div>
                   </div>

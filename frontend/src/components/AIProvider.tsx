@@ -1,10 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Maximize2, MessageSquarePlus, Sparkles, X } from "lucide-react";
-import { ChatView } from "./chat/ChatView";
 import { AgentAvatar } from "./AgentAvatar";
 
 import type { AgentKey } from "../lib/types";
+import { Spinner } from "./ui";
+
+// Khung chat (markdown, thẻ kết quả...) chỉ tải khi mở ngăn "Hỏi AI" lần đầu
+const ChatView = lazy(() => import("./chat/ChatView").then((m) => ({ default: m.ChatView })));
 
 interface OpenOpts {
   text?: string;
@@ -59,10 +62,10 @@ export function AIProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
-      {!onChatPage && !isOpen && !loc.pathname.startsWith("/workouts/session") && !loc.pathname.startsWith("/workouts/camera") && (
+      {!onChatPage && !isOpen && loc.pathname !== "/" && !loc.pathname.startsWith("/workouts/session") && !loc.pathname.startsWith("/workouts/camera") && (
         <button
           onClick={() => open()}
-          className="no-print fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-primary-strong px-4 py-3 text-sm font-semibold text-on-primary shadow-xl transition hover:scale-105 lg:bottom-6 lg:right-6"
+          className="no-print fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-on-ink shadow-xl transition hover:scale-105 lg:bottom-6 lg:right-6"
         >
           <Sparkles size={18} /> Hỏi AI
         </button>
@@ -70,7 +73,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
       {isOpen && !onChatPage && (
         <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/30 lg:bg-transparent" onClick={close}>
           <div
-            className="fade-in flex h-full w-full flex-col border-l border-border bg-surface shadow-2xl sm:w-[440px]"
+            className="glass fade-in flex h-full w-full flex-col overflow-hidden [background:color-mix(in_srgb,var(--surface)_92%,transparent)] sm:m-3 sm:h-[calc(100%-1.5rem)] sm:w-[440px] sm:rounded-[28px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
@@ -90,6 +93,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
               </button>
             </div>
             <div className="min-h-0 flex-1">
+              <Suspense fallback={<Spinner />}>
               <ChatView
                 key={nonce}
                 compact
@@ -100,6 +104,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
                 initial={initial}
                 emptyState={<DrawerEmpty page={page} onPick={(t, a) => setInitial({ text: t, agent: a, autoSend: true })} />}
               />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -120,11 +125,11 @@ function DrawerEmpty({ page, onPick }: { page: string; onPick: (t: string, a: Ag
   const list = SUGGEST[page] || SUGGEST.dashboard;
   return (
     <div className="py-6 text-center">
-      <p className="text-sm font-semibold">Hỏi đội FitBro bất cứ điều gì</p>
-      <p className="mt-1 text-xs text-muted">Router sẽ chuyển câu hỏi cho đúng chuyên gia.</p>
+      <p className="text-lg font-semibold tracking-[-0.02em]">Hỏi HeadBro bất cứ điều gì</p>
+      <p className="mt-1 text-xs text-muted">HeadBro tự điều phối chuyên gia tập luyện hoặc dinh dưỡng phía sau.</p>
       <div className="mt-4 space-y-2 text-left">
         {list.map(([t, a]) => (
-          <button key={t} onClick={() => onPick(t, a)} className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm hover:border-primary/60">
+          <button key={t} onClick={() => onPick(t, a)} className="flex w-full items-center gap-2.5 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm transition hover:bg-surface-3">
             <AgentAvatar agent={a} size={24} />
             {t}
           </button>

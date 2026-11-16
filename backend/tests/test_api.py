@@ -138,3 +138,212 @@ def test_chat_daily_limit(client, auth, monkeypatch):
     monkeypatch.setattr(get_settings(), "chat_daily_limit", 0)
     r = client.post("/api/chat/send", headers=auth, json={"text": "hi"})
     assert r.status_code == 429
+
+
+def test_change_password(client):
+    r = client.post("/api/auth/register", json={"email": "pw@test.vn", "password": "matkhau1", "name": "Hà"})
+    h = {"Authorization": f"Bearer {r.json()['token']}"}
+    assert client.put("/api/me/password", headers=h, json={"current_password": "sai", "new_password": "matkhau2"}).status_code == 400
+    assert client.put("/api/me/password", headers=h, json={"current_password": "matkhau1", "new_password": "matkhau1"}).status_code == 400
+    assert client.put("/api/me/password", headers=h, json={"current_password": "matkhau1", "new_password": "123"}).status_code == 422
+    assert client.put("/api/me/password", headers=h, json={"current_password": "matkhau1", "new_password": "matkhau2"}).status_code == 200
+    assert client.post("/api/auth/login", json={"email": "pw@test.vn", "password": "matkhau1"}).status_code == 401
+    assert client.post("/api/auth/login", json={"email": "pw@test.vn", "password": "matkhau2"}).status_code == 200
+
+
+def test_update_custom_plan(client, auth):
+    items = [{"exercise_id": "0043", "sets": 3, "reps": 10, "rest_sec": 90}]
+    p = client.post("/api/workouts/plans", headers=auth, json={"name": "Chân A", "focus": "legs", "items": items}).json()
+    items.append({"exercise_id": "0001", "sets": 2, "reps": 12, "rest_sec": 60})
+    r = client.put(f"/api/workouts/plans/{p['id']}", headers=auth, json={"name": "Chân B", "focus": "legs", "items": items})
+    assert r.status_code == 200 and r.json()["name"] == "Chân B" and len(r.json()["items"]) == 2
+    # chương trình có sẵn không sửa được; buổi của người khác cũng không
+    assert client.put("/api/workouts/plans/tpl_leg", headers=auth, json={"name": "x", "items": items}).status_code == 404
+    other = client.post("/api/auth/register", json={"email": "khac@test.vn", "password": "secret123", "name": "B"}).json()["token"]
+    assert client.put(f"/api/workouts/plans/{p['id']}", headers={"Authorization": f"Bearer {other}"}, json={"name": "x", "items": items}).status_code == 404
+    # buổi giãn cơ (focus mobility) giữ kiểu "tự chọn bài"
+    m = client.post("/api/workouts/plans", headers=auth, json={"name": "Giãn", "focus": "mobility", "items": items}).json()
+    assert m["optional"] is True
+
+
+def test_auto_camera_setting(client, auth):
+    assert client.get("/api/me", headers=auth).json()["profile"]["settings"]["auto_camera"] is True
+    r = client.put("/api/profile/settings", headers=auth, json={"auto_camera": False})
+    assert r.status_code == 200 and r.json()["settings"]["auto_camera"] is False
+
+
+def _session(client, auth, sets, plan_id="tpl_leg"):
+    """Tạo 1 buổi tập với danh sách set (dict) rồi kết thúc."""
+    s = client.post("/api/workouts/sessions", headers=auth, json={"plan_id": plan_id, "name": "Test"}).json()
+    out = [client.post(f"/api/workouts/sessions/{s['id']}/sets", headers=auth, json=x).json() for x in sets]
+    fin = client.post(f"/api/workouts/sessions/{s['id']}/finish", headers=auth, json={}).json()
+    return s["id"], out, fin
+
+
+def test_edit_delete_set_and_warmup(client, auth):
+    sid, sets, fin = _session(client, auth, [
+        {"exercise_id": "0043", "set_index": 1, "weight_kg": 20, "reps": 10, "is_warmup": True},
+        {"exercise_id": "0043", "set_index": 1, "weight_kg": 600, "reps": 8},  # gõ nhầm 60 → 600
+        {"exercise_id": "0043", "set_index": 2, "weight_kg": 60, "reps": 8},
+    ])
+    assert sets[0]["is_warmup"] and sets[0]["is_pr"] is False
+    # set khởi động không tính khối lượng
+    assert fin["total_volume"] == 600 * 8 + 60 * 8
+    assert client.get("/api/workouts/prs", headers=auth).json()[0]["weight_kg"] == 600
+    # sửa set nhầm → kỷ lục và khối lượng tính lại
+    r = client.put(f"/api/workouts/sessions/{sid}/sets/{sets[1]['id']}", headers=auth, json={"weight_kg": 60})
+    assert r.status_code == 200 and r.json()["weight_kg"] == 60
+    assert client.get(f"/api/workouts/sessions/{sid}", headers=auth).json()["total_volume"] == 60 * 8 * 2
+    assert client.get("/api/workouts/prs", headers=auth).json()[0]["weight_kg"] == 60
+    # xoá set → khối lượng giảm
+    client.delete(f"/api/workouts/sessions/{sid}/sets/{sets[2]['id']}", headers=auth)
+    assert client.get(f"/api/workouts/sessions/{sid}", headers=auth).json()["total_volume"] == 60 * 8
+    # set khởi động không vào bản đồ cơ
+    hm = client.get("/api/dashboard/heatmap?days=7", headers=auth).json()
+    assert hm["muscles"]["glutes"]["sets"] == 1
+
+
+def test_overload_uses_plan_target(client, auth):
+    _session(client, auth, [{"exercise_id": "0043", "set_index": i, "weight_kg": 80, "reps": 5} for i in (1, 2, 3)])
+    # chương trình 5 rep: đủ rep → tăng tạ (trước đây luôn so với 10 rep → "giữ tạ")
+    assert client.get("/api/exercises/0043?target_reps=5", headers=auth).json()["overload"]["weight_kg"] == 82.5
+    assert client.get("/api/exercises/0043?target_reps=8", headers=auth).json()["overload"]["weight_kg"] == 80
+    # bài giữ: gợi ý theo giây
+    _session(client, auth, [{"exercise_id": "0464", "set_index": 1, "duration_sec": 40}], plan_id="tpl_core")
+    o = client.get("/api/exercises/0464?target_sec=40", headers=auth).json()["overload"]
+    assert o["duration_sec"] == 45 and o["reps"] == 0
+
+
+def test_bodyweight_and_time_prs(client, auth):
+    _session(client, auth, [{"exercise_id": "3294", "set_index": 1, "reps": 12}, {"exercise_id": "0464", "set_index": 1, "duration_sec": 40}])
+    prs = {p["exercise_id"]: p for p in client.get("/api/workouts/prs", headers=auth).json()}
+    assert prs["3294"]["kind"] == "reps" and prs["3294"]["value"] == 12 and prs["3294"]["e1rm"] is None
+    assert prs["0464"]["kind"] == "time" and prs["0464"]["unit"] == "giây"
+    s = client.post("/api/workouts/sessions", headers=auth, json={"name": "Lần 2"}).json()
+    r = client.post(f"/api/workouts/sessions/{s['id']}/sets", headers=auth, json={"exercise_id": "3294", "set_index": 1, "reps": 15}).json()
+    assert r["is_pr"] and r["pr_kind"] == "reps" and r["previous_best"] == 12
+    fin = client.post(f"/api/workouts/sessions/{s['id']}/finish", headers=auth, json={}).json()
+    assert fin["prs"][0]["value"] == 15
+
+
+def test_goal_auto_achieved_and_metric_edit(client, auth):
+    client.post("/api/body/metrics", headers=auth, json={"weight_kg": 70})
+    g = client.post("/api/goals", headers=auth, json={"title": "Về 66kg", "metric": "weight_kg", "target_value": 66}).json()
+    m2 = client.post("/api/body/metrics", headers=auth, json={"weight_kg": 65.5}).json()
+    assert client.get("/api/profile", headers=auth).json()["weight_kg"] == 65.5
+    goal = next(x for x in client.get("/api/goals", headers=auth).json() if x["id"] == g["id"])
+    assert goal["status"] == "achieved" and goal["progress_pct"] == 100
+    # đã đạt rồi thì lần sau không báo "vừa đạt" nữa
+    assert not next(x for x in client.get("/api/goals", headers=auth).json() if x["id"] == g["id"])["just_achieved"]
+    # sửa lần cân → hồ sơ cập nhật theo
+    r = client.put(f"/api/body/metrics/{m2['id']}", headers=auth, json={"weight_kg": 67})
+    assert r.status_code == 200 and client.get("/api/profile", headers=auth).json()["weight_kg"] == 67
+    # xoá lần cân mới nhất → hồ sơ quay về lần cân còn lại mới nhất (cùng ngày: lần nhập trước đó)
+    client.delete(f"/api/body/metrics/{m2['id']}", headers=auth)
+    assert client.get("/api/profile", headers=auth).json()["weight_kg"] == 70
+
+
+def test_copy_day_and_favorites(client, auth):
+    import datetime as dt
+    y = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    a = client.post("/api/nutrition/meals", headers=auth, json={"date": y, "meal_type": "breakfast", "name": "Bánh mì trứng", "calories": 400, "protein": 18}).json()
+    client.post("/api/nutrition/meals", headers=auth, json={"date": y, "meal_type": "lunch", "name": "Cơm gà", "calories": 650, "protein": 35})
+    r = client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": y, "meal_types": ["breakfast"]}).json()
+    assert r["copied"] == 1
+    r = client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": y}).json()
+    assert r["copied"] == 2
+    assert client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": "2001-01-01"}).status_code == 404
+    favs = client.post(f"/api/nutrition/meals/{a['id']}/favorite", headers=auth).json()["favorites"]
+    assert favs[0]["name"] == "Bánh mì trứng"
+    # thêm lại cùng món không bị trùng
+    assert len(client.post(f"/api/nutrition/meals/{a['id']}/favorite", headers=auth).json()["favorites"]) == 1
+    logged = client.post(f"/api/nutrition/favorites/{a['id']}/log", headers=auth, json={}).json()
+    assert logged["calories"] == 400
+    # món yêu thích không lộ trong cài đặt hồ sơ, và đổi cài đặt không làm mất món yêu thích
+    assert "favorite_meals" not in client.get("/api/profile", headers=auth).json()["settings"]
+    client.put("/api/profile/settings", headers=auth, json={"voice_coach": False})
+    assert len(client.get("/api/nutrition/favorites", headers=auth).json()) == 1
+    client.delete(f"/api/nutrition/favorites/{a['id']}", headers=auth)
+    assert client.get("/api/nutrition/favorites", headers=auth).json() == []
+
+
+def test_calorie_cycling(client, auth):
+    import datetime as dt
+    base = client.get("/api/nutrition/day", headers=auth).json()["targets"]
+    assert base["day_type"] is None and base["adjust_kcal"] == 0
+    wd = dt.date.today().weekday()
+    # hôm nay nghỉ theo lịch (lịch có buổi vào ngày khác)
+    client.put("/api/schedule", headers=auth, json={"days": {str((wd + 1) % 7): {"plan_id": "tpl_leg"}}})
+    rest = client.get("/api/nutrition/day", headers=auth).json()["targets"]
+    assert rest["day_type"] == "rest" and rest["calories"] == base["calories"] - 150
+    assert rest["protein"] == base["protein"]
+    client.put("/api/schedule", headers=auth, json={"days": {str(wd): {"plan_id": "tpl_leg"}}})
+    train = client.get("/api/dashboard", headers=auth).json()["today"]["targets"]
+    assert train["day_type"] == "train" and train["calories"] == base["calories"] + 150
+    client.put("/api/profile/settings", headers=auth, json={"calorie_cycling": False})
+    assert client.get("/api/nutrition/day", headers=auth).json()["targets"]["calories"] == base["calories"]
+
+
+def test_stale_session_auto_closed_with_real_duration(client, auth):
+    import datetime as dt
+
+    from app.db import SessionLocal
+    from app.models import WorkoutSession
+
+    s = client.post("/api/workouts/sessions", headers=auth, json={"plan_id": "tpl_leg", "name": "Bỏ dở"}).json()
+    client.post(f"/api/workouts/sessions/{s['id']}/sets", headers=auth, json={"exercise_id": "0043", "set_index": 1, "weight_kg": 60, "reps": 8})
+    # giả lập: bắt đầu và ghi set từ 20 giờ trước rồi quên bấm Kết thúc
+    with SessionLocal() as db:
+        ws = db.get(WorkoutSession, s["id"])
+        ago = dt.timedelta(hours=20)
+        ws.started_at -= ago
+        for x in ws.sets:
+            x.created_at -= ago
+        db.commit()
+    assert client.get("/api/workouts/active", headers=auth).json() is None
+    done = client.get(f"/api/workouts/sessions/{s['id']}", headers=auth).json()
+    assert done["status"] == "completed" and done["duration_sec"] < 30 * 60  # không phải 20 tiếng
+    assert "bỏ dở" in done["notes"]
+
+
+def test_ai_tools_daily_quota(client, auth, monkeypatch):
+    from app.agents import analyzers
+    from app.config import get_settings
+
+    async def fake_meal(db, user, image=None, text=None):
+        return {"name": "Phở", "items": [], "calories": 450, "protein": 25, "carbs": 60, "fat": 10, "confidence": "high", "analysis": "ok"}
+
+    monkeypatch.setattr(analyzers, "analyze_meal", fake_meal)
+    monkeypatch.setattr(get_settings(), "ai_tools_daily_limit", 2)
+    for _ in range(2):
+        assert client.post("/api/nutrition/analyze", headers=auth, json={"text": "1 bát phở"}).status_code == 200
+    r = client.post("/api/nutrition/analyze", headers=auth, json={"text": "1 bát phở"})
+    assert r.status_code == 429 and "lượt" in r.json()["detail"]
+    # hết lượt AI: gợi ý bài vẫn chạy bằng luật, không lỗi
+    sug = client.post("/api/workouts/suggest", headers=auth, json={"muscle": "biceps"}).json()
+    assert sug["method"] == "rules" and sug["exercises"]
+
+
+def test_no_future_dates(client, auth):
+    import datetime as dt
+    tomorrow = (dt.date.today() + dt.timedelta(days=2)).isoformat()
+    assert client.post("/api/nutrition/meals", headers=auth, json={"date": tomorrow, "name": "x", "calories": 100}).status_code == 400
+    assert client.post("/api/body/metrics", headers=auth, json={"date": tomorrow, "weight_kg": 60}).status_code == 400
+
+
+def test_wipe_clears_favorites_and_export_has_schedule(client, auth):
+    m = client.post("/api/nutrition/meals", headers=auth, json={"name": "Xôi", "calories": 400}).json()
+    client.post(f"/api/nutrition/meals/{m['id']}/favorite", headers=auth)
+    client.put("/api/schedule", headers=auth, json={"days": {"0": {"plan_id": "tpl_leg"}}})
+    ex = client.get("/api/data/export", headers=auth).json()
+    assert ex["favorite_meals"][0]["name"] == "Xôi" and ex["weekly_schedule"][0]["plan"]
+    client.post("/api/data/wipe", headers=auth, json={"confirm": "XOA"})
+    assert client.get("/api/nutrition/favorites", headers=auth).json() == []
+
+
+def test_goal_deadline_insight(client, auth):
+    import datetime as dt
+    soon = (dt.date.today() + dt.timedelta(days=3)).isoformat()
+    client.post("/api/goals", headers=auth, json={"title": "Eo 78cm", "metric": "waist_cm", "target_value": 78, "deadline": soon})
+    ins = client.get("/api/insights", headers=auth).json()
+    assert any("Eo 78cm" in x["title"] and "Còn 3 ngày" in x["title"] for x in ins)

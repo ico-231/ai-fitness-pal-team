@@ -9,6 +9,8 @@ export interface SendOptions {
   agent?: string; // "auto" | headbro | coachbro | nutribro
   page?: string;
   pageContext?: string;
+  /** Tạo lại / sửa câu hỏi: id tin người dùng cần thay (tin đó và mọi tin sau nó bị thay bằng lượt mới) */
+  replaceFrom?: string;
 }
 
 interface ServerMessage {
@@ -79,7 +81,11 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
       setSending(true);
       setRouteInfo(null);
       const userMsg: ChatMessage = { id: tmpId(), role: "user", content: o.text.trim(), cards: [], trace: [], image: o.image || null };
-      setMessages((ms) => [...ms, userMsg]);
+      setMessages((ms) => {
+        if (!o.replaceFrom) return [...ms, userMsg];
+        const i = ms.findIndex((m) => m.id === o.replaceFrom);
+        return [...(i >= 0 ? ms.slice(0, i) : ms), userMsg];
+      });
       let current: string | null = null; // id tin nhắn agent đang stream
       let currentAgent: string | null = null;
       let routeLocal: ChatMessage["route"] = null; // gắn lý do định tuyến vào agent đầu tiên của lượt
@@ -87,6 +93,11 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
       const handle = (ev: Record<string, unknown>) => {
         switch (ev.type) {
           case "conversation":
+            // gắn id thật của tin người dùng (cần cho "Tạo lại" / "Sửa")
+            if (ev.user_message_id) {
+              const realId = ev.user_message_id as string;
+              setMessages((ms) => ms.map((m) => (m.id === userMsg.id ? { ...m, id: realId } : m)));
+            }
             if (!convRef.current) {
               convRef.current = ev.id as string;
               skipLoad.current = true;
@@ -187,6 +198,7 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
             agent: o.agent && o.agent !== "auto" ? o.agent : null,
             page: o.page || null,
             page_context: o.pageContext || null,
+            replace_from: o.replaceFrom || null,
           }),
         });
         if (!res.ok || !res.body) {

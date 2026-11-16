@@ -17,7 +17,7 @@ from ..agents.tools import REGISTRY, execute_action
 from ..config import get_settings
 from ..db import SessionLocal, get_db
 from ..services import stats
-from ..models import Conversation, Message, PendingAction, User
+from ..models import AgentTrace, Conversation, Message, PendingAction, User
 from ..security import get_current_user
 from ..utils import prepare_image, thumbnail
 
@@ -32,6 +32,8 @@ class SendIn(BaseModel):
     page: str | None = None
     page_context: str | None = Field(None, max_length=4000)
     agent: str | None = None  # None/"auto" = để Router tự chọn
+    # Tạo lại / sửa câu hỏi: id tin nhắn người dùng cần thay. Tin đó và mọi tin sau nó bị xoá, rồi xử lý như tin mới.
+    replace_from: str | None = None
 
 
 class RenameIn(BaseModel):
@@ -109,10 +111,20 @@ async def send(body: SendIn, user: User = Depends(get_current_user), db: Session
         select(func.count(Message.id)).join(Conversation, Message.conversation_id == Conversation.id)
         .where(Conversation.user_id == user.id, Message.role == "user", Message.created_at >= start)
     ) or 0
+    # Lượt đã xử lý (trace không bị xoá theo tin nhắn) → "tạo lại" nhiều lần vẫn bị tính vào giới hạn
+    turns_today = db.scalar(select(func.count(AgentTrace.id)).where(AgentTrace.user_id == user.id, AgentTrace.created_at >= start)) or 0
+    sent_today = max(sent_today, turns_today)
     if sent_today >= get_settings().chat_daily_limit:
         raise HTTPException(429, f"Bạn đã dùng hết {get_settings().chat_daily_limit} tin nhắn AI hôm nay. Quay lại vào ngày mai nhé!")
     if body.conversation_id:
         conv = _own_conv(db, user, body.conversation_id)
+        if body.replace_from:
+            target = db.get(Message, body.replace_from)
+            if not target or target.conversation_id != conv.id or target.role != "user":
+                raise HTTPException(404, "Không tìm thấy câu hỏi cần thay")
+            for m in db.scalars(select(Message).where(Message.conversation_id == conv.id, Message.created_at >= target.created_at)):
+                db.delete(m)
+            db.commit()
     else:
         conv = Conversation(user_id=user.id)
         db.add(conv)

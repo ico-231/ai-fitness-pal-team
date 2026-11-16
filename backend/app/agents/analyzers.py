@@ -153,7 +153,7 @@ def _suggest_context(db: Session, user: User, muscle: str) -> dict:
             "readiness_today": rd["score"] if rd else "chưa check-in",
             "protein_today_g": nut["protein"], "protein_target_g": stats.targets(prof)["protein"],
             "candidates": [{"exercise_id": c["id"], "name": c["name"], "equipment": c["equipment"], "compound": c["compound"],
-                            "your_best": prs.get(c["id"], {}).get("e1rm")} for c in cands],
+                            "your_best": (f'{prs[c["id"]]["value"]} {prs[c["id"]]["unit"]}' if c["id"] in prs else None)} for c in cands],
         },
         "readiness": rd,
         "sets7": mv["muscles"].get(muscle, {}).get("sets", 0),
@@ -178,13 +178,13 @@ def _rule_based(ctx: dict, muscle: str) -> dict:
     }
 
 
-async def suggest_for_muscle(db: Session, user: User, muscle: str) -> dict:
+async def suggest_for_muscle(db: Session, user: User, muscle: str, use_ai: bool = True) -> dict:
     s = get_settings()
     ctx = _suggest_context(db, user, muscle)
     if not ctx["candidates"]:
         return {"summary": "Chưa có bài phù hợp cho nhóm cơ này.", "exercises": [], "method": "none"}
     result = None
-    if s.ai_enabled:
+    if s.ai_enabled and use_ai:
         try:
             data = await llm.complete_json(
                 [{"role": "system", "content": SUGGEST_PROMPT.format(muscle=exsvc.MUSCLES.get(muscle, muscle))},
@@ -207,7 +207,7 @@ async def suggest_for_muscle(db: Session, user: User, muscle: str) -> dict:
         e["rest_sec"] = int(e.get("rest_sec") or 90)
         e["duration_sec"] = 40 if ex["timed"] and not e["reps"] else 0
         last = stats.last_performance(db, user.id, ex["id"])
-        e["overload"] = formulas.overload_suggestion(last, e["reps"] or 10, ex["compound"])
+        e["overload"] = formulas.overload_suggestion(last, e["reps"], ex["compound"], e["duration_sec"])
     result["muscle"] = muscle
     result["muscle_vi"] = exsvc.MUSCLES.get(muscle, muscle)
     result["agent"] = "coachbro"

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { get } from "./api";
 import { toast } from "../components/ui";
@@ -24,6 +25,19 @@ export function useAction<TVars, TRes = unknown>(fn: (v: TVars) => Promise<TRes>
     },
     onError: (e) => toast(e.message, "error"),
   });
+}
+
+// Mục tiêu vừa tự chuyển "Đã đạt" (server báo just_achieved đúng 1 lần) → chúc mừng, mỗi mục tiêu 1 lần.
+const celebrated = new Set<string>();
+export function useGoalCelebration(goals: { id: string; title: string; just_achieved?: boolean }[] | undefined) {
+  useEffect(() => {
+    for (const g of goals || []) {
+      if (g.just_achieved && !celebrated.has(g.id)) {
+        celebrated.add(g.id);
+        toast(`Chúc mừng! Bạn đã đạt mục tiêu "${g.title}"`);
+      }
+    }
+  }, [goals]);
 }
 
 export function useInvalidateAll() {

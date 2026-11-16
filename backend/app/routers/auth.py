@@ -24,6 +24,11 @@ class LoginIn(BaseModel):
     password: str
 
 
+class PasswordIn(BaseModel):
+    current_password: str = ""  # bỏ trống nếu tài khoản Google chưa từng đặt mật khẩu
+    new_password: str = Field(min_length=6, max_length=128)
+
+
 class GoogleIn(BaseModel):
     credential: str
 
@@ -89,6 +94,18 @@ async def google_login(body: GoogleIn, db: Session = Depends(get_db)):
 @router.get("/me")
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return user_out(user, db)
+
+
+@router.put("/me/password")
+def change_password(body: PasswordIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Đổi mật khẩu. Đã có mật khẩu thì phải nhập đúng mật khẩu hiện tại; tài khoản Google chưa có thì đặt mới."""
+    if user.password_hash and not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(400, "Mật khẩu hiện tại không đúng")
+    if user.password_hash and verify_password(body.new_password, user.password_hash):
+        raise HTTPException(400, "Mật khẩu mới phải khác mật khẩu hiện tại")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"ok": True}
 
 
 @router.delete("/me")

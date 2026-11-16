@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -147,6 +148,8 @@ class WorkoutSet(Base):
     duration_sec: Mapped[int] = mapped_column(Integer, default=0)
     form_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     rpe: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # set khởi động: không tính vào khối lượng, kỷ lục, gợi ý tăng tải và bản đồ cơ
+    is_warmup: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     muscles: Mapped[dict] = mapped_column(JSON, default=dict)  # {"primary": [...], "secondary": [...]}
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, index=True)
 
@@ -313,3 +316,16 @@ class AgentTrace(Base):
     output_flags: Mapped[list] = mapped_column(JSON, default=list)
     rag: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, index=True)
+
+
+class AiUsage(Base):
+    """Số lượt gọi AI ngoài chat mỗi ngày (phân tích ảnh bữa ăn, đọc phiếu InBody, gợi ý bài) — chống tốn chi phí."""
+
+    __tablename__ = "ai_usage"
+    __table_args__ = (UniqueConstraint("user_id", "day", "kind"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    day: Mapped[dt.date] = mapped_column(Date)
+    kind: Mapped[str] = mapped_column(String(20))  # meal | inbody | suggest
+    count: Mapped[int] = mapped_column(Integer, default=0)

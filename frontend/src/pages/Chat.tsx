@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
-import { MessageSquarePlus, PanelLeft, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Dumbbell, History, MessageSquarePlus, Pencil, Salad, Search, Sparkles, Target, Trash2 } from "lucide-react";
 import { del, api } from "../lib/api";
 import { useApi, useInvalidateAll } from "../lib/hooks";
 import { AGENTS } from "../lib/constants";
@@ -9,7 +9,8 @@ import { timeAgo } from "../lib/format";
 import type { AgentKey, Conversation } from "../lib/types";
 import { ChatView } from "../components/chat/ChatView";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { confirmDialog, promptDialog } from "../components/ui";
+import { MuscleMini, PRCard, ReadinessCard, SuggestCard, TodayRings, WeekDots, useOverview } from "../components/Widgets";
+import { confirmDialog, HelpButton, promptDialog } from "../components/ui";
 
 const STARTERS: [string, AgentKey][] = [
   ["Hôm nay mình muốn tập tay, gợi ý bài cho mình", "coachbro"],
@@ -21,28 +22,34 @@ const STARTERS: [string, AgentKey][] = [
 ];
 
 function Welcome({ onPick }: { onPick: (t: string) => void }) {
+  const areas: { k: AgentKey; title: string; icon: typeof Dumbbell }[] = [
+    { k: "headbro", title: "Tổng quan & mục tiêu", icon: Target },
+    { k: "coachbro", title: "Tập luyện", icon: Dumbbell },
+    { k: "nutribro", title: "Dinh dưỡng", icon: Salad },
+  ];
   return (
-    <div className="py-6 text-center sm:py-12">
-      <div className="mx-auto flex w-fit -space-x-2">
-        <AgentAvatar agent="headbro" size={52} />
-      </div>
-      <h2 className="mt-4 text-2xl font-bold">HeadBro sẵn sàng</h2>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted">
-        Hỏi gì cũng được: tập luyện, ăn uống, tiến độ. HeadBro tự nhờ chuyên gia phía sau xử lý và đọc dữ liệu thật của bạn.
+    <div className="pb-4 pt-6 text-center sm:pt-10">
+      <h2 className="text-[28px] font-bold leading-tight tracking-[-0.035em] sm:text-[36px]">
+        <span className="font-light text-muted">Hôm nay</span> HeadBro
+        <br />
+        giúp gì cho bạn?
+      </h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        Hỏi gì cũng được: tập luyện, ăn uống, tiến độ. HeadBro tự điều phối chuyên gia phía sau và trả lời dựa trên dữ liệu của bạn.
       </p>
-      <div className="mx-auto mt-6 grid max-w-2xl gap-3 text-left sm:grid-cols-3">
-        {(["headbro", "coachbro", "nutribro"] as AgentKey[]).map((a) => (
-          <div key={a} className="card p-3.5">
-            <p className="font-semibold">{a === "headbro" ? "Tổng quan & mục tiêu" : a === "coachbro" ? "Tập luyện" : "Dinh dưỡng"}</p>
-            <p className="mt-1 text-xs text-muted">{AGENTS[a].domain}</p>
+      <div className="mx-auto mt-6 grid max-w-xl gap-2.5 text-left sm:grid-cols-3">
+        {areas.map(({ k, title, icon: I }) => (
+          <div key={k} className="rounded-[20px] bg-[var(--glass-fill)] p-3.5">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-volt text-on-volt"><I size={15} /></span>
+            <p className="mt-2.5 text-sm font-semibold">{title}</p>
+            <p className="mt-0.5 text-[11px] text-muted">{AGENTS[k].domain}</p>
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-5 grid max-w-2xl gap-2 text-left sm:grid-cols-2">
-        {STARTERS.map(([t, a]) => (
-          <button key={t} onClick={() => onPick(t)} className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm hover:border-primary/60">
-            <span className="text-muted" aria-hidden>{a === "coachbro" ? "🏋️" : a === "nutribro" ? "🥗" : "🎯"}</span>
-            {t}
+      <div className="mx-auto mt-4 flex max-w-xl flex-wrap justify-center gap-2">
+        {STARTERS.map(([t]) => (
+          <button key={t} onClick={() => onPick(t)} className="flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 text-[13px] font-medium shadow-[var(--shadow)] transition hover:-translate-y-0.5">
+            <Sparkles size={13} className="text-muted" /> {t}
           </button>
         ))}
       </div>
@@ -50,103 +57,116 @@ function Welcome({ onPick }: { onPick: (t: string) => void }) {
   );
 }
 
+/** Nút "Lịch sử" ở góc trên khung chat: bấm mở danh sách hội thoại (tìm, chọn, đổi tên, xoá). */
+function HistoryButton({ current }: { current?: string }) {
+  const nav = useNavigate();
+  const invalidate = useInvalidateAll();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const { data: convs } = useApi<Conversation[]>(["conversations"], "/api/chat/conversations");
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  const list = (convs || []).filter((c) => c.title.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+        className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--glass-fill)] px-3.5 text-sm font-medium transition hover:bg-surface-3">
+        <History size={15} /> Lịch sử
+        {convs && <span className="num rounded-full bg-surface px-1.5 text-[11px] text-muted">{convs.length}</span>}
+        <ChevronDown size={14} className={clsx("text-muted transition", open && "rotate-180")} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
+          <div className="fade-in absolute right-0 top-[calc(100%+8px)] z-50 flex max-h-[60vh] w-[min(360px,calc(100vw-2rem))] flex-col rounded-[22px] border border-[var(--card-border)] bg-surface p-2 shadow-[var(--shadow-lg)]">
+            <div className="relative mb-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm cuộc trò chuyện..." aria-label="Tìm cuộc trò chuyện"
+                className="w-full rounded-full bg-surface-2 py-2 pl-8 pr-3 text-sm outline-none" />
+            </div>
+            <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+              {list.map((c) => (
+                <div key={c.id} className={clsx("group flex items-center gap-1 rounded-2xl pr-1 text-sm", c.id === current ? "bg-surface-2 font-medium" : "hover:bg-surface-2")}>
+                  <button type="button" aria-current={c.id === current ? "page" : undefined}
+                    onClick={() => { nav(`/chat/${c.id}`); setOpen(false); }} className="min-w-0 flex-1 px-3 py-2 text-left">
+                    <p className="truncate">{c.title}</p>
+                    <p className="text-[11px] text-muted">{timeAgo(c.updated_at)}</p>
+                  </button>
+                  <button type="button" aria-label={`Đổi tên "${c.title}"`}
+                    className="grid h-8 w-8 place-items-center rounded-full text-muted hover:text-text sm:hidden sm:group-hover:grid sm:group-focus-within:grid [@media(hover:none)]:grid"
+                    onClick={async () => {
+                      const t = await promptDialog({ title: "Đổi tên cuộc trò chuyện", initial: c.title, confirmLabel: "Lưu tên" });
+                      if (t) {
+                        await api(`/api/chat/conversations/${c.id}`, { method: "PATCH", body: { title: t } });
+                        invalidate();
+                      }
+                    }}>
+                    <Pencil size={14} />
+                  </button>
+                  <button type="button" aria-label={`Xoá "${c.title}"`}
+                    className="grid h-8 w-8 place-items-center rounded-full text-muted hover:text-danger sm:hidden sm:group-hover:grid sm:group-focus-within:grid [@media(hover:none)]:grid"
+                    onClick={async () => {
+                      if (!(await confirmDialog({ title: `Xoá "${c.title}"?`, text: "Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ mất.", confirmLabel: "Xoá cuộc trò chuyện", danger: true }))) return;
+                      await del(`/api/chat/conversations/${c.id}`);
+                      invalidate();
+                      if (c.id === current) nav("/chat");
+                    }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {convs && !list.length && <p className="px-3 py-3 text-xs text-muted">{q ? "Không tìm thấy." : "Chưa có cuộc trò chuyện nào."}</p>}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Chat() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [side, setSide] = useState(false);
   const [pick, setPick] = useState<{ text: string; autoSend: boolean } | null>(null);
   // Cuộc trò chuyện vừa được tạo từ khung "mới": đổi URL nhưng GIỮ khung chat đang stream (không dựng lại)
   const created = useRef<string | null>(null);
   const viewKey = id && id === created.current ? "new" : id || "new";
   if (!id) created.current = null;
-  const { data: convs } = useApi<Conversation[]>(["conversations"], "/api/chat/conversations");
-  const invalidate = useInvalidateAll();
-
-  const list = (
-    <div className="flex h-full flex-col">
-      <div className="p-3">
-        <button
-          onClick={() => {
-            nav("/chat");
-            setPick(null);
-            setSide(false);
-          }}
-          className="flex w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium hover:bg-surface-2"
-        >
-          <MessageSquarePlus size={17} /> Cuộc trò chuyện mới
-        </button>
-      </div>
-      <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
-        {(convs || []).map((c) => (
-          <div
-            key={c.id}
-            className={clsx("group flex items-center gap-1 rounded-lg pr-1 text-sm", c.id === id ? "bg-surface-3" : "hover:bg-surface-2")}
-          >
-            <button
-              type="button"
-              aria-current={c.id === id ? "page" : undefined}
-              onClick={() => {
-                nav(`/chat/${c.id}`);
-                setSide(false);
-              }}
-              className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left"
-            >
-              <p className="truncate">{c.title}</p>
-              <p className="text-[11px] text-muted">{timeAgo(c.updated_at)}</p>
-            </button>
-            <button
-              type="button"
-              aria-label={`Đổi tên "${c.title}"`}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-              onClick={async () => {
-                const t = await promptDialog({ title: "Đổi tên cuộc trò chuyện", initial: c.title, confirmLabel: "Lưu tên" });
-                if (t) {
-                  await api(`/api/chat/conversations/${c.id}`, { method: "PATCH", body: { title: t } });
-                  invalidate();
-                }
-              }}
-            >
-              <Pencil size={14} />
-            </button>
-            <button
-              type="button"
-              aria-label={`Xoá "${c.title}"`}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted hover:text-danger sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-              onClick={async () => {
-                if (!(await confirmDialog({ title: `Xoá "${c.title}"?`, text: "Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ mất.", confirmLabel: "Xoá cuộc trò chuyện", danger: true }))) return;
-                await del(`/api/chat/conversations/${c.id}`);
-                invalidate();
-                if (c.id === id) nav("/chat");
-              }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-        {convs && !convs.length && <p className="px-3 py-2 text-xs text-muted">Chưa có cuộc trò chuyện nào.</p>}
-      </div>
-    </div>
-  );
+  const { data: ov } = useOverview();
+  const ask = (text: string) => setPick({ text, autoSend: true });
 
   return (
-    <div className="flex h-[calc(100dvh-57px)] lg:h-dvh">
-      <aside className="hidden w-64 shrink-0 border-r border-border bg-surface-2/50 md:block">{list}</aside>
-      {side && (
-        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSide(false)}>
-          <div className="h-full w-72 bg-surface" onClick={(e) => e.stopPropagation()}>
-            {list}
+    <div className="flex h-[calc(100dvh-57px)] gap-5 p-2 sm:p-4 lg:h-dvh lg:pl-0 lg:pr-5 xl:gap-6">
+      {/* Cột trái: thông số hôm nay */}
+      <aside className="rise hidden w-[280px] shrink-0 flex-col gap-5 overflow-y-auto pb-2 [scrollbar-width:none] xl:flex">
+        {ov && (
+          <>
+            <ReadinessCard readiness={ov.today.readiness} streak={ov.today.streak.current} />
+            <TodayRings t={ov.today} />
+            <WeekDots streak={ov.today.streak.current} best={ov.today.streak.best} />
+          </>
+        )}
+      </aside>
+
+      {/* Giữa: khung chat */}
+      <section className="card rise relative flex min-w-0 flex-1 flex-col overflow-hidden" style={{ animationDelay: "80ms" }}>
+        <header className="flex items-center gap-3 border-b border-border px-4 py-3">
+          <AgentAvatar agent="headbro" size={34} />
+          <div className="mr-auto min-w-0 flex-1">
+            <p className="text-[15px] font-semibold leading-tight">HeadBro</p>
+            <p className="hidden truncate text-[11px] text-muted xl:block">Trợ lý chính FitBro · điều phối chuyên gia tập luyện & dinh dưỡng</p>
           </div>
-        </div>
-      )}
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-2 md:hidden">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm text-muted hover:text-text" aria-label="Mở danh sách cuộc trò chuyện" onClick={() => setSide(true)}>
-            <PanelLeft size={16} /> Cuộc trò chuyện
+          <HelpButton to="headbro" className="!h-9 !w-9 !bg-transparent" />
+          <HistoryButton current={id} />
+          <button type="button" onClick={() => { nav("/chat"); setPick(null); }} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới"
+            className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-ink px-3.5 text-sm font-medium text-on-ink transition hover:opacity-90">
+            <MessageSquarePlus size={15} /> <span className="hidden sm:inline">Mới</span>
           </button>
-          <button className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="Cuộc trò chuyện mới" onClick={() => nav("/chat")}>
-            <MessageSquarePlus size={17} />
-          </button>
-        </div>
+        </header>
         <ChatView
           key={viewKey}
           conversationId={id || null}
@@ -156,9 +176,16 @@ export default function Chat() {
           }}
           page="chat"
           initial={pick}
-          emptyState={<Welcome onPick={(t) => setPick({ text: t, autoSend: true })} />}
+          emptyState={<Welcome onPick={ask} />}
         />
-      </div>
+      </section>
+
+      {/* Cột phải: hình & chỉ số */}
+      <aside className="rise hidden w-[300px] shrink-0 flex-col gap-5 overflow-y-auto pb-2 [scrollbar-width:none] lg:flex" style={{ animationDelay: "160ms" }}>
+        <MuscleMini days={7} />
+        {ov && <PRCard prs={ov.prs} limit={3} />}
+        {ov && <SuggestCard insights={ov.insights || []} onPick={ask} />}
+      </aside>
     </div>
   );
 }

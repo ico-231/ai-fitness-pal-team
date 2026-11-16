@@ -6,6 +6,7 @@ code không bao giờ hard-code bí mật.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # .../backend
@@ -31,7 +32,12 @@ class Settings(BaseSettings):
     # --- Database ---
     # SQLite mặc định (chạy ngay không cần cài gì). Khi deploy dùng Postgres:
     # DATABASE_URL=postgresql+psycopg://user:pass@host:5432/dbname
-    database_url: str = f"sqlite:///{BASE_DIR / 'fitbro.db'}"
+    # SUPABASE_DB_URL (nếu có) được ưu tiên hơn DATABASE_URL — trên Vercel, DATABASE_URL do tích hợp Neon
+    # tự quản lý nên không sửa được; đặt SUPABASE_DB_URL để chuyển sang Supabase mà không đụng tới Neon.
+    database_url: str = Field(
+        default=f"sqlite:///{BASE_DIR / 'fitbro.db'}",
+        validation_alias=AliasChoices("SUPABASE_DB_URL", "DATABASE_URL", "database_url"),
+    )
 
     # --- Google Sign-In (tùy chọn) ---
     google_client_id: str = ""
@@ -59,6 +65,7 @@ class Settings(BaseSettings):
     llm_reasoning_effort: str = ""  # "low" | "medium" | "high" — giảm mức "suy nghĩ" của model để trả lời nhanh hơn (trống = mặc định)
     llm_followups: bool = True  # gợi ý 3 câu hỏi tiếp theo sau mỗi câu trả lời
     chat_daily_limit: int = 150  # số tin nhắn AI tối đa / người / ngày (chống tốn chi phí)
+    ai_tools_daily_limit: int = 40  # phân tích ảnh bữa ăn + đọc phiếu InBody + gợi ý bài / người / ngày
 
     # --- Guardrails ---
     guard_llm_classifier: bool = True  # câu "lưng chừng" mà regex không chắc → hỏi thêm model nhanh để phân loại rủi ro

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import clsx from "clsx";
-import { Loader2, X } from "lucide-react";
+import { CircleHelp, Loader2, X } from "lucide-react";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
 export function clickable(onClick?: () => void) {
@@ -21,7 +23,7 @@ export function clickable(onClick?: () => void) {
 
 export function Card({ children, className, onClick, title, label }: { children: ReactNode; className?: string; onClick?: () => void; title?: string; label?: string }) {
   return (
-    <div title={title} aria-label={label} {...clickable(onClick)} className={clsx("card", onClick && "cursor-pointer transition hover:border-primary/60", className)}>
+    <div title={title} aria-label={label} {...clickable(onClick)} className={clsx("card", onClick && "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]", className)}>
       {children}
     </div>
   );
@@ -29,11 +31,11 @@ export function Card({ children, className, onClick, title, label }: { children:
 
 export function CardHeader({ title, subtitle, icon, right }: { title: ReactNode; subtitle?: ReactNode; icon?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-4 pb-2">
-      <div className="flex min-w-0 items-center gap-2.5">
-        {icon && <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted">{icon}</div>}
+    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-5 pb-2">
+      <div className="flex min-w-0 items-center gap-3">
+        {icon && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-volt text-on-volt">{icon}</div>}
         <div className="min-w-0">
-          <h3 className="truncate text-[15px] font-semibold">{title}</h3>
+          <h3 className="truncate text-base font-semibold tracking-tight">{title}</h3>
           {subtitle && <p className="truncate text-xs text-muted">{subtitle}</p>}
         </div>
       </div>
@@ -57,13 +59,13 @@ export function Button({
       {...rest}
       disabled={rest.disabled || loading}
       className={clsx(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
-        size === "sm" && "h-8 px-3 text-[13px] pointer-coarse:h-10",
-        size === "md" && "h-10 px-4 text-sm pointer-coarse:h-11",
-        size === "lg" && "h-12 px-6 text-base",
-        variant === "primary" && "bg-primary-strong text-on-primary hover:bg-primary-strong/90",
-        variant === "secondary" && "bg-surface-2 text-text hover:bg-surface-3",
-        variant === "outline" && "border border-border bg-surface text-text hover:bg-surface-2",
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
+        size === "sm" && "h-8 px-3.5 text-[13px] pointer-coarse:h-10",
+        size === "md" && "h-10 px-5 text-sm pointer-coarse:h-11",
+        size === "lg" && "h-12 px-7 text-base",
+        variant === "primary" && "bg-ink text-on-ink hover:opacity-90",
+        variant === "secondary" && "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-text backdrop-blur-xl hover:bg-surface",
+        variant === "outline" && "border border-border bg-surface text-text hover:border-text/30 hover:bg-surface-2",
         variant === "ghost" && "text-muted hover:bg-surface-2 hover:text-text",
         variant === "danger" && "bg-danger text-on-danger hover:bg-danger/90",
         className,
@@ -77,7 +79,7 @@ export function Button({
 
 export function IconButton({ children, className, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" aria-label={rest["aria-label"] ?? rest.title} {...rest} className={clsx("grid h-9 w-9 place-items-center rounded-lg text-muted transition pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-surface-2 hover:text-text disabled:opacity-40", className)}>
+    <button type="button" aria-label={rest["aria-label"] ?? rest.title} {...rest} className={clsx("grid h-9 w-9 place-items-center rounded-full text-muted transition pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-surface-2 hover:text-text disabled:opacity-40", className)}>
       {children}
     </button>
   );
@@ -123,14 +125,14 @@ export function Progress({ value, max, color, className, height = 8 }: { value: 
   );
 }
 
-export function Ring({ value, max = 100, size = 92, stroke = 9, color, children }: { value: number; max?: number; size?: number; stroke?: number; color?: string; children?: ReactNode }) {
+export function Ring({ value, max = 100, size = 92, stroke = 9, color, track, children }: { value: number; max?: number; size?: number; stroke?: number; color?: string; track?: string; children?: ReactNode }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(1, value / max));
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track || "var(--surface-3)"} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -190,14 +192,15 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
     };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Portal ra <body>: hộp thoại không bị giới hạn bởi phần tử cha có kính mờ/transform (backdrop-filter tạo khung chứa mới)
+  return createPortal(
     <div className="no-print fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
       <div
         ref={box}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={clsx("fade-in flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-2xl sm:rounded-2xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
+        className={clsx("fade-in flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-[var(--card-border)] bg-surface shadow-2xl sm:rounded-[28px]", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
@@ -209,13 +212,14 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="flex justify-end gap-2 border-t border-border px-5 py-3">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 export function Segmented<T extends string>({ value, onChange, options, size = "md" }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; size?: "sm" | "md" }) {
   return (
-    <div className="inline-flex rounded-xl bg-surface-2 p-1">
+    <div className="inline-flex rounded-full bg-surface-2 p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -223,9 +227,9 @@ export function Segmented<T extends string>({ value, onChange, options, size = "
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={clsx(
-            "rounded-lg font-medium transition",
-            size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
-            value === o.value ? "bg-surface text-text shadow-sm" : "text-muted hover:text-text",
+            "rounded-full font-medium transition",
+            size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm",
+            value === o.value ? "bg-ink text-on-ink shadow-sm" : "text-muted hover:text-text",
           )}
         >
           {o.label}
@@ -247,13 +251,17 @@ export function Field({ label, hint, children, className }: { label: ReactNode; 
 
 export function Stat({ label, value, unit, sub, icon, onClick, accent }: { label: string; value: ReactNode; unit?: string; sub?: ReactNode; icon?: ReactNode; onClick?: () => void; accent?: string }) {
   return (
-    <Card onClick={onClick} className="p-4">
-      <div className="flex items-center justify-between text-[13px] text-muted">
-        <span>{label}</span>
-        {icon && <span style={{ color: accent }}>{icon}</span>}
+    <Card onClick={onClick} className="p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-2 text-[13px] text-muted">
+        <span className="truncate">{label}</span>
+        {icon && (
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ color: accent, background: accent ? `color-mix(in srgb, ${accent} 14%, transparent)` : "var(--surface-2)" }}>
+            {icon}
+          </span>
+        )}
       </div>
-      <div className="mt-1.5 flex items-baseline gap-1">
-        <span className="text-[26px] font-extrabold leading-none tracking-tight tabular-nums">{value}</span>
+      <div className="mt-3 flex items-baseline gap-1">
+        <span className="num num-accent text-[32px] font-semibold leading-none">{value}</span>
         {unit && <span className="text-sm text-muted">{unit}</span>}
       </div>
       {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
@@ -264,7 +272,7 @@ export function Stat({ label, value, unit, sub, icon, onClick, accent }: { label
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: ReactNode }) {
   return (
     <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="flex items-center gap-3 text-left">
-      <span className={clsx("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-primary-strong" : "bg-surface-3")}>
+      <span className={clsx("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-ink" : "bg-surface-3")}>
         <span className={clsx("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
       </span>
       {label && <span className="text-sm">{label}</span>}
@@ -282,18 +290,18 @@ export function ScalePicker({ value, onChange, labels, low, high }: { value: num
             key={i}
             onClick={() => onChange(i + 1)}
             className={clsx(
-              "flex flex-col items-center rounded-xl border py-1.5 leading-tight transition",
-              value === i + 1 ? "border-primary bg-primary-soft" : "border-border bg-surface-2 hover:border-primary/50",
+              "flex flex-col items-center rounded-2xl border py-1.5 leading-tight transition",
+              value === i + 1 ? "border-transparent bg-volt text-on-volt shadow-sm" : "border-transparent bg-surface-2 hover:border-text/20",
             )}
             aria-label={`Mức ${i + 1}`}
             aria-pressed={value === i + 1}
           >
             {l === String(i + 1) ? (
-              <span className="py-1 text-lg font-bold tabular-nums">{l}</span>
+              <span className="num py-1 text-lg font-semibold">{l}</span>
             ) : (
               <>
                 <span className="text-lg">{l}</span>
-                <span className={clsx("text-[11px] font-semibold tabular-nums", value === i + 1 ? "text-primary-strong" : "text-muted")}>{i + 1}</span>
+                <span className={clsx("num text-[11px] font-semibold", value === i + 1 ? "text-on-volt" : "text-muted")}>{i + 1}</span>
               </>
             )}
           </button>
@@ -309,34 +317,57 @@ export function ScalePicker({ value, onChange, labels, low, high }: { value: num
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
+/** Tiêu đề trang kiểu Tổng quan: chữ lớn hai tông (lead mảnh + title đậm), hành động là các viên kính. */
+/** Nút "?" mở đúng chương trong tab Hướng dẫn (vd help="tap-luyen"). */
+export function HelpButton({ to, className }: { to: string; className?: string }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-[26px] font-extrabold leading-tight tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+    <Link to={`/guide#${to}`} title="Xem hướng dẫn cho trang này" aria-label="Xem hướng dẫn cho trang này"
+      className={clsx("no-print glass inline-grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted transition hover:text-text", className)}>
+      <CircleHelp size={17} />
+    </Link>
+  );
+}
+
+export function PageHeader({ title, subtitle, actions, lead, help }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; lead?: ReactNode; help?: string }) {
+  return (
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="on-bg text-[32px] leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
+          {lead && <span className="font-light text-muted">{lead} </span>}
+          <span className="font-bold">{title}</span>
+          {help && <HelpButton to={help} className="ml-3 -translate-y-1.5 align-middle" />}
+        </h1>
+        {subtitle && <p className="on-bg mt-2 max-w-2xl text-sm text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="no-print flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; icon?: ReactNode }[] }) {
+/** Thanh tab dạng viên kính. `extra`: phần tử phụ nằm cuối cùng thanh (vd nút "Buổi tự soạn"). */
+export function Tabs<T extends string>({ value, onChange, tabs, extra }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; icon?: ReactNode }[]; extra?: ReactNode }) {
   return (
-    <div className="no-print mb-5 flex gap-1 overflow-x-auto border-b border-border">
+    <div className="glass no-print mb-8 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
       {tabs.map((t) => (
         <button
           key={t.value}
           onClick={() => onChange(t.value)}
+          aria-pressed={value === t.value}
           className={clsx(
-            "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3.5 py-2.5 text-sm font-medium transition",
-            value === t.value ? "border-primary text-text" : "border-transparent text-muted hover:text-text",
+            "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+            value === t.value ? "bg-volt text-on-volt shadow-[0_6px_18px_-8px_rgb(132_204_22/0.8)]" : "text-muted hover:bg-[var(--glass-fill)] hover:text-text",
           )}
         >
           {t.icon}
           {t.label}
         </button>
       ))}
+      {extra && (
+        <>
+          <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-[var(--glass-border)]" />
+          {extra}
+        </>
+      )}
     </div>
   );
 }
@@ -352,8 +383,8 @@ export function toast(message: string, kind: "ok" | "error" = "ok") {
     document.body.appendChild(el);
   }
   el.className = clsx(
-    "no-print pointer-events-none fixed left-1/2 top-4 z-[80] -translate-x-1/2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-xl fade-in",
-    kind === "ok" ? "bg-primary-strong text-on-primary" : "bg-danger text-on-danger",
+    "no-print pointer-events-none fixed left-1/2 top-4 z-[80] -translate-x-1/2 rounded-full px-5 py-2.5 text-sm font-medium shadow-xl fade-in",
+    kind === "ok" ? "bg-ink text-on-ink" : "bg-danger text-on-danger",
   );
   el.textContent = message;
   el.style.display = "block";

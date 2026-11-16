@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Camera, Info, Loader2, Plus, Scale, Sparkles, Target, Trash2 } from "lucide-react";
+import { Camera, Info, Loader2, Pencil, Plus, Scale, Sparkles, Target, Trash2 } from "lucide-react";
 import { del, post, put } from "../lib/api";
-import { useAction, useApi } from "../lib/hooks";
+import { useAction, useApi, useGoalCelebration } from "../lib/hooks";
 import { dayLabel, fmt, todayISO } from "../lib/format";
 import { fileToDataUrl } from "../lib/media";
 import type { Goal } from "../lib/types";
@@ -33,21 +33,29 @@ const CARDS = ["weight_kg", "body_fat_pct", "skeletal_muscle_kg", "body_fat_kg",
 // chiều "tốt" của thay đổi
 const GOOD_UP = new Set(["skeletal_muscle_kg", "bmr_kcal"]);
 
-function MetricModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [f, setF] = useState<Record<string, string>>({ date: todayISO() });
-  const [seg, setSeg] = useState<Record<string, string>>({});
+/** Nhập lần đo mới, hoặc sửa một lần đo đã có (`editing`). */
+function MetricModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: Metric | null }) {
+  const init = (): Record<string, string> => {
+    if (!editing) return { date: todayISO() };
+    const o: Record<string, string> = { date: editing.date };
+    FIELDS.forEach(([k]) => { if (editing[k] != null) o[k] = String(editing[k]); });
+    return o;
+  };
+  const [f, setF] = useState<Record<string, string>>(init);
+  const [seg, setSeg] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries((editing?.segmental as Record<string, number>) || {}).map(([k, v]) => [k, String(v)])));
   const [scanning, setScanning] = useState(false);
-  const [note, setNote] = useState("");
-  const [source, setSource] = useState<"manual" | "inbody_scan">("manual");
+  const [note, setNote] = useState((editing?.note as string) || "");
+  const [source, setSource] = useState<"manual" | "inbody_scan">((editing?.source as "manual" | "inbody_scan") === "inbody_scan" ? "inbody_scan" : "manual");
   const fileRef = useRef<HTMLInputElement>(null);
   const save = useAction(
     () => {
       const body: Record<string, unknown> = { date: f.date, source, note };
       FIELDS.forEach(([k]) => { if (f[k]) body[k] = +f[k]; });
       body.segmental = Object.fromEntries(Object.entries(seg).filter(([, v]) => v).map(([k, v]) => [k, +v]));
-      return post("/api/body/metrics", body);
+      return editing ? put(`/api/body/metrics/${editing.id}`, body) : post("/api/body/metrics", body);
     },
-    { success: "Đã lưu chỉ số", onSuccess: () => { setF({ date: todayISO() }); setSeg({}); setNote(""); onClose(); } },
+    { success: editing ? "Đã sửa lần đo" : "Đã lưu chỉ số", onSuccess: () => { setF({ date: todayISO() }); setSeg({}); setNote(""); onClose(); } },
   );
   const scan = async (file: File) => {
     setScanning(true);
@@ -67,7 +75,7 @@ function MetricModal({ open, onClose }: { open: boolean; onClose: () => void }) 
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Nhập chỉ số cơ thể" wide footer={<Button loading={save.isPending} onClick={() => save.mutate(undefined as never)}>Lưu</Button>}>
+    <Modal open={open} onClose={onClose} title={editing ? `Sửa lần đo ${dayLabel(editing.date).toLowerCase()}` : "Nhập chỉ số cơ thể"} wide footer={<Button loading={save.isPending} onClick={() => save.mutate(undefined as never)}>Lưu</Button>}>
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-border bg-surface-2 p-3">
         <AgentAvatar agent="headbro" size={30} />
         <p className="flex-1 text-sm text-muted">Có phiếu InBody? Chụp ảnh để HeadBro đọc và điền sẵn các ô bên dưới.</p>
@@ -125,6 +133,7 @@ export default function InBody() {
   const { data: s, isLoading } = useApi<Summary>(["body-summary"], "/api/body/summary");
   const { data: rows } = useApi<Metric[]>(["body-metrics"], "/api/body/metrics");
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Metric | null>(null);
   const [goalModal, setGoalModal] = useState<{ open: boolean; goal?: Goal | null }>({ open: false });
   const [histAll, setHistAll] = useState(false);
   const [chart, setChart] = useState<"weight" | "comp" | "size">("weight");
@@ -133,22 +142,25 @@ export default function InBody() {
   const delMetric = useAction((id: string) => del(`/api/body/metrics/${id}`), { success: "Đã xoá" });
   const delGoal = useAction((id: string) => del(`/api/goals/${id}`), { success: "Đã xoá mục tiêu" });
   const markGoal = useAction((g: Goal) => put(`/api/goals/${g.id}`, { ...g, status: "achieved" }), { success: "Chúc mừng bạn đã đạt mục tiêu!" });
+  useGoalCelebration(s?.goals);
 
   if (isLoading || !s) return <Spinner />;
   const lines = chart === "weight"
-    ? [{ key: "weight_kg", color: "var(--head)", label: "Cân nặng (kg)" }]
+    ? [{ key: "weight_kg", color: "var(--primary)", label: "Cân nặng (kg)" }]
     : chart === "comp"
-      ? [{ key: "skeletal_muscle_kg", color: "var(--coach)", label: "Cơ xương (kg)" }, { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" as const }]
-      : [{ key: "waist_cm", color: "var(--primary)", label: "Eo (cm)" }, { key: "hip_cm", color: "var(--head)", label: "Mông (cm)" }];
+      ? [{ key: "skeletal_muscle_kg", color: "var(--primary)", label: "Cơ xương (kg)" }, { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" as const }]
+      : [{ key: "waist_cm", color: "var(--primary)", label: "Eo (cm)" }, { key: "hip_cm", color: "#38bdf8", label: "Mông (cm)" }];
   const chartData = (rows || []).filter((r) => lines.some((l) => r[l.key] != null));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <PageHeader
-        title="InBody & Mục tiêu"
+        help="inbody"
+        lead="Cơ thể,"
+        title="InBody & mục tiêu"
         subtitle="Theo dõi thành phần cơ thể theo thời gian và đặt mục tiêu đo lường được"
         actions={<>
-          <Button variant="outline" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "headbro", text: "Giải thích các chỉ số cơ thể mới nhất của mình bằng ngôn ngữ dễ hiểu và nó liên quan gì tới việc tập luyện." })}>Nhờ HeadBro giải thích</Button>
+          <Button variant="secondary" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "headbro", text: "Giải thích các chỉ số cơ thể mới nhất của mình bằng ngôn ngữ dễ hiểu và nó liên quan gì tới việc tập luyện." })}>Nhờ HeadBro giải thích</Button>
           <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Nhập chỉ số</Button>
         </>}
       />
@@ -156,16 +168,21 @@ export default function InBody() {
       {s.count === 0 ? (
         <Card><Empty icon={<Scale size={22} />} title="Chưa có lần đo nào" text="Nhập cân nặng, số đo hoặc chụp phiếu InBody để bắt đầu theo dõi." action={<Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Nhập chỉ số</Button>} /></Card>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {CARDS.filter((k) => s.latest[k]).map((k) => {
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {CARDS.filter((k) => s.latest[k]).map((k, i) => {
             const inf = s.info[k], v = s.latest[k], ch = s.changes[k];
             const good = ch == null || ch === 0 ? null : GOOD_UP.has(k) ? ch > 0 : ch < 0;
             return (
-              <Card key={k} className="p-4" onClick={() => setInfo(k)}>
-                <div className="flex items-center justify-between text-[13px] text-muted"><span>{inf?.label || k}</span><Info size={14} /></div>
-                <p className="mt-1 text-2xl font-bold">{fmt(v.value, 1)} <span className="text-sm font-normal text-muted">{inf?.unit}</span></p>
-                <p className="text-xs text-muted">
-                  {ch != null && ch !== 0 && <span className={good ? "text-primary-strong" : "text-danger"}>{ch > 0 ? "+" : ""}{ch} </span>}
+              <Card key={k} className="p-5" onClick={() => setInfo(k)} label={`${inf?.label || k}: ${fmt(v.value, 1)} ${inf?.unit || ""}. Bấm để xem giải thích`}>
+                <div className="flex items-center justify-between text-[13px] text-muted"><span className="truncate">{inf?.label || k}</span><Info size={14} className="shrink-0" /></div>
+                <p className="mt-3 flex items-baseline gap-1">
+                  <span className={`num font-semibold leading-none ${i < 2 ? "num-accent text-[38px]" : "text-[30px]"}`}>{fmt(v.value, 1)}</span>
+                  <span className="text-sm text-muted">{inf?.unit}</span>
+                </p>
+                <p className="mt-2 text-xs text-muted">
+                  {ch != null && ch !== 0 && (
+                    <span className={`mr-1 inline-flex rounded-full px-1.5 py-px font-semibold ${good ? "bg-primary-soft text-primary-strong" : "bg-danger/10 text-danger"}`}>{ch > 0 ? "+" : ""}{ch}</span>
+                  )}
                   {ch != null ? "so với lần đầu · " : ""}{dayLabel(v.date)}
                 </p>
               </Card>
@@ -174,7 +191,7 @@ export default function InBody() {
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:gap-8">
         <Card>
           <CardHeader title="Biểu đồ theo thời gian" right={<Segmented size="sm" value={chart} onChange={setChart} options={[{ value: "weight", label: "Cân nặng" }, { value: "comp", label: "Cơ & mỡ" }, { value: "size", label: "Số đo" }]} />} />
           <div className="px-3 pb-4">
@@ -185,7 +202,7 @@ export default function InBody() {
           <CardHeader title="Phân tích mất cân đối cơ" subtitle="So sánh khối nạc trái/phải" />
           <div className="space-y-3 px-5 pb-5">
             {s.imbalance.length ? s.imbalance.map((x) => (
-              <div key={x.part} className="rounded-xl bg-surface-2 p-3">
+              <div key={x.part} className="rounded-2xl bg-[var(--glass-fill)] p-4">
                 <div className="flex justify-between text-sm font-medium"><span>{x.part}: trái {fmt(x.left, 1)}kg · phải {fmt(x.right, 1)}kg</span>
                   <Badge color={x.level === "ok" ? "var(--primary-strong)" : x.level === "watch" ? "var(--warn)" : "var(--danger)"}>lệch {fmt(x.diff_pct, 1)}%</Badge></div>
                 <p className="mt-1 text-xs text-muted">{x.advice}</p>
@@ -198,7 +215,7 @@ export default function InBody() {
       <Card>
         <CardHeader title="Mục tiêu" icon={<Target size={16} />} right={
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu mới thật cụ thể. Hãy hỏi mình từng bước, đừng lập kế hoạch tập luyện." })}>Đặt cùng HeadBro</Button>
+            <Button size="sm" variant="secondary" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu mới thật cụ thể. Hãy hỏi mình từng bước, đừng lập kế hoạch tập luyện." })}>Đặt cùng HeadBro</Button>
             <Button size="sm" icon={<Plus size={14} />} onClick={() => setGoalModal({ open: true, goal: null })}>Tự nhập</Button>
           </div>
         } />
@@ -218,7 +235,7 @@ export default function InBody() {
                   {g.status === "achieved" && <Badge color="var(--primary-strong)">Đã đạt</Badge>}
                 </div>
               </div>
-              {g.progress_pct != null && <><Progress value={g.progress_pct} max={100} className="mt-3" /><p className="mt-1 text-xs text-muted">{g.progress_pct}%{g.days_left != null && ` · còn ${g.days_left} ngày`}</p></>}
+              {g.progress_pct != null && <><Progress value={g.progress_pct} max={100} className="mt-3" color="var(--volt)" /><p className="mt-1 text-xs text-muted">{g.progress_pct}%{g.days_left != null && ` · còn ${g.days_left} ngày`}</p></>}
               {g.plan && <p className="mt-2 whitespace-pre-line text-xs text-muted">{g.plan}</p>}
               <div className="mt-2 flex gap-1">
                 <Button size="sm" variant="ghost" onClick={() => setGoalModal({ open: true, goal: g })}>Sửa</Button>
@@ -240,7 +257,7 @@ export default function InBody() {
                 <tr key={r.id} className="border-t border-border">
                   <td className="p-2">{dayLabel(r.date as string, true)}</td><td>{fmt(r.weight_kg as number, 1)}</td><td>{fmt(r.body_fat_pct as number, 1)}</td><td>{fmt(r.skeletal_muscle_kg as number, 1)}</td>
                   <td>{fmt(r.visceral_fat as number)}</td><td>{fmt(r.waist_cm as number, 1)}</td><td className="text-xs text-muted">{SOURCE_LABEL[r.source as string] ?? (r.source as string)}</td>
-                  <td className="text-right"><button className="text-muted hover:text-danger" aria-label="Xoá lần đo này" onClick={async () => (await confirmDialog({ title: "Xoá lần đo này?", text: "Biểu đồ và mục tiêu sẽ tính lại không có lần đo này.", confirmLabel: "Xoá lần đo", danger: true })) && delMetric.mutate(r.id)}><Trash2 size={14} /></button></td>
+                  <td className="whitespace-nowrap text-right"><button className="mr-2 text-muted hover:text-text" aria-label={`Sửa lần đo ${dayLabel(r.date as string)}`} title="Sửa lần đo" onClick={() => setEditing(r)}><Pencil size={14} /></button><button className="text-muted hover:text-danger" aria-label="Xoá lần đo này" onClick={async () => (await confirmDialog({ title: "Xoá lần đo này?", text: "Biểu đồ và mục tiêu sẽ tính lại không có lần đo này.", confirmLabel: "Xoá lần đo", danger: true })) && delMetric.mutate(r.id)}><Trash2 size={14} /></button></td>
                 </tr>
               ))}</tbody>
             </table>
@@ -256,6 +273,7 @@ export default function InBody() {
       )}
 
       <MetricModal open={adding} onClose={() => setAdding(false)} />
+      {editing && <MetricModal key={editing.id} open editing={editing} onClose={() => setEditing(null)} />}
       {goalModal.open && <GoalModal open onClose={() => setGoalModal({ open: false })} goal={goalModal.goal} />}
       <Modal open={!!info} onClose={() => setInfo(null)} title={info ? s.info[info]?.label : ""}>
         {info && s.info[info] && (

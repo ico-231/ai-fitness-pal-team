@@ -203,22 +203,24 @@ def get_muscle_volume(ctx: ToolContext, days=7) -> dict:
     }
 
 
-@tool("get_personal_records", "Kỷ lục cá nhân (PR) — 1RM ước tính tốt nhất của từng bài.", agents=("coachbro", "headbro"))
+@tool("get_personal_records", "Kỷ lục cá nhân (PR) của từng bài: bài có tạ = 1RM ước tính (kg); bài không tạ = số rep; bài giữ (plank) = số giây.",
+      agents=("coachbro", "headbro"))
 def get_personal_records(ctx: ToolContext) -> dict:
     prs = stats.personal_records(ctx.db, ctx.user.id)[:12]
-    return {"records": prs or "Chưa có PR nào (cần hoàn thành buổi tập có tạ)."}
+    return {"records": prs or "Chưa có PR nào (cần hoàn thành ít nhất 1 buổi tập)."}
 
 
 @tool(
     "get_overload_suggestion",
-    "Gợi ý mức tạ/rep hôm nay cho 1 bài dựa trên lần tập gần nhất (tăng tải lũy tiến).",
-    _obj({"exercise_id": {"type": "string"}, "target_reps": {"type": "integer"}}, ["exercise_id"]),
+    "Gợi ý mức tạ/rep (hoặc số giây với bài giữ) hôm nay cho 1 bài dựa trên lần tập gần nhất (tăng tải lũy tiến).",
+    _obj({"exercise_id": {"type": "string"}, "target_reps": {"type": "integer"},
+          "target_sec": {"type": "integer", "description": "Số giây mục tiêu nếu là bài giữ (plank...)"}}, ["exercise_id"]),
     agents=("coachbro",),
 )
-def get_overload_suggestion(ctx: ToolContext, exercise_id: str, target_reps=10) -> dict:
+def get_overload_suggestion(ctx: ToolContext, exercise_id: str, target_reps=10, target_sec=0) -> dict:
     e = exsvc.get_exercise(exercise_id)
     last = stats.last_performance(ctx.db, ctx.user.id, exercise_id)
-    sug = formulas.overload_suggestion(last, int(target_reps or 10), bool(e and e["compound"]))
+    sug = formulas.overload_suggestion(last, int(target_reps or 0), bool(e and e["compound"]), int(target_sec or 0))
     return {"last_time": last or "Chưa tập bài này", "suggestion": sug or "Chưa có dữ liệu — bắt đầu với mức tạ làm được 12 rep thoải mái."}
 
 
@@ -332,7 +334,8 @@ def get_nutrition_day(ctx: ToolContext, date=None) -> dict:
         d = stats.today()
     meals = stats.meals_on(ctx.db, ctx.user.id, d)
     tot = stats.day_nutrition(ctx.db, ctx.user.id, d)
-    tg = stats.targets(ctx.profile)
+    # cùng mục tiêu với màn hình Dinh dưỡng (đã cộng/trừ theo ngày tập/nghỉ)
+    tg = stats.day_targets(ctx.db, ctx.user, d)
     return {
         "date": d.isoformat(),
         "meals": [{"meal_type": m.meal_type, "name": m.name, "kcal": round(m.calories), "protein": m.protein, "carbs": m.carbs, "fat": m.fat} for m in meals]

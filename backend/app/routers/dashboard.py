@@ -21,6 +21,8 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     rows = list(db.scalars(select(BodyMetric).where(BodyMetric.user_id == user.id).order_by(BodyMetric.date)))
     latest = _latest_values(rows)
     goals = [goal_progress(db, user, g, latest) for g in db.scalars(select(Goal).where(Goal.user_id == user.id, Goal.status == "active"))]
+    if any(x["just_achieved"] for x in goals):
+        db.commit()
     b = stats.badges(db, user.id, p)
     return {
         "user": {"name": user.name},

@@ -148,14 +148,27 @@ def readiness_band(score: int) -> dict:
     }
 
 
-def overload_suggestion(last_sets: list[dict], target_reps: int, is_compound: bool) -> dict | None:
+def overload_suggestion(last_sets: list[dict], target_reps: int, is_compound: bool, target_sec: int = 0) -> dict | None:
     """Gợi ý tăng tải lũy tiến dựa trên buổi tập gần nhất của cùng bài.
 
-    - Nếu tất cả set đạt đủ rep mục tiêu → tăng tạ (compound +2.5kg, bài đơn +1kg).
-    - Nếu chưa đạt → giữ mức tạ, cố gắng thêm 1 rep.
+    - target_reps / target_sec lấy từ chương trình đang tập (không cố định 10 rep).
+    - Bài tính giờ (plank...): đạt đủ thời gian → thêm 5 giây; chưa đủ → giữ mức cũ.
+    - Bài có tạ: tất cả set đạt đủ rep → tăng tạ (compound +2.5kg, bài đơn +1kg); chưa đạt → giữ tạ, thêm 1 rep.
+    - Bài không tạ: thêm 1 rep so với lần tốt nhất.
     """
     if not last_sets:
         return None
+    durs = [s.get("duration_sec") or 0 for s in last_sets]
+    if target_sec or (max(durs) > 0 and not any(s.get("reps") for s in last_sets)):
+        best = max(durs)
+        goal = target_sec or best
+        if best >= goal:
+            nxt = best + 5
+            return {"weight_kg": 0, "reps": 0, "duration_sec": nxt,
+                    "reason": f"Lần trước giữ được {best} giây → hôm nay thử {nxt} giây."}
+        return {"weight_kg": 0, "reps": 0, "duration_sec": goal,
+                "reason": f"Lần trước giữ tối đa {best}/{goal} giây → giữ mục tiêu {goal} giây, cố trọn từng set."}
+    target_reps = target_reps or 10
     weights = [s.get("weight_kg") or 0 for s in last_sets]
     reps = [s.get("reps") or 0 for s in last_sets]
     top_w = max(weights)
@@ -164,6 +177,7 @@ def overload_suggestion(last_sets: list[dict], target_reps: int, is_compound: bo
         return {
             "weight_kg": 0,
             "reps": best_reps + 1,
+            "duration_sec": 0,
             "reason": f"Lần trước tối đa {best_reps} rep. Hôm nay thử {best_reps + 1} rep.",
         }
     hit_all = all(r >= target_reps for r in reps)
@@ -172,10 +186,12 @@ def overload_suggestion(last_sets: list[dict], target_reps: int, is_compound: bo
         return {
             "weight_kg": round(top_w + inc, 1),
             "reps": target_reps,
+            "duration_sec": 0,
             "reason": f"Lần trước đạt đủ {target_reps} rep ở mức {top_w}kg → tăng lên {round(top_w + inc, 1)}kg.",
         }
     return {
         "weight_kg": top_w,
         "reps": target_reps,
+        "duration_sec": 0,
         "reason": f"Lần trước chưa đủ {target_reps} rep ở {top_w}kg → giữ mức tạ, cố thêm 1 rep mỗi set.",
     }

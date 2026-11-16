@@ -153,7 +153,7 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
 
   if (!def) return null;
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-black">
+    <div className="overflow-hidden rounded-[inherit] bg-black">
       <div className="relative aspect-[4/3] w-full">
         {/* video chỉ làm nguồn hình (ẩn); canvas hiển thị cả hình lẫn khung xương, lật gương như soi gương */}
         <video ref={videoRef} playsInline muted aria-hidden className="pointer-events-none absolute left-0 top-0 h-px w-px opacity-0" />

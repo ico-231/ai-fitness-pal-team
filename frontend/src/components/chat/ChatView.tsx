@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
-import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Route, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
+import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Pencil, RotateCcw, Route, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useChat } from "../../lib/chat";
 import { AGENTS, TOOL_LABELS } from "../../lib/constants";
@@ -54,11 +54,46 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-function Bubble({ m, onCardStatus, compact, onFollowup }: { m: ChatMessage; onCardStatus: (a: string, s: string) => void; compact?: boolean; onFollowup?: (q: string) => void }) {
+/** Ô sửa câu hỏi ngay tại bong bóng (Enter = gửi lại, Esc = huỷ). */
+function EditBox({ initial, onCancel, onSave }: { initial: string; onCancel: () => void; onSave: (t: string) => void }) {
+  const [t, setT] = useState(initial);
+  const submit = () => t.trim() && t.trim() !== initial.trim() && onSave(t.trim());
+  return (
+    <div className="flex justify-end">
+      <div className="w-full max-w-[85%] rounded-[22px] border border-[var(--glass-border)] bg-surface p-2 shadow-[var(--shadow)]">
+        <textarea autoFocus value={t} onChange={(e) => setT(e.target.value)} rows={2} aria-label="Sửa câu hỏi"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onCancel();
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+          }}
+          className="w-full resize-none bg-transparent px-2 py-1.5 text-[14.5px] outline-none" style={{ fieldSizing: "content" } as React.CSSProperties} />
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className="rounded-full px-3.5 py-1.5 text-sm text-muted hover:bg-surface-2">Huỷ</button>
+          <button type="button" onClick={submit} disabled={!t.trim() || t.trim() === initial.trim()}
+            className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-on-ink transition hover:opacity-90 disabled:opacity-40">Gửi lại</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: {
+  m: ChatMessage; onCardStatus: (a: string, s: string) => void; compact?: boolean; onFollowup?: (q: string) => void;
+  onRegenerate?: () => void; onEdit?: (text: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  if (m.role === "user" && editing && onEdit)
+    return <EditBox initial={m.content} onCancel={() => setEditing(false)} onSave={(t) => { setEditing(false); onEdit(t); }} />;
   if (m.role === "user")
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary-strong px-4 py-2.5 text-[14.5px] text-on-primary">
+      <div className="group flex items-start justify-end gap-1.5">
+        {onEdit && (
+          <button type="button" onClick={() => setEditing(true)} title="Sửa câu hỏi" aria-label="Sửa câu hỏi"
+            className="mt-1.5 grid h-7 w-7 place-items-center rounded-full text-muted opacity-0 transition hover:bg-surface-2 hover:text-text focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-60">
+            <Pencil size={13} />
+          </button>
+        )}
+        <div className="max-w-[85%] rounded-[22px] rounded-br-md bg-ink px-4 py-2.5 text-[14.5px] text-on-ink">
           {m.image && <img src={m.image} alt="" className="mb-2 max-h-48 rounded-lg" />}
           <p className="whitespace-pre-wrap">{m.content}</p>
         </div>
@@ -75,6 +110,11 @@ function Bubble({ m, onCardStatus, compact, onFollowup }: { m: ChatMessage; onCa
           {m.synthesis && <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-muted">TỔNG KẾT</span>}
           {!m.streaming && m.content && (
             <span className="ml-auto flex items-center gap-2">
+              {onRegenerate && (
+                <button className="flex items-center gap-1 text-[11px] text-muted opacity-70 hover:opacity-100" title="Tạo lại câu trả lời" onClick={onRegenerate}>
+                  <RotateCcw size={13} /> Tạo lại
+                </button>
+              )}
               <CopyBtn text={m.content} />
               <button className="text-muted opacity-60 hover:opacity-100" title="Đọc to" onClick={() => voice.speak(m.content.replace(/[*#_>`-]/g, ""), { force: true })}>
                 <Volume2 size={14} />
@@ -93,7 +133,7 @@ function Bubble({ m, onCardStatus, compact, onFollowup }: { m: ChatMessage; onCa
           </p>
         )}
         <Trace m={m} />
-        <div className={clsx("rounded-2xl rounded-tl-md px-4 py-2.5", agent === "guard" ? "border border-warn/40 bg-warn/10" : "bg-surface-2", m.error && "border border-danger/40")}>
+        <div className={clsx("rounded-[22px] rounded-tl-md px-4 py-2.5", agent === "guard" ? "border border-warn/40 bg-warn/10" : "bg-surface-2", m.error && "border border-danger/40")}>
           {showTyping ? (
             <span className="flex gap-1 py-1.5">
               <span className="typing-dot h-2 w-2 rounded-full bg-muted" />
@@ -221,6 +261,15 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
                 onCardStatus={updateCard}
                 compact={compact}
                 onFollowup={i === messages.length - 1 && !sending ? (q) => send({ text: q, agent, page, pageContext }) : undefined}
+                onEdit={m.role === "user" && !sending && !m.id.startsWith("tmp-") && conversationId
+                  ? (t) => send({ text: t, page, pageContext, replaceFrom: m.id }) : undefined}
+                onRegenerate={(() => {
+                  // chỉ câu trả lời cuối cùng mới có "Tạo lại"; gửi lại câu hỏi ngay trước nó
+                  if (m.role !== "assistant" || i !== messages.length - 1 || sending || m.streaming) return undefined;
+                  const q = [...messages.slice(0, i)].reverse().find((x) => x.role === "user");
+                  if (!q || q.id.startsWith("tmp-") || !conversationId) return undefined;
+                  return () => send({ text: q.content, image: q.image, page, pageContext, replaceFrom: q.id });
+                })()}
               />
               {i === lastUserIdx && sending && !messages.slice(i + 1).some((x) => x.role === "assistant") && <RouteChip info={routeInfo} />}
             </div>
@@ -228,7 +277,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
         </div>
       </div>
 
-      <div className={clsx("border-t border-border bg-surface", compact ? "p-2.5" : "p-3 sm:p-4")}>
+      <div className={clsx("border-t border-border bg-[var(--glass-strong)] backdrop-blur-2xl", compact ? "p-2.5" : "p-3 sm:p-4")}>
         <div className={clsx("mx-auto", !compact && "max-w-3xl")}>
           {!config?.ai_enabled && (
             <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
@@ -241,7 +290,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl border border-transparent bg-surface-2 p-1.5 shadow-sm">
+          <div className="flex items-end gap-2 rounded-[22px] border border-[var(--glass-border)] bg-surface p-1.5 shadow-[var(--shadow)]">
             <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface-3 hover:text-text" title="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}>
               <ImagePlus size={18} />
             </button>
@@ -282,7 +331,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
               <button
                 disabled={!text.trim() && !image}
                 onClick={submit}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-strong text-on-primary disabled:opacity-40"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-on-ink disabled:opacity-40"
                 title="Gửi"
               >
                 <Send size={17} />

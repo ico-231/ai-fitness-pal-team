@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import { Camera, ChevronLeft, ChevronRight, History, Leaf, Library, Loader2, PencilLine, Plus, Repeat, Search, Sparkles, Trash2, Type, Utensils } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Copy, Dumbbell, History, Leaf, Library, Loader2, Moon, PencilLine, Plus, Repeat, Search, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
 import { del, post, put } from "../lib/api";
 import { useAction, useApi, useInvalidateAll } from "../lib/hooks";
 import { MEAL_TYPES } from "../lib/constants";
@@ -11,9 +11,10 @@ import { BarSeries } from "../components/Charts";
 import { FoodTile, quickLogFood } from "../components/chat/ChatCards";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, CardHeader, Empty, Field, Modal, PageHeader, Progress, Segmented, Spinner, toast, confirmDialog, clickable } from "../components/ui";
+import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Ring, Segmented, Spinner, toast, confirmDialog, clickable } from "../components/ui";
 
 interface Day { date: string; meals: Meal[]; totals: { calories: number; protein: number; carbs: number; fat: number; meals_count: number }; targets: Targets }
+interface Favorite { id: string; name: string; meal_type: Meal["meal_type"]; calories: number; protein: number; carbs: number; fat: number; image: string | null }
 interface Analysis { name: string; items: Meal["items"]; calories: number; protein: number; carbs: number; fat: number; confidence: string; analysis: string; image_thumb: string | null }
 
 const guessType = () => { const h = new Date().getHours(); return h < 10 ? "breakfast" : h < 14 ? "lunch" : h < 17 ? "snack" : "dinner"; };
@@ -43,7 +44,7 @@ function MealForm({ value, onChange }: { value: Partial<Meal>; onChange: (v: Par
 }
 
 function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; date: string }) {
-  const [mode, setMode] = useState<"recent" | "photo" | "text" | "library" | "manual">("photo");
+  const [mode, setMode] = useState<"favorites" | "recent" | "photo" | "text" | "library" | "manual">("photo");
   const [img, setImg] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,6 +57,7 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
   const invalidate = useInvalidateAll();
   const { data: foods } = useApi<{ items: Food[] }>(["foods", q, cleanOnly], `/api/foods?q=${encodeURIComponent(q)}&clean=${cleanOnly}`, { enabled: open && mode === "library" });
   const { data: recent } = useApi<Meal[]>(["nutrition-recent"], "/api/nutrition/recent", { enabled: open });
+  const { data: favs } = useApi<Favorite[]>(["nutrition-favorites"], "/api/nutrition/favorites", { enabled: open });
 
   const reset = () => { setImg(null); setText(""); setRes(null); setForm({ meal_type: guessType() as Meal["meal_type"] }); };
   const close = () => { reset(); onClose(); };
@@ -96,6 +98,7 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
     <Modal open={open} onClose={close} title="Ghi bữa ăn" wide>
       <div className="mb-4">
         <Segmented value={mode} onChange={(m) => { setMode(m); setRes(null); }} options={[
+          ...(favs && favs.length ? [{ value: "favorites" as const, label: <span className="flex items-center gap-1.5"><Star size={14} /> Yêu thích</span> }] : []),
           ...(recent && recent.length ? [{ value: "recent" as const, label: <span className="flex items-center gap-1.5"><History size={14} /> Gần đây</span> }] : []),
           { value: "photo", label: <span className="flex items-center gap-1.5"><Camera size={14} /> Ảnh</span> },
           { value: "text", label: <span className="flex items-center gap-1.5"><Type size={14} /> Mô tả</span> },
@@ -104,7 +107,37 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
         ]} />
       </div>
 
-      {mode === "recent" ? (
+      {mode === "favorites" ? (
+        <div>
+          <p className="mb-3 text-sm text-muted">Món đã lưu yêu thích — bấm để ghi vào {dayLabel(date).toLowerCase()}.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(favs || []).map((f) => (
+              <div key={f.id} className="flex items-center gap-1 rounded-xl border border-border p-2 hover:border-primary/60">
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  onClick={async () => {
+                    try {
+                      await post(`/api/nutrition/favorites/${f.id}/log`, { date, meal_type: form.meal_type || guessType() });
+                      invalidate();
+                      toast(`Đã ghi ${f.name}`);
+                      close();
+                    } catch (e) {
+                      toast((e as Error).message, "error");
+                    }
+                  }}>
+                  {f.image ? <img src={f.image} className="h-12 w-12 rounded-lg object-cover" alt="" /> : <div className="grid h-12 w-12 place-items-center rounded-lg bg-surface-2 text-muted"><Star size={18} /></div>}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{f.name}</p>
+                    <p className="text-xs text-muted">{fmt(f.calories)} kcal · {fmt(f.protein, 1)}g đạm</p>
+                  </div>
+                </button>
+                <button type="button" title="Bỏ khỏi yêu thích" aria-label={`Bỏ ${f.name} khỏi yêu thích`}
+                  onClick={async () => { await del(`/api/nutrition/favorites/${f.id}`); invalidate(); }}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-danger"><X size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : mode === "recent" ? (
         <div>
           <p className="mb-3 text-sm text-muted">Món bạn hay ăn — bấm để ghi lại nhanh (giữ nguyên phân tích cũ).</p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -270,6 +303,22 @@ function MealDetail({ meal, onClose }: { meal: Meal | null; onClose: () => void 
               >
                 Ăn lại hôm nay
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                icon={<Star size={14} />}
+                onClick={async () => {
+                  try {
+                    await post(`/api/nutrition/meals/${meal.id}/favorite`, {});
+                    invalidate();
+                    toast(`Đã lưu "${meal.name}" vào Yêu thích`);
+                  } catch (e) {
+                    toast((e as Error).message, "error");
+                  }
+                }}
+              >
+                Lưu yêu thích
+              </Button>
               <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => (await confirmDialog({ title: `Xoá "${meal.name}"?`, text: "Calo và macro của ngày này sẽ tính lại.", confirmLabel: "Xoá bữa ăn", danger: true })) && remove.mutate(meal.id)}>Xoá</Button>
             </div>
           )}
@@ -291,74 +340,146 @@ export default function Nutrition() {
   const { data: hist } = useApi<{ days: { date: string; calories: number; protein: number }[]; targets: Targets }>(["nutrition-history"], "/api/nutrition/history?days=14");
   const { data: foods } = useApi<{ items: Food[] }>(["foods", lib, cleanOnly], `/api/foods?q=${encodeURIComponent(lib)}&clean=${cleanOnly}`);
 
+  const prev = addDays(date, -1);
+  const prevKcal = hist?.days.find((x) => x.date === prev)?.calories || 0;
+  const copyPrev = useAction(() => post<{ copied: number }>("/api/nutrition/copy-day", { from_date: prev, to_date: date }), {
+    onSuccess: (r) => { invalidate(); toast(`Đã chép ${r.copied} bữa từ ${dayLabel(prev).toLowerCase()}`); },
+  });
+  const copyBtn = prevKcal > 0 && (
+    <Button size="sm" variant="secondary" icon={<Copy size={14} />} loading={copyPrev.isPending} onClick={() => copyPrev.mutate()}>
+      Chép bữa {dayLabel(prev).toLowerCase()}
+    </Button>
+  );
+
   const series = Array.from({ length: 14 }, (_, i) => {
     const d = addDays(todayISO(), i - 13);
     const row = hist?.days.find((x) => x.date === d);
     return { date: d, calories: row?.calories || 0, protein: row?.protein || 0 };
   });
 
+  const MACROS = [
+    { label: "Đạm", k: "protein", unit: "g", color: "var(--volt)" },
+    { label: "Tinh bột", k: "carbs", unit: "g", color: "#38bdf8" },
+    { label: "Chất béo", k: "fat", unit: "g", color: "#fbbf24" },
+  ] as const;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <PageHeader
-        title="Dinh dưỡng"
-        subtitle="Nhật ký bữa ăn theo ngày — mọi phân tích AI đều được lưu lại"
+        help="dinh-duong"
+        lead="Dinh dưỡng,"
+        title={dayLabel(date, true)}
+        subtitle="Nhật ký bữa ăn theo ngày — mọi phân tích AI đều được lưu lại."
         actions={<>
-          <Button variant="outline" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." })}>HeadBro gợi ý thực đơn</Button>
+          <div className="glass flex h-11 items-center gap-1 rounded-full p-1">
+            <button type="button" aria-label="Ngày trước" onClick={() => setDate(addDays(date, -1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--glass-fill)]"><ChevronLeft size={17} /></button>
+            <input type="date" aria-label="Chọn ngày" className="h-9 rounded-full bg-transparent px-2 text-sm font-medium outline-none" value={date} max={todayISO()} onChange={(e) => e.target.value && setDate(e.target.value)} />
+            <button type="button" aria-label="Ngày sau" disabled={date >= todayISO()} onClick={() => setDate(addDays(date, 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--glass-fill)] disabled:opacity-30"><ChevronRight size={17} /></button>
+          </div>
+          <Button variant="secondary" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." })}>Gợi ý thực đơn</Button>
           <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
         </>}
       />
 
-      <Card className="p-4">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <Button size="sm" variant="ghost" icon={<ChevronLeft size={16} />} aria-label="Ngày trước" onClick={() => setDate(addDays(date, -1))} />
-          <div className="flex items-center gap-2">
-            <p className="font-semibold">{dayLabel(date, true)}</p>
-            <input type="date" aria-label="Chọn ngày" className="input h-8 w-auto py-0 text-xs" value={date} max={todayISO()} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          </div>
-          <Button size="sm" variant="ghost" disabled={date >= todayISO()} icon={<ChevronRight size={16} />} aria-label="Ngày sau" onClick={() => setDate(addDays(date, 1))} />
-        </div>
-        {isLoading || !data ? <Spinner /> : (
-          <div className="grid gap-4 md:grid-cols-4">
-            {([["Calo", "calories", "kcal", "var(--nutri)"], ["Đạm", "protein", "g", "var(--primary)"], ["Tinh bột", "carbs", "g", "var(--data-carbs)"], ["Chất béo", "fat", "g", "var(--data-fat)"]] as const).map(([label, k, unit, color]) => {
-              const v = data.totals[k], t = data.targets[k];
-              return (
-                <div key={k}>
-                  <div className="mb-1 flex justify-between text-sm"><span className="font-medium">{label}</span><span className="text-muted"><b className="text-text">{fmt(v)}</b> / {fmt(t)} {unit}</span></div>
-                  <Progress value={v} max={t} color={color} height={10} />
-                  <p className="mt-1 text-xs text-muted">{v <= t ? `Còn ${fmt(t - v)} ${unit}` : `Vượt ${fmt(v - t)} ${unit}`}</p>
+      {/* Hàng đầu: calo + macro (vòng) | lịch sử 14 ngày */}
+      <div className="grid gap-6 lg:grid-cols-12 xl:gap-8">
+        <Card className="p-6 sm:p-7 lg:col-span-7">
+          {isLoading || !data ? <Spinner /> : (
+            <div className="flex flex-col gap-7 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-5">
+                <Ring value={data.totals.calories} max={data.targets.calories || 1} size={156} stroke={13} color="var(--nutri)" track="var(--surface-3)">
+                  <div>
+                    <p className="num text-[40px] font-semibold leading-none">{fmt(data.totals.calories)}</p>
+                    <p className="mt-1 text-[11px] text-muted">/ {fmt(data.targets.calories)} kcal</p>
+                  </div>
+                </Ring>
+                <div className="sm:hidden">
+                  <p className="eyebrow">Calo</p>
+                  <p className="mt-1 text-sm text-muted">{data.totals.calories <= data.targets.calories ? `Còn ${fmt(data.targets.calories - data.totals.calories)} kcal` : `Vượt ${fmt(data.totals.calories - data.targets.calories)} kcal`}</p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="space-y-4">
-          {data && data.meals.length === 0 && (
-            <Card><Empty icon={<Utensils size={22} />} title={`Chưa có bữa ăn nào ${date === todayISO() ? "hôm nay" : "ngày này"}`} text="Chụp ảnh món ăn, mô tả bằng 1 câu hoặc chọn từ thư viện món Việt." action={<Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>} /></Card>
-          )}
-          {data && date === todayISO() && new Date().getHours() >= 18 && data.meals.length > 0 && !data.meals.some((m) => m.meal_type === "dinner") && (
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3">
-              <p className="flex-1 text-sm text-muted">Chưa ghi bữa tối. Ghi lại để calo và đạm hôm nay chính xác.</p>
-              <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => setAdding(true)}>Ghi bữa tối</Button>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="eyebrow hidden sm:block">Calo & macro</p>
+                <p className="mb-4 mt-1 hidden text-sm text-muted sm:block">
+                  {data.totals.calories <= data.targets.calories ? `Còn ${fmt(data.targets.calories - data.totals.calories)} kcal cho hôm nay` : `Đã vượt ${fmt(data.totals.calories - data.targets.calories)} kcal`}
+                </p>
+                {data.targets.day_type && (
+                  <p className="-mt-2 mb-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--glass-fill)] px-3 py-1 text-xs text-muted"
+                    title="Theo lịch tập tuần: ngày tập ăn thêm tinh bột để có sức, ngày nghỉ ăn bớt. Tắt được trong Cài đặt.">
+                    {data.targets.day_type === "train" ? <Dumbbell size={12} /> : <Moon size={12} />}
+                    {data.targets.day_type === "train" ? "Ngày tập" : "Ngày nghỉ"}:{" "}
+                    <b className="num font-semibold text-text">{(data.targets.adjust_kcal ?? 0) > 0 ? "+" : "−"}{fmt(Math.abs(data.targets.adjust_kcal ?? 0))} kcal</b> tinh bột
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-3">
+                  {MACROS.map((m) => {
+                    const v = data.totals[m.k], t = data.targets[m.k];
+                    return (
+                      <div key={m.k} className="flex flex-col items-center rounded-[20px] bg-[var(--glass-fill)] px-2 py-3">
+                        <Ring value={v} max={t || 1} size={70} stroke={6} color={m.color} track="var(--surface-3)">
+                          <span className="num text-[15px] font-semibold">{t ? Math.round((v / t) * 100) : 0}%</span>
+                        </Ring>
+                        <p className="mt-2 text-xs font-medium">{m.label}</p>
+                        <p className="text-[11px] text-muted"><b className="num font-semibold text-text">{fmt(v)}</b>/{fmt(t)}{m.unit}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
+        </Card>
+        <Card className="p-6 lg:col-span-5">
+          <p className="eyebrow">Lịch sử 14 ngày</p>
+          <p className="mb-2 mt-1 text-sm text-muted">Bấm một ngày bên dưới để xem lại</p>
+          <BarSeries data={series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={hist?.targets.calories} height={170} />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {series.slice().reverse().filter((x) => x.calories > 0).slice(0, 8).map((x) => (
+              <button key={x.date} onClick={() => setDate(x.date)} className={clsx("rounded-full px-2.5 py-1 text-[11px] transition", x.date === date ? "bg-volt font-semibold text-on-volt" : "bg-[var(--glass-fill)] text-muted hover:text-text")}>
+                {dayLabel(x.date)} · <span className="num">{fmt(x.calories)}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Bữa ăn trong ngày */}
+      <section>
+        <div className="mb-4 flex items-end justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-semibold tracking-[-0.02em]">Bữa ăn</h2>
+            <p className="text-sm text-muted">{data ? `${data.meals.length} bữa đã ghi` : "Đang tải..."}</p>
+          </div>
+          {data && data.meals.length > 0 && copyBtn}
+        </div>
+        {data && data.meals.length === 0 && (
+          <Card><Empty icon={<Utensils size={22} />} title={`Chưa có bữa ăn nào ${date === todayISO() ? "hôm nay" : "ngày này"}`} text="Chụp ảnh món ăn, mô tả bằng 1 câu hoặc chọn từ thư viện món Việt." action={<div className="flex flex-wrap justify-center gap-2"><Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>{copyBtn}</div>} /></Card>
+        )}
+        {data && date === todayISO() && new Date().getHours() >= 18 && data.meals.length > 0 && !data.meals.some((m) => m.meal_type === "dinner") && (
+          <div className="glass mb-4 flex flex-wrap items-center gap-3 rounded-[22px] px-5 py-3">
+            <p className="flex-1 text-sm text-muted">Chưa ghi bữa tối. Ghi lại để calo và đạm hôm nay chính xác.</p>
+            <Button size="sm" variant="secondary" icon={<Plus size={14} />} onClick={() => setAdding(true)}>Ghi bữa tối</Button>
+          </div>
+        )}
+        <div className="grid gap-5 md:grid-cols-2">
           {data && Object.entries(MEAL_TYPES).map(([type, label]) => {
             const meals = data.meals.filter((m) => m.meal_type === type);
             if (!meals.length) return null;
             return (
-              <Card key={type}>
-                <CardHeader title={label} subtitle={`${fmt(meals.reduce((a, m) => a + m.calories, 0))} kcal · ${fmt(meals.reduce((a, m) => a + m.protein, 0), 1)}g đạm`} />
-                <div className="divide-y divide-border px-3 pb-2">
+              <Card key={type} className="p-5">
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <p className="font-semibold">{label}</p>
+                  <p className="text-xs text-muted"><b className="num text-[15px] font-semibold text-text">{fmt(meals.reduce((x, m) => x + m.calories, 0))}</b> kcal · {fmt(meals.reduce((x, m) => x + m.protein, 0), 1)}g đạm</p>
+                </div>
+                <div className="space-y-1">
                   {meals.map((m) => (
-                    <button key={m.id} onClick={() => setDetail(m)} className="flex w-full items-center gap-3 px-2 py-2.5 text-left hover:bg-surface-2">
-                      {m.image ? <img src={m.image} className="h-12 w-12 rounded-lg object-cover" alt="" /> : <div className="grid h-12 w-12 place-items-center rounded-lg bg-surface-2 text-muted"><Utensils size={18} /></div>}
+                    <button key={m.id} onClick={() => setDetail(m)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition hover:bg-[var(--glass-fill)]">
+                      {m.image ? <img src={m.image} className="h-14 w-14 rounded-2xl object-cover" alt="" /> : <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--glass-fill)] text-muted"><Utensils size={18} /></div>}
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{m.name}</p>
                         <p className="text-xs text-muted">{fmt(m.protein, 1)}g đạm · {fmt(m.carbs, 1)}g carb · {fmt(m.fat, 1)}g béo {m.analysis && "· có phân tích AI"}</p>
                       </div>
-                      <p className="font-semibold">{fmt(m.calories)}<span className="text-xs font-normal text-muted"> kcal</span></p>
+                      <p className="num text-lg font-semibold">{fmt(m.calories)}<span className="font-sans text-xs font-normal text-muted"> kcal</span></p>
                     </button>
                   ))}
                 </div>
@@ -366,34 +487,31 @@ export default function Nutrition() {
             );
           })}
         </div>
-        <Card>
-          <CardHeader title="Lịch sử 14 ngày" subtitle="Chọn một ngày bên dưới để xem lại" />
-          <div className="px-3 pb-4">
-            <BarSeries data={series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={hist?.targets.calories} height={200} />
-            <div className="mt-2 flex flex-wrap gap-1 px-2">
-              {series.slice().reverse().filter((s) => s.calories > 0).slice(0, 10).map((s) => (
-                <button key={s.date} onClick={() => setDate(s.date)} className={clsx("rounded-full border px-2 py-0.5 text-[11px]", s.date === date ? "border-primary bg-primary-soft" : "border-border")}>{dayLabel(s.date)}: {fmt(s.calories)}</button>
-              ))}
-            </div>
-          </div>
-        </Card>
-      </div>
+      </section>
 
-      <Card>
-        <CardHeader title="Thư viện món Việt" subtitle="Ảnh thật, calo/macro ước tính cho 1 khẩu phần phổ biến + mẹo ăn clean" right={
-          <div className="flex items-center gap-2">
-            <input className="input h-8 w-40 text-sm" aria-label="Tìm món trong thư viện" placeholder="Tìm món..." value={lib} onChange={(e) => setLib(e.target.value)} />
-            <button aria-pressed={cleanOnly} onClick={() => setCleanOnly(!cleanOnly)} className={clsx("whitespace-nowrap rounded-full border px-3 py-1 text-xs", cleanOnly ? "border-primary bg-primary-soft" : "border-border")}><Leaf size={12} className="mr-1 inline" />Clean</button>
+      {/* Thư viện món Việt */}
+      <section>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-[-0.02em]">Thư viện món Việt</h2>
+            <p className="text-sm text-muted">Ảnh thật, calo/macro ước tính cho 1 khẩu phần phổ biến + mẹo ăn clean</p>
           </div>
-        } />
-        <div className="grid grid-cols-2 gap-3 p-4 pt-1 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="glass flex items-center gap-1 rounded-full p-1">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input className="h-9 w-44 rounded-full bg-transparent pl-8 pr-3 text-sm outline-none placeholder:text-muted" aria-label="Tìm món trong thư viện" placeholder="Tìm món..." value={lib} onChange={(e) => setLib(e.target.value)} />
+            </div>
+            <button aria-pressed={cleanOnly} onClick={() => setCleanOnly(!cleanOnly)} className={clsx("flex h-9 items-center gap-1 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition", cleanOnly ? "bg-volt text-on-volt" : "text-muted hover:text-text")}><Leaf size={12} /> Clean</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {(foods?.items || []).map((f) => (
             <FoodTile key={f.id} f={f} onAdd={async () => {
               try { await quickLogFood(f); invalidate(); toast(`Đã ghi ${f.name} vào hôm nay`); } catch (e) { toast((e as Error).message, "error"); }
             }} />
           ))}
         </div>
-      </Card>
+      </section>
 
       <AddMeal open={adding} onClose={() => setAdding(false)} date={date} />
       <MealDetail meal={detail} onClose={() => setDetail(null)} />

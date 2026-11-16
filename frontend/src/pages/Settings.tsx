@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { fmt } from "../lib/format";
 import { useState } from "react";
-import { Bell, Bot, Camera, Database, Download, LogOut, Palette, Trash2, User, Volume2 } from "lucide-react";
+import { Bell, Bot, Camera, Database, Download, KeyRound, LogOut, Palette, Trash2, User, Volume2 } from "lucide-react";
 import { apiUrl, del, post, put, tokenStore } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
@@ -70,8 +70,8 @@ export default function Settings() {
   const n = (k: keyof typeof f) => <input className="input" type="number" value={f[k] as number} onChange={(e) => setF({ ...f, [k]: +e.target.value })} />;
 
   return (
-    <div className="space-y-5">
-      <PageHeader title="Cài đặt" subtitle="Cá nhân hoá FitBro theo bạn" />
+    <div className="space-y-8">
+      <PageHeader lead="Cài đặt," help="cai-dat" title="theo cách của bạn" subtitle="Hồ sơ, mục tiêu dinh dưỡng, giọng PT, camera, giao diện, nhắc nhở và dữ liệu." />
       <Card>
         <CardHeader title="Hồ sơ cá nhân" subtitle="Các agent dùng thông tin này để cá nhân hoá lời khuyên" icon={<User size={16} />} />
         <div className="space-y-4 px-5 pb-5">
@@ -97,12 +97,15 @@ export default function Settings() {
                 <Field label="Béo (g)">{n("target_fat")}</Field><Field label="Nước (ml)">{n("target_water_ml")}</Field>
               </div>
             )}
+            <div className="mt-3 border-t border-border pt-3">
+              <Toggle checked={s.calorie_cycling ?? true} onChange={(v) => setSetting({ calorie_cycling: v })} label="Calo theo ngày tập / nghỉ (ngày tập +150 kcal, ngày nghỉ −150 kcal tinh bột, dựa theo lịch tập tuần)" />
+            </div>
           </div>
           <Button loading={busy} onClick={saveProfile}>Lưu hồ sơ</Button>
         </div>
       </Card>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:gap-8">
         <Card>
           <CardHeader title="Giọng nói PT & buổi tập" icon={<Volume2 size={16} />} />
           <div className="space-y-4 px-5 pb-5">
@@ -158,6 +161,8 @@ export default function Settings() {
         </p>
       </Card>
 
+      <PasswordCard hasPassword={!!user?.has_password} />
+
       <Card>
         <CardHeader title="Dữ liệu & tài khoản" icon={<Database size={16} />} />
         <div className="flex flex-wrap gap-2 px-5 pb-5">
@@ -178,5 +183,48 @@ export default function Settings() {
         <Field label='Gõ "XOA" để xác nhận' className="mt-3"><input className="input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} /></Field>
       </Modal>
     </div>
+  );
+}
+
+/** Đổi mật khẩu (tài khoản Google chưa có mật khẩu thì đặt mật khẩu mới để đăng nhập bằng email). */
+function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
+  const { refresh } = useAuth();
+  const [f, setF] = useState({ current: "", next: "", confirm: "" });
+  const [busy, setBusy] = useState(false);
+  const mismatch = f.confirm.length > 0 && f.next !== f.confirm;
+  const valid = f.next.length >= 6 && f.next === f.confirm && (!hasPassword || f.current.length > 0);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await put("/api/me/password", { current_password: f.current, new_password: f.next });
+      toast(hasPassword ? "Đã đổi mật khẩu" : "Đã đặt mật khẩu");
+      setF({ current: "", next: "", confirm: "" });
+      refresh();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card>
+      <CardHeader title={hasPassword ? "Đổi mật khẩu" : "Đặt mật khẩu"} subtitle={hasPassword ? "Tối thiểu 6 ký tự, khác mật khẩu hiện tại" : "Tài khoản đăng nhập bằng Google: đặt mật khẩu để đăng nhập thêm bằng email"} icon={<KeyRound size={16} />} />
+      <form className="grid gap-4 px-5 pb-5 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); if (valid) save(); }}>
+        {hasPassword && (
+          <Field label="Mật khẩu hiện tại">
+            <input className="input" type="password" autoComplete="current-password" value={f.current} onChange={(e) => setF({ ...f, current: e.target.value })} />
+          </Field>
+        )}
+        <Field label="Mật khẩu mới" hint={f.next && f.next.length < 6 ? "Cần ít nhất 6 ký tự" : undefined}>
+          <input className="input" type="password" autoComplete="new-password" minLength={6} value={f.next} onChange={(e) => setF({ ...f, next: e.target.value })} />
+        </Field>
+        <Field label="Nhập lại mật khẩu mới" hint={mismatch ? "Hai mật khẩu chưa khớp" : undefined}>
+          <input className="input" type="password" autoComplete="new-password" value={f.confirm} onChange={(e) => setF({ ...f, confirm: e.target.value })} />
+        </Field>
+        <div className="sm:col-span-3">
+          <Button type="submit" disabled={!valid} loading={busy}>{hasPassword ? "Đổi mật khẩu" : "Đặt mật khẩu"}</Button>
+        </div>
+      </form>
+    </Card>
   );
 }

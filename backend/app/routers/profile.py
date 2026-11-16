@@ -22,9 +22,12 @@ DEFAULT_SETTINGS = {
     "voice_rate": 1.0,
     "prep_seconds": 10,
     "auto_camera": True,  # bài có Camera AI thì tự bật camera khi vào hiệp tập
+    "calorie_cycling": True,  # ngày tập +150 kcal, ngày nghỉ −150 kcal (theo lịch tuần)
     "theme": "system",
     "reminders": {"checkin": "07:30", "workout": "18:00", "water_every_min": 0, "enabled": False},
 }
+# Các khoá lưu trong settings nhưng không phải tuỳ chọn hiển thị (không trả trong /profile)
+FAVORITES_KEY = "favorite_meals"
 
 
 def profile_out(p: Profile) -> dict:
@@ -37,7 +40,7 @@ def profile_out(p: Profile) -> dict:
         "goal": p.goal, "level": p.level, "activity_level": p.activity_level, "training_days": p.training_days,
         "equipment": p.equipment, "injuries": p.injuries, "targets": t, "targets_manual": p.targets_manual,
         "calculated": calc, "bmi": formulas.bmi(p.weight_kg, p.height_cm) if p.weight_kg and p.height_cm else None,
-        "settings": {**DEFAULT_SETTINGS, **(p.settings or {})},
+        "settings": {**DEFAULT_SETTINGS, **{k: v for k, v in (p.settings or {}).items() if k != FAVORITES_KEY}},
     }
 
 
@@ -101,7 +104,7 @@ def onboard(body: ProfileIn, user: User = Depends(get_current_user), db: Session
 @router.put("/settings")
 def update_settings(body: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = stats.get_profile(db, user)
-    merged = {**DEFAULT_SETTINGS, **(p.settings or {})}
+    merged = {**DEFAULT_SETTINGS, **(p.settings or {})}  # giữ cả món yêu thích
     for k, v in body.items():
         if k in DEFAULT_SETTINGS:
             merged[k] = {**merged[k], **v} if isinstance(merged[k], dict) and isinstance(v, dict) else v

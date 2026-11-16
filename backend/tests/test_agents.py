@@ -248,3 +248,24 @@ def test_nutri_meal_plan_card(client, auth, fake):
     card = next(e for e in ev if e["type"] == "card")["card"]
     assert card["kind"] == "mealplan" and len(card["items"]) == 4
     assert card["totals"]["calories"] == 220 + 600 + 330 + 165
+
+
+def test_regenerate_and_edit_question(client, auth, fake):
+    fake(["headbro"], {"headbro": [("text", "Trả lời lần 1"), ("text", "Trả lời câu thứ hai"), ("text", "Trả lời lần 2"), ("text", "Trả lời câu đã sửa")]})
+    ev = sse_events(client.post("/api/chat/send", headers=auth, json={"text": "câu hỏi gốc"}))
+    cid, uid = ev[0]["id"], ev[0]["user_message_id"]
+    # thêm 1 lượt nữa để kiểm tra "xoá tin đó và mọi tin sau nó"
+    sse_events(client.post("/api/chat/send", headers=auth, json={"conversation_id": cid, "text": "câu thứ hai"}))
+    assert len(client.get(f"/api/chat/conversations/{cid}", headers=auth).json()["messages"]) == 4
+    # Tạo lại câu trả lời cho câu hỏi gốc: lịch sử còn đúng 1 cặp hỏi–đáp mới
+    ev = sse_events(client.post("/api/chat/send", headers=auth, json={"conversation_id": cid, "text": "câu hỏi gốc", "replace_from": uid}))
+    msgs = client.get(f"/api/chat/conversations/{cid}", headers=auth).json()["messages"]
+    assert [m["content"] for m in msgs] == ["câu hỏi gốc", "Trả lời lần 2"]
+    # Sửa câu hỏi
+    uid2 = ev[0]["user_message_id"]
+    sse_events(client.post("/api/chat/send", headers=auth, json={"conversation_id": cid, "text": "câu đã sửa", "replace_from": uid2}))
+    msgs = client.get(f"/api/chat/conversations/{cid}", headers=auth).json()["messages"]
+    assert [m["content"] for m in msgs] == ["câu đã sửa", "Trả lời câu đã sửa"]
+    # id không thuộc cuộc trò chuyện / không phải tin người dùng → 404
+    assert client.post("/api/chat/send", headers=auth, json={"conversation_id": cid, "text": "x", "replace_from": "khong-co"}).status_code == 404
+    assert client.post("/api/chat/send", headers=auth, json={"conversation_id": cid, "text": "x", "replace_from": msgs[1]["id"]}).status_code == 404

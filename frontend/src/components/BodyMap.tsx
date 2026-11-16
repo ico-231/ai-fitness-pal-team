@@ -18,58 +18,95 @@ const pair = (m: string, d: string): Shape[] => [
   { m, d: mirror(d) },
 ];
 
+// Toạ độ: khung 200 × 390, trục giữa x = 100. Chỉ vẽ nửa trái rồi lật gương (pair) cho nửa phải.
+// Mỗi nhóm cơ có thể gồm nhiều bó (6 múi bụng, 2 đầu bắp chân...) — cùng mã nhóm nên tô màu / chọn cùng lúc.
+
+const ARM_DELT = "M69,67 C59,66 51,73 49,85 C48,93 51,100 55,103 C58,93 62,84 70,76 Z";
+const ARM_UPPER = "M55,107 C51,116 49,126 50,137 C53,141 58,141 61,137 C62,127 62,117 60,107 Z";
+const ARM_FORE = "M50,143 C46,157 45,171 46,185 C49,188 53,188 55,185 C58,171 60,157 60,143 Z";
+
 const FRONT: Shape[] = [
-  ...pair("traps", "M90,58 L72,72 L92,71 Z"),
-  ...pair("shoulders", "M70,72 Q52,74 50,94 Q56,100 66,96 Q72,86 76,77 Z"),
-  ...pair("chest", "M98,74 L77,77 Q68,92 74,108 Q87,116 98,110 Z"),
-  ...pair("biceps", "M51,99 Q46,116 50,134 L60,135 Q66,118 64,99 Z"),
-  ...pair("forearms", "M49,138 Q42,160 45,180 L54,181 Q61,160 60,138 Z"),
-  { m: "abs", d: "M87,114 L113,114 L114,176 Q100,182 86,176 Z" },
-  ...pair("obliques", "M84,114 L75,111 Q70,142 76,172 L85,176 Z"),
-  ...pair("quads", "M77,197 Q69,240 76,284 L93,284 Q99,244 93,199 Z"),
-  ...pair("adductors", "M94,199 L100,199 L100,252 Q95,236 94,199 Z"),
-  ...pair("calves", "M77,300 Q72,334 80,372 L91,372 Q97,334 93,300 Z"),
+  ...pair("traps", "M93,58 C88,62 80,64 72,66 C80,69 89,68 95,65 Z"),
+  ...pair("shoulders", ARM_DELT),
+  ...pair("chest", "M99,72 C89,69 79,71 72,78 C68,88 69,100 75,108 C83,113 92,113 99,109 Z"),
+  ...pair("biceps", ARM_UPPER),
+  ...pair("forearms", ARM_FORE),
+  // 6 múi + bụng dưới
+  ...pair("abs", "M99,115 L89,115 C88,120 88,125 89,129 L99,129 Z"),
+  ...pair("abs", "M99,132 L89,132 C88,137 88,141 89,145 L99,145 Z"),
+  ...pair("abs", "M99,148 L89,148 C88,153 88,157 89,161 L99,161 Z"),
+  ...pair("abs", "M99,164 L89,164 C89,172 92,180 99,186 Z"),
+  ...pair("obliques", "M86,114 C80,112 76,115 75,121 C75,137 77,152 80,166 C83,171 86,170 87,163 Z"),
+  ...pair("quads", "M79,206 C75,229 76,255 80,279 C84,283 88,282 90,277 C92,253 92,229 90,207 C86,203 82,203 79,206 Z"),
+  ...pair("quads", "M92,240 C95,254 96,268 93,283 C96,285 98,281 98,274 C99,262 98,250 96,240 Z"),
+  ...pair("adductors", "M92,205 C94,214 96,226 98,238 L100,236 L100,204 C97,202 94,203 92,205 Z"),
+  ...pair("calves", "M80,297 C76,316 77,338 81,358 C84,361 87,359 88,354 C90,334 90,314 88,297 Z"),
+  ...pair("calves", "M90,299 C94,316 95,336 93,355 C95,356 96,351 96,345 C97,329 97,313 95,299 Z"),
 ];
 
 const BACK: Shape[] = [
-  { m: "traps", d: "M100,56 L74,73 L100,92 L126,73 Z" },
-  ...pair("shoulders", "M72,72 Q52,74 50,94 Q56,100 66,96 Q74,86 78,78 Z"),
-  { m: "upper_back", d: "M100,94 L80,80 L84,118 L100,124 L116,118 L120,80 Z" },
-  ...pair("lats", "M79,84 L69,98 Q72,136 88,156 L95,140 L83,120 Z"),
-  { m: "lower_back", d: "M88,146 L112,146 L115,178 L85,178 Z" },
-  ...pair("triceps", "M51,99 Q46,116 50,134 L60,135 Q66,118 64,99 Z"),
-  ...pair("forearms", "M49,138 Q42,160 45,180 L54,181 Q61,160 60,138 Z"),
-  ...pair("glutes", "M99,182 L82,182 Q72,200 80,214 Q92,222 99,214 Z"),
-  ...pair("hamstrings", "M78,218 Q71,252 79,286 L94,286 Q99,252 97,220 Z"),
-  ...pair("calves", "M77,300 Q70,330 81,368 L91,368 Q99,330 93,300 Z"),
+  { m: "traps", d: "M100,56 C94,60 84,64 73,67 C83,74 93,88 100,112 C107,88 117,74 127,67 C116,64 106,60 100,56 Z" },
+  ...pair("shoulders", ARM_DELT),
+  ...pair("upper_back", "M94,96 C89,88 81,80 72,76 C68,84 68,94 72,102 C80,108 88,110 95,108 Z"),
+  ...pair("lats", "M72,106 C70,119 72,133 78,146 C83,154 89,158 95,161 C95,147 94,131 92,116 C86,112 79,109 72,106 Z"),
+  // cơ dựng sống: hai cột hai bên cột sống
+  ...pair("lower_back", "M98,140 C95,141 93,145 93,151 L93,176 C95,181 97,183 98,183 Z"),
+  ...pair("triceps", ARM_UPPER),
+  ...pair("forearms", ARM_FORE),
+  ...pair("glutes", "M99,186 C90,183 80,187 76,197 C74,209 78,221 88,225 C94,227 98,223 99,217 Z"),
+  ...pair("hamstrings", "M78,229 C76,249 78,267 82,283 C86,285 89,283 90,279 C90,263 89,245 88,229 Z"),
+  ...pair("hamstrings", "M90,229 C92,247 94,265 94,281 C96,283 98,279 98,273 C99,257 98,241 96,229 Z"),
+  ...pair("calves", "M80,295 C76,309 77,323 82,337 C86,339 88,335 89,329 C89,317 88,303 86,295 Z"),
+  ...pair("calves", "M89,295 C93,305 95,319 93,333 C95,335 97,331 97,323 C98,311 96,301 93,295 Z"),
 ];
 
+// Thân người liền khối (nửa trái + lật gương): cổ → vai → sườn → eo → hông → chân → bàn chân
+const BODY_HALF =
+  "M100,50 L93,50 L93,58 C87,62 77,63 68,66 C64,72 66,84 68,96 C70,112 73,124 74,134 C76,148 79,158 79,168 " +
+  "C77,178 74,188 74,201 C73,232 75,260 78,286 C76,312 77,340 80,364 L78,376 C77,383 83,386 92,385 L97,384 " +
+  "C98,376 97,370 96,364 C99,340 100,316 97,292 C99,262 100,236 100,206 Z";
+const ARM_HALF =
+  "M68,66 C57,65 49,72 47,85 C46,104 46,122 48,140 C44,158 43,176 44,192 C41,200 41,210 45,214 " +
+  "C49,217 53,211 53,201 L54,192 C58,174 61,156 61,141 C63,124 64,108 66,94 Z";
+
 function Silhouette() {
-  // phần không phải cơ (đầu, tay, khung xương chậu, gối, bàn chân)
-  const c = "var(--surface-3)";
   return (
-    <g fill={c} opacity={0.55}>
-      <ellipse cx="100" cy="32" rx="16" ry="20" />
-      <rect x="92" y="48" width="16" height="12" rx="4" />
-      <ellipse cx="49" cy="188" rx="6" ry="8" />
-      <ellipse cx="151" cy="188" rx="6" ry="8" />
-      <path d="M76,177 L124,177 L120,197 L80,197 Z" />
-      <ellipse cx="85" cy="292" rx="9" ry="7" />
-      <ellipse cx="115" cy="292" rx="9" ry="7" />
-      <ellipse cx="86" cy="380" rx="9" ry="6" />
-      <ellipse cx="114" cy="380" rx="9" ry="6" />
+    <g fill="var(--body-fill)" stroke="var(--muscle-0-stroke)" strokeWidth={0.7} strokeLinejoin="round">
+      <path d={BODY_HALF} />
+      <path d={mirror(BODY_HALF)} />
+      <path d={ARM_HALF} />
+      <path d={mirror(ARM_HALF)} />
+      <ellipse cx="100" cy="31" rx="14" ry="18" />
     </g>
   );
 }
 
-function Figure({ shapes, label, data, selected, onSelect, colorOf }: {
+/** Tâm (trung bình các điểm) của hình đầu tiên thuộc nhóm cơ — chỗ cắm ghim nhãn. */
+function centroid(shapes: Shape[], m: string): [number, number] | null {
+  const sh = shapes.find((x) => x.m === m && /^M(\d+)/.test(x.d) && parseFloat(x.d.slice(1)) <= 100) || shapes.find((x) => x.m === m);
+  if (!sh) return null;
+  const pts = [...sh.d.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map((g) => [parseFloat(g[1]), parseFloat(g[2])]);
+  if (!pts.length) return null;
+  return [pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length];
+}
+
+function Figure({ shapes, label, data, selected, onSelect, colorOf, big, pins, pinSide }: {
   shapes: Shape[]; label: string; data?: MuscleVolume["muscles"]; selected?: string | null;
-  onSelect?: (m: string) => void; colorOf: (m: string) => string;
+  onSelect?: (m: string) => void; colorOf: (m: string) => string; big?: boolean; pins?: string[]; pinSide?: "left" | "right";
 }) {
   const [hover, setHover] = useState<string | null>(null);
+  const pinList = (pins || []).map((m) => ({ m, c: centroid(shapes, m) })).filter((x) => x.c) as { m: string; c: [number, number] }[];
+  // ghim xếp theo chiều dọc, đặt hết về một phía để không đè lên nhau
+  const placed: { m: string; c: [number, number]; y: number }[] = [];
+  for (const p of [...pinList].sort((a, b) => a.c[1] - b.c[1])) {
+    const prev = placed[placed.length - 1];
+    placed.push({ ...p, y: prev ? Math.max(p.c[1], prev.y + 24) : p.c[1] });
+  }
+  const vb = pins ? (pinSide === "left" ? "-38 8 198 380" : "40 8 198 380") : "40 8 120 380";
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="40 8 120 380" className="h-[300px] w-auto sm:h-[340px]" role="img" aria-label={label}>
+      <svg viewBox={vb} overflow="visible" className={clsx("w-auto", big ? "h-[270px] sm:h-[440px] xl:h-[520px]" : "h-[300px] sm:h-[340px]")} role="img" aria-label={label}>
+        {big && <ellipse cx="100" cy="387" rx="40" ry="4" fill="var(--text)" opacity="0.1" />}
         <Silhouette />
         {shapes.map((s, i) => {
           const active = selected === s.m || hover === s.m;
@@ -79,8 +116,9 @@ function Figure({ shapes, label, data, selected, onSelect, colorOf }: {
               d={s.d}
               className={clsx("muscle", onSelect && "clickable")}
               fill={colorOf(s.m)}
-              stroke={active ? "var(--text)" : "var(--muscle-0-stroke)"}
-              strokeWidth={active ? 1.6 : 0.8}
+              stroke={active ? "var(--text)" : "var(--surface)"}
+              strokeWidth={active ? 1.4 : 1}
+              strokeLinejoin="round"
               onMouseEnter={() => setHover(s.m)}
               onMouseLeave={() => setHover(null)}
               onClick={() => onSelect?.(s.m)}
@@ -92,6 +130,20 @@ function Figure({ shapes, label, data, selected, onSelect, colorOf }: {
             </path>
           );
         })}
+        {placed.map((p) => {
+          const left = pinSide === "left";
+          const tx = left ? -34 : 166;
+          const text = `${MUSCLES[p.m]} · ${fmt(data?.[p.m]?.sets ?? 0, 1)}`;
+          const w = text.length * 4.2 + 14;
+          return (
+            <g key={p.m} className="pointer-events-none">
+              <line x1={p.c[0]} y1={p.c[1]} x2={left ? tx + w : tx} y2={p.y} stroke="var(--text)" strokeWidth="0.6" strokeDasharray="2 2" opacity="0.5" />
+              <circle cx={p.c[0]} cy={p.c[1]} r="2.6" fill="var(--ink)" stroke="var(--surface)" strokeWidth="1" />
+              <rect x={tx} y={p.y - 8} width={w} height="16" rx="8" fill="var(--surface)" stroke="var(--card-border)" />
+              <text x={tx + 7} y={p.y + 3} fontSize="8" fontWeight="600" fill="var(--text)">{text}</text>
+            </g>
+          );
+        })}
       </svg>
       <span className="mt-1 text-xs font-medium text-muted">{label}</span>
       <span className="h-5 text-xs font-semibold">{hover ? `${MUSCLES[hover]}${data ? ` · ${fmt(data[hover]?.sets ?? 0, 1)} set` : ""}` : ""}</span>
@@ -99,11 +151,13 @@ function Figure({ shapes, label, data, selected, onSelect, colorOf }: {
   );
 }
 
-export function BodyMap({ data, selected, onSelect, highlight }: {
+export function BodyMap({ data, selected, onSelect, highlight, big, pins }: {
   data?: MuscleVolume["muscles"];
   selected?: string | null;
   onSelect?: (m: string) => void;
   highlight?: Record<string, number>; // dùng ở màn tổng kết buổi tập
+  big?: boolean; // cỡ "sân khấu" ở trang Tổng quan
+  pins?: string[]; // nhóm cơ cần cắm ghim nhãn (số set)
 }) {
   const colorOf = (m: string) => {
     if (selected === m) return "var(--primary)";
@@ -112,12 +166,14 @@ export function BodyMap({ data, selected, onSelect, highlight }: {
       return v <= 0 ? HEAT_COLORS[0] : v < 2 ? HEAT_COLORS[1] : v < 4 ? HEAT_COLORS[2] : v < 7 ? HEAT_COLORS[3] : HEAT_COLORS[4];
     }
     if (data) return HEAT_COLORS[data[m]?.level ?? 0];
-    return onSelect ? "var(--surface-3)" : HEAT_COLORS[0];
+    return HEAT_COLORS[0];
   };
   return (
-    <div className="flex justify-center gap-2 sm:gap-8">
-      <Figure shapes={FRONT} label="Mặt trước" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} />
-      <Figure shapes={BACK} label="Mặt sau" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} />
+    <div className={clsx("flex justify-center", big ? "gap-0 sm:gap-4" : "gap-2 sm:gap-8")}>
+      <Figure shapes={FRONT} label="Mặt trước" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} big={big}
+        pins={pins?.filter((m) => FRONT.some((x) => x.m === m))} pinSide="left" />
+      <Figure shapes={BACK} label="Mặt sau" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} big={big}
+        pins={pins?.filter((m) => BACK.some((x) => x.m === m) && !FRONT.some((x) => x.m === m))} pinSide="right" />
     </div>
   );
 }

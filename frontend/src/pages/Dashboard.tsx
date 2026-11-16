@@ -1,134 +1,24 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity, ArrowRight, CheckCircle2, Circle, Droplets, Dumbbell, Flame, Pause, Play, Printer, Scale, Sparkles, Target, Trophy, Utensils, Volume2, Weight,
+  Activity, ArrowRight, CheckCircle2, Circle, Droplets, Dumbbell, Pause, Printer, Scale, Sparkles, Trophy, Utensils, Volume2, Weight,
 } from "lucide-react";
 import { get, post } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useAction, useApi } from "../lib/hooks";
 import { fmt, greeting, minutes, shortDate } from "../lib/format";
 import { voice } from "../lib/media";
-import type { Goal, Insight, MuscleVolume, PR, Readiness, Targets } from "../lib/types";
+import type { Insight, MuscleVolume } from "../lib/types";
 import { BodyMap, HeatLegend } from "../components/BodyMap";
-import { BarSeries, LineSeries } from "../components/Charts";
-import { useTodayAdvice } from "../components/WorkoutExtras";
+import type { DetailKind, Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
-import { Badge, Button, Card, CardHeader, Field, Modal, PageHeader, Progress, Ring, Segmented, Spinner, Stat, toast, clickable, IconButton } from "../components/ui";
+import { Button, Card, CardHeader, Field, Modal, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
 import { AgentAvatar } from "../components/AgentAvatar";
+import { GoalsCard, PRCard, ReadinessCard, TodayRings, type Overview } from "../components/Widgets";
 
-interface Overview {
-  user: { name: string };
-  today: {
-    date: string;
-    readiness: Readiness | null;
-    water_ml: number;
-    nutrition: { calories: number; protein: number; carbs: number; fat: number; meals_count: number };
-    targets: Targets;
-    workouts: { count: number; minutes: number; volume: number; avg_form_score: number | null; names: string[] };
-    streak: { current: number; best: number; today_active: boolean };
-  };
-  prs: PR[];
-  latest_body: Record<string, { value: number; date: string }>;
-  goals: Goal[];
-  badges: { achieved: number; total: number };
-  insights: Insight[];
-  has_any_data: boolean;
-}
+const ReportDetail = lazy(() => import("../components/ReportDetail"));
 
-interface Report {
-  period: string;
-  start: string;
-  end: string;
-  bucket_days: number;
-  summary: {
-    sessions: number; total_volume: number; total_minutes: number; avg_form_score: number | null; pr_count: number;
-    avg_calories: number | null; avg_protein: number | null; meal_logged_days: number; weight_change: number | null; avg_readiness: number | null;
-  };
-  series: { date: string; volume: number; sessions: number; minutes: number; calories: number; protein: number }[];
-  sessions: { id: string; name: string; date: string; minutes: number; volume: number; sets: number; form: number | null }[];
-  weights: { date: string; weight: number | null; body_fat_pct: number | null; skeletal_muscle_kg: number | null }[];
-  readiness: { date: string; readiness: number }[];
-  prs: PR[];
-}
-
-const BAND_COLOR: Record<string, string> = { high: "var(--primary)", good: "var(--primary)", moderate: "var(--warn)", low: "var(--danger)" };
 const PERIODS = { week: "7 ngày", month: "30 ngày", quarter: "Quý (90 ngày)", year: "Năm" } as const;
-type DetailKind = "sessions" | "volume" | "prs" | "weight" | "nutrition" | "readiness";
-
-function ReportDetail({ kind, report, onClose, targets }: { kind: DetailKind | null; report?: Report; onClose: () => void; targets?: Targets }) {
-  if (!kind || !report) return null;
-  const titles: Record<DetailKind, string> = {
-    sessions: "Buổi tập", volume: "Khối lượng tập (kg)", prs: "Kỷ lục cá nhân mới", weight: "Xu hướng cân nặng & thành phần cơ thể",
-    nutrition: "Dinh dưỡng theo ngày", readiness: "Điểm sẵn sàng",
-  };
-  const unitDays = report.bucket_days > 1 ? " (gộp theo tuần)" : "";
-  return (
-    <Modal open onClose={onClose} title={`${titles[kind]} · ${shortDate(report.start)} – ${shortDate(report.end)}`} wide>
-      {kind === "sessions" || kind === "volume" ? (
-        <>
-          <BarSeries data={report.series} dataKey={kind === "sessions" ? "sessions" : "volume"} unit={kind === "sessions" ? "buổi" : "kg"} label={titles[kind]} color="var(--coach)" />
-          <p className="mb-3 text-xs text-muted">Khối lượng = Σ (mức tạ × số rep) của mọi set{unitDays}.</p>
-          {report.sessions.length ? (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs text-muted">
-                <tr>
-                  <th className="py-1.5">Ngày</th><th>Buổi tập</th><th className="text-right">Thời gian</th><th className="text-right">Set</th><th className="text-right">Khối lượng</th><th className="text-right">Form</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.sessions.map((s) => (
-                  <tr key={s.id} className="border-t border-border">
-                    <td className="py-1.5">{shortDate(s.date)}</td><td>{s.name}</td><td className="text-right">{s.minutes}′</td><td className="text-right">{s.sets}</td>
-                    <td className="text-right">{fmt(s.volume)} kg</td><td className="text-right">{s.form ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-sm text-muted">Chưa có buổi tập nào trong kỳ này.</p>
-          )}
-        </>
-      ) : kind === "prs" ? (
-        report.prs.length ? (
-          <ul className="divide-y divide-border text-sm">
-            {report.prs.map((p, i) => (
-              <li key={i} className="flex items-center justify-between py-2">
-                <div>
-                  <p className="font-medium first-letter:uppercase">{p.exercise_name}</p>
-                  <p className="text-xs text-muted">{shortDate(p.date)} · {fmt(p.weight_kg, 1)}kg × {p.reps}</p>
-                </div>
-                <p className="text-right font-semibold text-primary-strong">{p.previous} → {p.e1rm} kg<span className="block text-xs font-normal text-muted">1RM ước tính</span></p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted">Chưa phá kỷ lục nào trong kỳ này. PR được tính khi 1RM ước tính (Epley) vượt mọi lần trước.</p>
-        )
-      ) : kind === "weight" ? (
-        report.weights.length ? (
-          <LineSeries
-            data={report.weights}
-            lines={[
-              { key: "weight", color: "var(--head)", label: "Cân nặng (kg)" },
-              { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" },
-            ]}
-          />
-        ) : (
-          <p className="text-sm text-muted">Chưa có lần đo nào trong kỳ này. Nhập cân nặng ở trang InBody.</p>
-        )
-      ) : kind === "nutrition" ? (
-        <>
-          <BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={report.bucket_days === 1 ? targets?.calories : undefined} />
-          <BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color="var(--primary)" target={report.bucket_days === 1 ? targets?.protein : undefined} height={180} />
-          <p className="text-xs text-muted">Có ghi bữa ăn {report.summary.meal_logged_days} ngày{unitDays}.</p>
-        </>
-      ) : (
-        <BarSeries data={report.readiness} dataKey="readiness" label="Điểm sẵn sàng" color="var(--primary)" />
-      )}
-    </Modal>
-  );
-}
-
 const LEVEL_COLOR = { info: "var(--info)", warn: "var(--warn)", good: "var(--primary-strong)" } as const;
 
 function Insights({ items }: { items: Insight[] }) {
@@ -145,9 +35,9 @@ function Insights({ items }: { items: Insight[] }) {
         icon={<AgentAvatar agent="headbro" size={26} />}
         right={items.length > 2 ? <Button size="sm" variant="ghost" onClick={() => setAll(!all)}>{all ? "Thu gọn" : `Xem thêm ${items.length - 2}`}</Button> : undefined}
       />
-      <div className="grid gap-2 px-4 pb-4 md:grid-cols-2">
+      <div className="grid gap-2 px-4 pb-4">
         {shown.map((it, i) => (
-          <div key={i} className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 p-3">
+          <div key={i} className="flex items-start gap-3 rounded-2xl bg-surface-2 p-3.5">
             <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: LEVEL_COLOR[it.level] }} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">{it.title}</p>
@@ -182,21 +72,23 @@ function QuickActions() {
       setW("");
     },
   });
-  const btn = "flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium hover:border-primary/60";
+  const items = [
+    { label: "+250ml nước", icon: <Droplets size={17} className="text-info" />, run: () => water.mutate(undefined as never) },
+    { label: "Ghi cân nặng", icon: <Scale size={17} className="text-head" />, run: () => setWeightOpen(true) },
+    { label: "Ghi bữa ăn", icon: <Utensils size={17} className="text-nutri" />, run: () => nav("/nutrition") },
+    { label: "Tập luyện", icon: <Dumbbell size={17} className="text-coach" />, run: () => nav("/workouts") },
+  ];
   return (
-    <div className="no-print flex flex-wrap gap-2">
-      <button className={btn} onClick={() => water.mutate(undefined as never)}>
-        <Droplets size={16} className="text-info" /> +250ml nước
-      </button>
-      <button className={btn} onClick={() => setWeightOpen(true)}>
-        <Scale size={16} className="text-head" /> Ghi cân nặng
-      </button>
-      <button className={btn} onClick={() => nav("/nutrition")}>
-        <Utensils size={16} className="text-nutri" /> Ghi bữa ăn
-      </button>
-      <button className={btn} onClick={() => nav("/workouts")}>
-        <Dumbbell size={16} className="text-coach" /> Tập luyện
-      </button>
+    <div className="glass no-print flex items-center gap-0.5 rounded-full p-1">
+      {items.map((x) => (
+        <button key={x.label} type="button" onClick={x.run} aria-label={x.label}
+          className="group relative grid h-9 w-9 place-items-center rounded-full transition hover:bg-[var(--glass-fill)]">
+          {x.icon}
+          <span className="pointer-events-none absolute top-[calc(100%+8px)] z-20 whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-on-ink opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100">
+            {x.label}
+          </span>
+        </button>
+      ))}
       <Modal
         open={weightOpen}
         onClose={() => setWeightOpen(false)}
@@ -216,60 +108,108 @@ function QuickActions() {
   );
 }
 
-function TodayHero({ readiness: r, streak }: { readiness: Readiness | null; streak: number }) {
-  const advice = useTodayAdvice();
+/** Lưới hoạt động 17 tuần (kiểu "contribution"): mỗi ô = 1 ngày, đậm hơn = làm được nhiều việc hơn. */
+function ActivityGrid({ bestStreak, streak }: { bestStreak: number; streak: number }) {
   const nav = useNavigate();
+  const { data } = useApi<{ days: { date: string; checkin: number | null; workout: number; meals: number; water: number }[] }>(["calendar", 119], "/api/daily/calendar?days=119");
+  if (!data) return <Card className="p-5"><Spinner /></Card>;
+  const days = data.days;
+  // căn cột theo tuần, hàng = Thứ 2 → Chủ nhật
+  const first = new Date(days[0].date + "T00:00:00");
+  const offset = (first.getDay() + 6) % 7;
+  const cells: (null | (typeof days)[number])[] = [...Array(offset).fill(null), ...days];
+  const weeks: (typeof cells)[] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  const level = (d: (typeof days)[number]) => Math.min(4, (d.workout > 0 ? 2 : 0) + (d.meals > 0 ? 1 : 0) + (d.checkin != null ? 1 : 0));
+  const active = days.filter((d) => level(d) > 0).length;
+  const trained = days.filter((d) => d.workout > 0).length;
+  const perWeek = (trained / (days.length / 7)).toFixed(1).replace(".", ",");
+  const COLORS = ["var(--surface-2)", "var(--heat-1)", "var(--heat-2)", "var(--heat-3)", "var(--heat-4)"];
+  const LABEL = ["T2", "", "T4", "", "T6", "", "CN"];
+  const cell = "h-[var(--cell)] w-[var(--cell)] rounded-[4px]";
   return (
-    <section aria-label="Hôm nay" className="card overflow-hidden">
-      <div className="grid gap-5 p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:p-6">
-        <button type="button" onClick={() => nav("/daily")} className="flex items-center gap-4 rounded-2xl text-left" aria-label={r ? `Điểm sẵn sàng ${r.score} trên 100, ${r.label}. Mở chi tiết` : "Check-in để có điểm sẵn sàng"}>
-          <Ring value={r?.score ?? 0} color={r ? BAND_COLOR[r.band] : "var(--surface-3)"} size={112} stroke={10}>
-            <div>
-              <p className="text-[34px] font-extrabold leading-none tracking-tight tabular-nums">{r ? r.score : "—"}</p>
-              <p className="mt-0.5 text-[11px] text-muted">sẵn sàng</p>
-            </div>
-          </Ring>
-          <div className="sm:hidden">
-            {r ? <Badge color={BAND_COLOR[r.band]}>{r.label}</Badge> : <p className="text-sm text-muted">Chưa check-in</p>}
-            {streak > 0 && (
-              <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-energy-strong">
-                <Flame size={15} /> Chuỗi {streak} ngày
-              </p>
-            )}
-          </div>
-        </button>
-        <div className="min-w-0">
-          <div className="mb-2 hidden flex-wrap items-center gap-2 sm:flex">
-            {r && <Badge color={BAND_COLOR[r.band]}>{r.label}</Badge>}
-            {streak > 0 && (
-              <span className="flex items-center gap-1 text-sm font-semibold text-energy-strong">
-                <Flame size={15} /> Chuỗi {streak} ngày
-              </span>
-            )}
-          </div>
-          {advice ? (
-            <>
-              <h2 className="text-xl font-bold leading-snug tracking-tight">{advice.headline}</h2>
-              <p className="mt-1 text-sm text-muted">{advice.reason}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {advice.action && (
-                  <Button icon={advice.tone === "go" ? <Play size={16} /> : undefined} onClick={() => nav(advice.action!.to)}>
-                    {advice.action.label}
-                  </Button>
-                )}
-                {advice.secondary && (
-                  <Button variant="outline" onClick={() => nav(advice.secondary!.to)}>
-                    {advice.secondary.label}
-                  </Button>
-                )}
-              </div>
-            </>
-          ) : (
-            <Spinner />
-          )}
-        </div>
+    <Card className="h-full p-5 [--cell:clamp(11px,2.4vw,17px)]">
+      <div className="mb-4">
+        <p className="text-base font-semibold tracking-tight">Mức độ đều đặn</p>
+        <p className="text-xs text-muted">17 tuần gần nhất · tập, ghi bữa, check-in</p>
       </div>
-    </section>
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <div className="flex gap-[4px]" {...clickable(() => nav("/daily"))} aria-label="Lịch hoạt động, mở trang Hôm nay">
+            <div className="mr-1 flex flex-col gap-[4px] text-[10px] text-muted">
+              {LABEL.map((l, i) => <span key={i} className="flex h-[var(--cell)] items-center leading-none">{l}</span>)}
+            </div>
+            {weeks.map((w, wi) => (
+              <div key={wi} className="flex flex-col gap-[4px]">
+                {Array.from({ length: 7 }).map((_, di) => {
+                  const d = w[di];
+                  if (!d) return <span key={di} className={cell} />;
+                  const lv = level(d);
+                  return (
+                    <span
+                      key={di}
+                      title={`${shortDate(d.date)}: ${d.workout ? `${d.workout} buổi tập` : "không tập"}${d.meals ? ` · ${d.meals} bữa` : ""}${d.checkin != null ? ` · sẵn sàng ${d.checkin}` : ""}`}
+                      className={`${cell} transition hover:scale-125`}
+                      style={{ background: COLORS[lv] }}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted">
+            Ít
+            {COLORS.map((c, i) => <span key={i} className="h-3 w-3 rounded-[3px]" style={{ background: c }} />)}
+            Nhiều
+          </div>
+        </div>
+        <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-4 sm:max-w-[220px]">
+          {[
+            [trained, "ngày tập"],
+            [perWeek, "buổi / tuần"],
+            [active, "ngày hoạt động"],
+            [`${streak}/${bestStreak}`, "chuỗi / kỷ lục"],
+          ].map(([v, l]) => (
+            <div key={l as string}>
+              <dd className="num text-[26px] font-semibold leading-none">{v}</dd>
+              <dt className="mt-1 text-[11px] text-muted">{l}</dt>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </Card>
+  );
+}
+
+/** Ô "Hỏi HeadBro" nổi ở đáy sân khấu, kèm chip gợi ý (kiểu "Ask Lander"). */
+function AskBar({ insights }: { insights: Insight[] }) {
+  const ai = useAI();
+  const [q, setQ] = useState("");
+  const chips = [
+    ...insights.filter((i) => i.ask).slice(0, 2).map((i) => ({ label: i.title, text: i.ask!.text })),
+    { label: "Tuần này mình làm tốt điều gì?", text: "Tuần này mình làm tốt và chưa tốt điều gì?" },
+    { label: "Nhóm cơ nào đang tập ít?", text: "Nhóm cơ nào mình đang tập ít? Gợi ý bài bù lại." },
+    { label: "Còn thiếu bao nhiêu đạm?", text: "Hôm nay mình còn thiếu bao nhiêu đạm, nên ăn gì?" },
+  ];
+  const send = (text: string) => text.trim() && ai.open({ text: text.trim() });
+  return (
+    <div className="glass no-print mx-auto w-full max-w-3xl rounded-[26px] p-2 shadow-[var(--shadow-lg)]">
+      <div className="flex gap-1.5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:none]">
+        {chips.map((c) => (
+          <button key={c.label} type="button" onClick={() => send(c.text)}
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-3 hover:text-text">
+            <Sparkles size={12} /> {c.label}
+          </button>
+        ))}
+      </div>
+      <form className="flex items-center gap-2 rounded-[20px] bg-surface p-1.5 pl-4" onSubmit={(e) => { e.preventDefault(); send(q); setQ(""); }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Hỏi HeadBro"
+          placeholder="Hỏi HeadBro về tập luyện, ăn uống, tiến độ..." className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-muted" />
+        <button type="submit" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-on-ink transition hover:opacity-90">
+          <span className="hidden sm:inline">Hỏi HeadBro</span> <Sparkles size={15} />
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -321,29 +261,80 @@ export default function Dashboard() {
     { done: Object.keys(ov.latest_body).length > 1 || ov.goals.length > 0, label: "Nhập chỉ số InBody hoặc đặt mục tiêu", to: "/inbody" },
   ];
 
+  const name = user?.name || "bạn";
+  const pins = heat ? Object.entries(heat.muscles).filter(([, v]) => v.sets > 0).sort((x, y) => y[1].sets - x[1].sets).slice(0, 5).map(([k]) => k) : [];
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title={`${greeting()}, ${user?.name || "bạn"}`}
-        subtitle={new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-        actions={
-          <>
-            <IconButton title={speaking ? "Dừng đọc" : "Nghe tóm tắt hôm nay"} onClick={brief}>
-              {speaking ? <Pause size={18} /> : <Volume2 size={18} />}
-            </IconButton>
-            <IconButton title="Xuất báo cáo PDF" onClick={() => window.print()}>
-              <Printer size={18} />
-            </IconButton>
-            <Button
-              icon={<Sparkles size={16} />}
-              onClick={() => ai.open({ agent: "headbro", text: "Phân tích tổng thể tiến độ của mình (tập luyện, dinh dưỡng, cơ thể) và cho mình 3 việc nên làm tuần này." })}
-            >
-              HeadBro phân tích
-            </Button>
-          </>
-        }
-      />
+    <div className="space-y-8">
+      {/* ===== Sân khấu: bản đồ cơ thể ở giữa, các tấm kính nổi xung quanh ===== */}
+      <section className="relative">
+        <div className="relative">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <h1 className="rise on-bg text-[32px] leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
+              <span className="font-light text-muted">{greeting()},</span> <span className="font-bold">{name}!</span>
+              <br />
+              <span className="font-bold">{r ? (r.score >= 60 ? "Sẵn sàng bứt phá hôm nay?" : "Hôm nay tập nhẹ thôi nhé.") : "Check-in để bắt đầu ngày mới."}</span>
+            </h1>
+            <div className="rise no-print flex flex-wrap items-center gap-2" style={{ animationDelay: "60ms" }}>
+              <QuickActions />
+              <span className="glass hidden h-11 items-center rounded-full px-4 text-sm font-medium sm:inline-flex">
+                {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}
+              </span>
+              <IconButton title={speaking ? "Dừng đọc" : "Nghe tóm tắt hôm nay"} onClick={brief} className="glass h-11 w-11">
+                {speaking ? <Pause size={18} /> : <Volume2 size={18} />}
+              </IconButton>
+              <IconButton title="Xuất báo cáo PDF" onClick={() => window.print()} className="glass h-11 w-11">
+                <Printer size={18} />
+              </IconButton>
+              <HelpButton to="tong-quan" className="!h-11 !w-11" />
+            </div>
+          </header>
 
+          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(270px,300px)_minmax(0,1fr)_minmax(250px,280px)] lg:items-start xl:gap-10 [&>*]:min-w-0">
+            {/* Cột trái */}
+            <div className="rise space-y-6" style={{ animationDelay: "120ms" }}>
+              <ReadinessCard readiness={r} streak={t.streak.current} />
+              <TodayRings t={t} />
+            </div>
+
+            {/* Giữa: bản đồ cơ thể nổi trên nền, có vòng "radar" mờ phía sau */}
+            <div className="rise relative flex flex-col items-center overflow-x-clip" style={{ animationDelay: "200ms" }}>
+              <svg aria-hidden viewBox="0 0 400 400" className="pointer-events-none absolute left-1/2 top-1/2 hidden sm:block h-[118%] w-auto -translate-x-1/2 -translate-y-[46%] opacity-60">
+                {[60, 110, 160, 198].map((r) => <circle key={r} cx="200" cy="200" r={r} fill="none" stroke="var(--text)" strokeOpacity="0.07" strokeDasharray={r === 198 ? "2 6" : undefined} />)}
+                <circle cx="200" cy="200" r="150" fill="url(#bodyglow)" />
+                <defs>
+                  <radialGradient id="bodyglow"><stop offset="0" stopColor="#c6f432" stopOpacity="0.35" /><stop offset="1" stopColor="#c6f432" stopOpacity="0" /></radialGradient>
+                </defs>
+              </svg>
+              <div className="glass mb-2 flex flex-wrap items-center justify-center gap-2 rounded-full p-1 pl-4">
+                <span className="text-xs font-medium text-muted">Nhóm cơ đã tập</span>
+                <Segmented size="sm" value={String(days)} onChange={(v) => setDays(+v)}
+                  options={[{ value: "7", label: "7 ngày" }, { value: "30", label: "Tháng" }, { value: "90", label: "Quý" }, { value: "365", label: "Năm" }]} />
+              </div>
+              {heat ? (
+                <>
+                  <BodyMap data={heat.muscles} big pins={pins} />
+                  <div className="glass mt-1 rounded-2xl px-4 py-2">
+                    <HeatLegend levels={heat.levels} />
+                  </div>
+                  {heat.total_sets === 0 && <p className="mt-2 text-sm text-muted">Chưa có buổi tập nào trong khoảng này.</p>}
+                </>
+              ) : (
+                <Spinner />
+              )}
+            </div>
+
+            {/* Cột phải */}
+            <div className="rise space-y-6" style={{ animationDelay: "280ms" }}>
+              <PRCard prs={ov.prs} />
+              <GoalsCard goals={ov.goals} onEmpty={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu cụ thể. Hãy hỏi mình từng bước." })} />
+            </div>
+          </div>
+
+          <div className="rise mt-10" style={{ animationDelay: "360ms" }}>
+            <AskBar insights={ov.insights || []} />
+          </div>
+        </div>
+      </section>
 
       {briefText && (
         <Card className="fade-in flex gap-3 p-4">
@@ -358,7 +349,7 @@ export default function Dashboard() {
           <p className="mt-0.5 text-sm text-muted">Trang này chỉ hiển thị dữ liệu thật bạn nhập — chưa có gì ở đây cả. Làm 4 bước sau:</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {checklist.map((c) => (
-              <button key={c.label} onClick={() => nav(c.to)} className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-left text-sm hover:border-primary/60">
+              <button key={c.label} onClick={() => nav(c.to)} className="flex items-center gap-2.5 rounded-2xl bg-surface-2 px-3.5 py-3 text-left text-sm transition hover:bg-surface-3">
                 {c.done ? <CheckCircle2 size={18} className="text-primary-strong" /> : <Circle size={18} className="text-muted" />}
                 <span className={c.done ? "text-muted line-through" : ""}>{c.label}</span>
                 <ArrowRight size={14} className="ml-auto text-muted" />
@@ -368,62 +359,14 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Hàng chính: hôm nay mình thế nào và nên làm gì */}
-      <TodayHero readiness={r} streak={t.streak.current} />
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Hôm nay */}
-        <Card className="p-5 lg:col-span-3">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[13px] font-medium text-muted">Tóm tắt hôm nay</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-3" {...clickable(() => nav("/nutrition"))} aria-label="Mở Dinh dưỡng">
-              {[
-                ["Calo", t.nutrition.calories, t.targets.calories, "kcal", "var(--nutri)"],
-                ["Đạm", t.nutrition.protein, t.targets.protein, "g", "var(--primary)"],
-                ["Nước", t.water_ml / 1000, t.targets.water_ml / 1000, "L", "var(--info)"],
-              ].map(([label, v, max, unit, color]) => (
-                <div key={label as string}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      {label === "Nước" ? <Droplets size={14} /> : <Utensils size={14} />} {label}
-                    </span>
-                    <span className="text-muted">
-                      <b className="text-text">{fmt(v as number, 1)}</b> / {fmt(max as number, 1)} {unit}
-                    </span>
-                  </div>
-                  <Progress value={v as number} max={max as number} color={color as string} />
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2" {...clickable(() => nav("/workouts"))} aria-label="Mở Tập luyện">
-              <div className="rounded-xl bg-surface-2 p-3">
-                <p className="text-xs text-muted">Buổi tập</p>
-                <p className="text-xl font-bold">{t.workouts.count}</p>
-                <p className="truncate text-xs text-muted">{t.workouts.names.join(", ") || "Chưa tập"}</p>
-              </div>
-              <div className="rounded-xl bg-surface-2 p-3">
-                <p className="text-xs text-muted">Thời gian</p>
-                <p className="text-xl font-bold">{t.workouts.minutes}′</p>
-              </div>
-              <div className="rounded-xl bg-surface-2 p-3">
-                <p className="text-xs text-muted">Khối lượng</p>
-                <p className="text-xl font-bold">{fmt(t.workouts.volume)}</p>
-                <p className="text-xs text-muted">kg</p>
-              </div>
-              <div className="rounded-xl bg-surface-2 p-3">
-                <p className="text-xs text-muted">Điểm form</p>
-                <p className="text-xl font-bold">{t.workouts.avg_form_score ?? "—"}</p>
-                <p className="text-xs text-muted">Camera AI</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <ActivityGrid streak={t.streak.current} bestStreak={t.streak.best} />
+        </div>
+        <div className="lg:col-span-5">
+          <Insights items={ov.insights || []} />
+        </div>
       </div>
-
-      <QuickActions />
-      <Insights items={ov.insights || []} />
 
       {/* Báo cáo */}
       <Card>
@@ -457,110 +400,11 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        {/* Heatmap */}
-        <Card className="lg:col-span-3">
-          <CardHeader
-            title="Bản đồ nhiệt cơ bắp"
-            subtitle="Nhóm cơ đã tập nhiều nhất trong khoảng thời gian"
-            right={
-              <Segmented
-                size="sm"
-                value={String(days)}
-                onChange={(v) => setDays(+v)}
-                options={[
-                  { value: "7", label: "7 ngày" },
-                  { value: "30", label: "Tháng" },
-                  { value: "90", label: "Quý" },
-                  { value: "365", label: "Năm" },
-                ]}
-              />
-            }
-          />
-          <div className="px-4 pb-5">
-            {heat ? (
-              <>
-                <BodyMap data={heat.muscles} />
-                <div className="mt-2">
-                  <HeatLegend levels={heat.levels} />
-                </div>
-                <p className="mt-2 text-center text-xs text-muted">
-                  Cơ chính = 1 set, cơ phụ = 0,5 set. Khuyến nghị 10–20 set/nhóm cơ/tuần để tăng cơ.
-                </p>
-                {heat.total_sets > 0 ? (
-                  <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                    {Object.entries(heat.muscles)
-                      .filter(([, v]) => v.sets > 0)
-                      .sort((a, b) => b[1].sets - a[1].sets)
-                      .slice(0, 6)
-                      .map(([k, v]) => (
-                        <Badge key={k}>
-                          {v.label}: {fmt(v.sets, 1)} set
-                        </Badge>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-center text-sm text-muted">Chưa có buổi tập nào trong khoảng này.</p>
-                )}
-              </>
-            ) : (
-              <Spinner />
-            )}
-          </div>
-        </Card>
-
-        <div className="space-y-4 lg:col-span-2">
-          <Card>
-            <CardHeader title="Kỷ lục cá nhân (PR)" icon={<Trophy size={16} />} />
-            <div className="px-5 pb-4">
-              {ov.prs.length ? (
-                <ul className="divide-y divide-border text-sm">
-                  {ov.prs.map((p) => (
-                    <li key={p.exercise_id} className="flex justify-between py-2">
-                      <span className="truncate pr-2 first-letter:uppercase">{p.exercise_name}</span>
-                      <span className="shrink-0 font-semibold">
-                        {fmt(p.e1rm, 1)} kg <span className="text-xs font-normal text-muted">({fmt(p.weight_kg, 1)}×{p.reps})</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="py-2 text-sm text-muted">Hoàn thành buổi tập có tạ để ghi nhận PR.</p>
-              )}
-            </div>
-          </Card>
-          <Card>
-            <CardHeader title="Mục tiêu" icon={<Target size={16} />} right={<Button size="sm" variant="ghost" onClick={() => nav("/inbody")}>Quản lý</Button>} />
-            <div className="space-y-3 px-5 pb-5">
-              {ov.goals.length ? (
-                [...ov.goals.slice(0, 3).map((g) => (
-                  <div key={g.id}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span className="font-medium">{g.title}</span>
-                      <span className="text-muted">{g.progress_pct ?? 0}%</span>
-                    </div>
-                    <Progress value={g.progress_pct ?? 0} max={100} />
-                    {g.days_left != null && <p className="mt-0.5 text-xs text-muted">Còn {g.days_left} ngày</p>}
-                  </div>
-                )), ov.goals.length > 3 && (
-                  <button key="more" type="button" onClick={() => nav("/inbody")} className="text-sm font-medium text-primary-strong hover:underline">
-                    Xem thêm {ov.goals.length - 3} mục tiêu
-                  </button>
-                )]
-              ) : (
-                <div className="text-sm text-muted">
-                  Chưa có mục tiêu.{" "}
-                  <button className="font-medium text-primary-strong" onClick={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu cụ thể. Hãy hỏi mình từng bước." })}>
-                    Đặt cùng HeadBro
-                  </button>
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      <ReportDetail kind={detail} report={rep} onClose={() => setDetail(null)} targets={t.targets} />
+      {detail && (
+        <Suspense fallback={null}>
+          <ReportDetail kind={detail} report={rep} onClose={() => setDetail(null)} targets={t.targets} />
+        </Suspense>
+      )}
     </div>
   );
 }

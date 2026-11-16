@@ -75,11 +75,37 @@ export function useTodayAdvice(): TodayAdvice | null {
 
 const TONE_ICON = { go: Play, easy: CalendarDays, rest: CalendarDays, done: CheckCircle2, unknown: ClipboardList } as const;
 
-export function TodayAdviceCard({ className }: { className?: string }) {
+export function TodayAdviceCard({ className, hero }: { className?: string; hero?: boolean }) {
   const a = useTodayAdvice();
   const nav = useNavigate();
   if (!a) return null;
   const Icon = TONE_ICON[a.tone];
+  if (hero)
+    return (
+      <Card className={clsx("flex flex-col p-6 sm:p-7", className)}>
+        <div className="flex items-center gap-2">
+          <span className={clsx("grid h-9 w-9 place-items-center rounded-full", a.tone === "easy" ? "bg-warn/20 text-warn-strong" : "bg-volt text-on-volt")}>
+            <Icon size={17} />
+          </span>
+          <p className="eyebrow">Hôm nay</p>
+        </div>
+        <h2 className="mt-4 text-[24px] font-semibold leading-tight tracking-[-0.025em] sm:text-[28px]">{a.headline}</h2>
+        <p className="mt-2 max-w-xl text-sm text-muted">{a.reason}</p>
+        <div className="mt-auto flex flex-wrap gap-2 pt-6">
+          {a.action && (
+            <button type="button" onClick={() => nav(a.action!.to)}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-volt px-6 text-sm font-semibold text-on-volt shadow-[0_8px_24px_-8px_rgb(132_204_22/0.7)] transition hover:brightness-105 active:scale-[0.98]">
+              {a.tone === "go" && <Play size={15} />} {a.action.label}
+            </button>
+          )}
+          {a.secondary && (
+            <Button variant="secondary" size="lg" className="h-11" onClick={() => nav(a.secondary!.to)}>
+              {a.secondary.label}
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
   return (
     <Card className={clsx("flex flex-wrap items-center gap-3 p-4", className)}>
       <div className={clsx("grid h-10 w-10 shrink-0 place-items-center rounded-xl", a.tone === "easy" ? "bg-warn/15 text-warn-strong" : "bg-primary-soft text-primary-strong")}>
@@ -233,17 +259,18 @@ export function AddToDraftButton({ ex }: { ex: Exercise }) {
   );
 }
 
-export function DraftTray() {
+/** Nút "Buổi tự soạn · N bài" nằm trong thanh tab của trang Tập luyện (chỉ hiện khi bản nháp có bài). */
+export function DraftPill() {
   const d = useDraft();
   const [open, setOpen] = useState(false);
   if (!d.items.length) return null;
   return (
     <>
-      <div className="no-print fixed bottom-20 left-4 z-30 lg:bottom-6 lg:left-[calc(50%+7.5rem)] lg:-translate-x-1/2">
-        <button onClick={() => setOpen(true)} className="flex items-center gap-2 rounded-full bg-text px-4 py-3 text-sm font-semibold text-bg shadow-xl">
-          <ClipboardList size={16} /> Buổi tự soạn · {d.items.length} bài
-        </button>
-      </div>
+      <button type="button" onClick={() => setOpen(true)}
+        className="flex shrink-0 items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-on-ink transition hover:opacity-90">
+        <ClipboardList size={15} /> Buổi tự soạn
+        <span className="num grid h-5 min-w-5 place-items-center rounded-full bg-volt px-1 text-[11px] font-semibold text-on-volt">{d.items.length}</span>
+      </button>
       <BuilderModal open={open} onClose={() => setOpen(false)} />
     </>
   );

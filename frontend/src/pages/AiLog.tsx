@@ -230,7 +230,7 @@ function Overview({ onOpen }: { onOpen: (id: string) => void }) {
   const topModels = useMemo(() => Object.entries(st?.llm.by_model || {}).slice(0, 4), [st]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-end">
         <Segmented size="sm" value={days} onChange={(v) => setParams({ days: v })} options={[{ value: "1", label: "24 giờ" }, { value: "7", label: "7 ngày" }, { value: "30", label: "30 ngày" }]} />
       </div>
@@ -243,7 +243,7 @@ function Overview({ onOpen }: { onOpen: (id: string) => void }) {
         </div>
       )}
       {st && st.count > 0 && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Card>
             <CardHeader title="Model & agent" icon={<Zap size={16} />} />
             <ul className="space-y-1 px-5 pb-5 text-sm">
@@ -321,8 +321,8 @@ export default function AiLog() {
   const [params, setParams] = useSearchParams();
   const id = params.get("id");
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader title="Nhật ký AI" subtitle="Observability: mỗi câu hỏi đã đi qua Safety Guard, Router, agent, model và công cụ nào, mất bao lâu" />
+    <div className="mx-auto max-w-[1400px]">
+      <PageHeader lead="Nhật ký AI," title="mỗi lượt xử lý" subtitle="Observability: mỗi câu hỏi đã đi qua Safety Guard, Router, agent, model và công cụ nào, mất bao lâu" />
       {id ? <Detail id={id} onBack={() => setParams({})} /> : <Overview onOpen={(tid) => setParams({ id: tid })} />}
     </div>
   );

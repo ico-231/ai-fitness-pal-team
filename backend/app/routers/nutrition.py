@@ -12,7 +12,7 @@ from ..db import get_db
 from ..models import Meal, User
 from ..security import get_current_user
 from ..services import foods as foodsvc
-from ..services import stats
+from ..services import quota, stats
 from ..utils import prepare_image, thumbnail
 
 router = APIRouter(prefix="/api", tags=["nutrition"])
@@ -50,6 +50,14 @@ class AnalyzeIn(BaseModel):
     text: str | None = Field(None, max_length=1000)
 
 
+def _not_future(d: dt.date | None) -> dt.date:
+    """Ngày ghi bữa ăn: mặc định hôm nay, không cho ghi trước vào tương lai."""
+    d = d or stats.today()
+    if d > stats.today():
+        raise HTTPException(400, "Không ghi bữa ăn cho ngày trong tương lai")
+    return d
+
+
 def meal_out(m: Meal) -> dict:
     return {"id": m.id, "date": m.date.isoformat(), "meal_type": m.meal_type, "name": m.name, "items": m.items,
             "calories": round(m.calories), "protein": round(m.protein, 1), "carbs": round(m.carbs, 1), "fat": round(m.fat, 1),
@@ -67,9 +75,8 @@ def _img(v: str | None) -> str | None:
 @router.get("/nutrition/day")
 def day(date: dt.date | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = date or stats.today()
-    p = stats.get_profile(db, user)
     return {"date": d.isoformat(), "meals": [meal_out(m) for m in stats.meals_on(db, user.id, d)],
-            "totals": stats.day_nutrition(db, user.id, d), "targets": stats.targets(p)}
+            "totals": stats.day_nutrition(db, user.id, d), "targets": stats.day_targets(db, user, d)}
 
 
 @router.get("/nutrition/history")
@@ -91,7 +98,7 @@ def history(days: int = 30, user: User = Depends(get_current_user), db: Session 
 
 @router.post("/nutrition/meals")
 def create_meal(body: MealIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    m = Meal(user_id=user.id, date=body.date or stats.today(), meal_type=body.meal_type, name=body.name,
+    m = Meal(user_id=user.id, date=_not_future(body.date), meal_type=body.meal_type, name=body.name,
              items=[i.model_dump() for i in body.items], calories=body.calories, protein=body.protein, carbs=body.carbs,
              fat=body.fat, image=_img(body.image), analysis=body.analysis, source=body.source)
     db.add(m)
@@ -117,6 +124,8 @@ def update_meal(mid: str, body: MealIn, user: User = Depends(get_current_user), 
     data = body.model_dump()
     img = data.pop("image")
     data["items"] = [i.model_dump() for i in body.items]
+    if body.date:
+        _not_future(body.date)
     for k, v in data.items():
         if k == "date" and v is None:
             continue
@@ -157,9 +166,84 @@ def recent(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 @router.post("/nutrition/meals/{mid}/repeat")
 def repeat_meal(mid: str, body: RepeatIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     src = _own(db, user, mid)
-    m = Meal(user_id=user.id, date=body.date or stats.today(), meal_type=body.meal_type or src.meal_type, name=src.name,
-             items=src.items, calories=src.calories, protein=src.protein, carbs=src.carbs, fat=src.fat, image=src.image,
-             analysis=src.analysis, source=src.source)
+    m = _clone(src, user, _not_future(body.date), body.meal_type)
+    db.add(m)
+    db.commit()
+    return meal_out(m)
+
+
+class CopyDayIn(BaseModel):
+    from_date: dt.date
+    to_date: dt.date | None = None
+    meal_types: list[MealType] | None = None  # None = chép tất cả bữa
+
+
+def _clone(src: Meal, user: User, day: dt.date, meal_type: str | None = None) -> Meal:
+    return Meal(user_id=user.id, date=day, meal_type=meal_type or src.meal_type, name=src.name, items=src.items,
+                calories=src.calories, protein=src.protein, carbs=src.carbs, fat=src.fat, image=src.image,
+                analysis=src.analysis, source=src.source)
+
+
+@router.post("/nutrition/copy-day")
+def copy_day(body: CopyDayIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Chép các bữa của một ngày (mặc định: hôm qua) sang ngày khác (mặc định: hôm nay)."""
+    to = _not_future(body.to_date)
+    if to == body.from_date:
+        raise HTTPException(400, "Ngày nguồn và ngày đích trùng nhau")
+    src = [m for m in stats.meals_on(db, user.id, body.from_date) if not body.meal_types or m.meal_type in body.meal_types]
+    if not src:
+        raise HTTPException(404, "Ngày đó chưa có bữa ăn nào để chép")
+    new = [_clone(m, user, to) for m in src]
+    db.add_all(new)
+    db.commit()
+    return {"copied": len(new), "meals": [meal_out(m) for m in new]}
+
+
+# ---- Món yêu thích: lưu bản chụp món (tên, macro, ảnh) trong settings của hồ sơ, không cần bảng mới
+FAV_KEY = "favorite_meals"
+FAV_MAX = 30
+
+
+def _favs(db: Session, user: User) -> list[dict]:
+    return list((stats.get_profile(db, user).settings or {}).get(FAV_KEY, []))
+
+
+def _save_favs(db: Session, user: User, favs: list[dict]) -> None:
+    p = stats.get_profile(db, user)
+    p.settings = {**(p.settings or {}), FAV_KEY: favs[:FAV_MAX]}
+    db.commit()
+
+
+@router.get("/nutrition/favorites")
+def list_favorites(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return _favs(db, user)
+
+
+@router.post("/nutrition/meals/{mid}/favorite")
+def add_favorite(mid: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    m = _own(db, user, mid)
+    favs = [f for f in _favs(db, user) if f["name"].strip().lower() != m.name.strip().lower()]
+    fav = {"id": m.id, "name": m.name, "meal_type": m.meal_type, "items": m.items, "calories": round(m.calories),
+           "protein": round(m.protein, 1), "carbs": round(m.carbs, 1), "fat": round(m.fat, 1), "image": m.image,
+           "analysis": m.analysis, "source": m.source}
+    _save_favs(db, user, [fav, *favs])
+    return {"ok": True, "favorites": _favs(db, user)}
+
+
+@router.delete("/nutrition/favorites/{fid}")
+def delete_favorite(fid: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    _save_favs(db, user, [f for f in _favs(db, user) if f["id"] != fid])
+    return {"ok": True}
+
+
+@router.post("/nutrition/favorites/{fid}/log")
+def log_favorite(fid: str, body: RepeatIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    f = next((x for x in _favs(db, user) if x["id"] == fid), None)
+    if not f:
+        raise HTTPException(404, "Không tìm thấy món yêu thích")
+    m = Meal(user_id=user.id, date=_not_future(body.date), meal_type=body.meal_type or f["meal_type"], name=f["name"],
+             items=f.get("items") or [], calories=f["calories"], protein=f["protein"], carbs=f["carbs"], fat=f["fat"],
+             image=f.get("image"), analysis=f.get("analysis") or "", source=f.get("source") or "manual")
     db.add(m)
     db.commit()
     return meal_out(m)
@@ -169,11 +253,13 @@ def repeat_meal(mid: str, body: RepeatIn, user: User = Depends(get_current_user)
 async def analyze(body: AnalyzeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not body.image and not (body.text or "").strip():
         raise HTTPException(400, "Cần ảnh hoặc mô tả bữa ăn")
+    quota.check(db, user.id)
     image = prepare_image(body.image) if body.image else None
     try:
         res = await analyzers.analyze_meal(db, user, image=image, text=body.text)
     except llm.LLMError as e:
         raise HTTPException(503, str(e)) from e
+    quota.consume(db, user.id, "meal")
     res["image_thumb"] = thumbnail(body.image) if body.image else None
     return res
 

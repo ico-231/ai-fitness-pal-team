@@ -5,57 +5,54 @@ import { CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbel
 import { del, get, post } from "../lib/api";
 import { useAction, useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
-import { dayLabel, exName, fmt, mmss } from "../lib/format";
+import { dayLabel, exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR, WorkoutSession } from "../lib/types";
 import { useAuth } from "../lib/auth";
 import { BodyMap } from "../components/BodyMap";
 import { ExerciseCard, ExerciseImage, ExerciseModal, PlanCard } from "../components/Exercise";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { AddToDraftButton, BuilderModal, DraftTray, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
+import { AddToDraftButton, BuilderModal, DraftPill, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Spinner, Tabs, Toggle, toast, confirmDialog } from "../components/ui";
 
 type Tab = "programs" | "custom" | "schedule" | "bodymap" | "library" | "history";
 
-function Programs({ setTab }: { setTab: (t: Tab) => void }) {
-  const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
-  const { data: mine } = useApi<Plan[]>(["plans"], "/api/workouts/plans");
-  const { user } = useAuth();
+/** Thẻ "Nhờ HeadBro thiết kế buổi tập riêng" ở hàng đầu trang Tập luyện. */
+function AskCoachCard({ className }: { className?: string }) {
   const ai = useAI();
+  const prompts = ["Tạo buổi tập tay 45 phút cho mình", "Tạo Leg Workout 60 phút phù hợp trình độ của mình", "Hôm nay mình chỉ có 20 phút, tập gì?", "Lên lịch tập 1 tuần theo mục tiêu của mình"];
+  return (
+    <Card className={clsx("p-6", className)}>
+      <div className="flex items-center gap-3">
+        <AgentAvatar agent="headbro" size={36} />
+        <div>
+          <p className="font-semibold">Nhờ HeadBro thiết kế buổi tập</p>
+          <p className="text-xs text-muted">Dựa trên lịch sử tập, điểm sẵn sàng, dụng cụ và mục tiêu của bạn.</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-col gap-2">
+        {prompts.map((p) => (
+          <button key={p} onClick={() => ai.open({ agent: "coachbro", text: p })}
+            className="flex items-center gap-2 rounded-2xl bg-[var(--glass-fill)] px-3.5 py-2.5 text-left text-[13px] transition hover:bg-surface-3">
+            <Sparkles size={14} className="shrink-0 text-muted" /> {p}
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Programs() {
+  const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
+  const { user } = useAuth();
   const eq = user?.profile?.equipment;
   const { data: sch } = useApi<{ today: { plan: { id: string } | null; done: boolean } }>(["schedule"], "/api/schedule");
   const todayId = sch?.today.done ? null : sch?.today.plan?.id;
   const sorted = (tpls || []).slice().sort((a, b) => (a.id === todayId ? -2 : a.equipment === eq ? -1 : 0) - (b.id === todayId ? -2 : b.equipment === eq ? -1 : 0));
-  const prompts = ["Tạo buổi tập tay 45 phút cho mình", "Tạo Leg Workout 60 phút phù hợp trình độ của mình", "Hôm nay mình chỉ có 20 phút, tập gì?", "Lên lịch tập 1 tuần theo mục tiêu của mình"];
   return (
     <div className="space-y-6">
-      <Card className="p-4">
-        <div className="flex items-center gap-2.5">
-          <AgentAvatar agent="coachbro" size={30} />
-          <div>
-            <p className="font-semibold">Nhờ HeadBro thiết kế buổi tập riêng</p>
-            <p className="text-xs text-muted">Dựa trên lịch sử tập, điểm sẵn sàng, dụng cụ và mục tiêu của bạn.</p>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {prompts.map((p) => (
-            <button key={p} onClick={() => ai.open({ agent: "coachbro", text: p })} className="rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[13px] hover:border-coach/60">
-              {p}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {mine && mine.length > 0 && (
-        <Card className="flex flex-wrap items-center gap-3 p-4">
-          <ClipboardList size={18} className="text-primary-strong" />
-          <p className="flex-1 text-sm">Bạn có <b>{mine.length}</b> buổi Custom (tự soạn hoặc HeadBro tạo).</p>
-          <Button size="sm" variant="outline" onClick={() => setTab("custom")}>Mở tab Custom</Button>
-        </Card>
-      )}
-
       <div>
-        <h2 className="mb-3 font-semibold">Chương trình tập có sẵn</h2>
+        <h2 className="on-bg mb-4 text-xl font-semibold tracking-[-0.02em]">Chương trình tập có sẵn</h2>
         {!tpls ? (
           <Spinner />
         ) : (
@@ -241,7 +238,7 @@ function Library() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input className="input pl-9" placeholder={`Tìm trong ${meta?.total || 1324} bài tập (vd: hít đất, đẩy ngực, squat, curl...)`} value={q} onChange={(e) => { setQ(e.target.value); setLimit(24); }} />
           </div>
-          <select className="input w-auto" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
+          <select aria-label="Lọc theo dụng cụ" className="input w-auto" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
             <option value="">Mọi dụng cụ</option>
             {Object.entries(meta?.equipment || {}).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
@@ -253,7 +250,7 @@ function Library() {
             <button
               key={k}
               onClick={() => { setFocus(k); setLimit(24); setSp(k ? { tab: "library", focus: k } : { tab: "library" }, { replace: true }); }}
-              className={clsx("rounded-full border px-3 py-1 text-[13px] font-medium", focus === k ? "border-transparent bg-primary-strong text-on-primary" : "border-border text-muted hover:text-text")}
+              className={clsx("rounded-full border px-3 py-1 text-[13px] font-medium", focus === k ? "border-transparent bg-ink text-on-ink" : "border-border text-muted hover:text-text")}
             >
               {v}
             </button>
@@ -344,7 +341,7 @@ function HistoryTab() {
               {prs.map((p) => (
                 <li key={p.exercise_id} className="flex justify-between py-2">
                   <span className="truncate pr-2 first-letter:uppercase">{p.exercise_name}</span>
-                  <span className="shrink-0 font-semibold">{p.e1rm} kg</span>
+                  <span className="shrink-0 text-right font-semibold">{prValue(p)}<span className="block text-[11px] font-normal text-muted">{prLabel(p.kind)}</span></span>
                 </li>
               ))}
             </ul>
@@ -368,9 +365,9 @@ export default function Workouts() {
 
   return (
     <div>
-      <PageHeader title="Tập luyện" subtitle="Chương trình tập, bản đồ cơ thông minh, thư viện 1.324 bài có ảnh minh hoạ" />
+      <PageHeader lead="Tập luyện," help="tap-luyen" title="hôm nay tập gì?" subtitle="Chương trình có sẵn, buổi Custom của bạn, bản đồ cơ có AI gợi ý và thư viện 1.324 bài có ảnh minh hoạ." />
       {active && active.sets.length > 0 && (
-        <Card className="mb-5 flex flex-wrap items-center gap-3 border-primary/50 p-4">
+        <Card className="mb-6 flex flex-wrap items-center gap-3 p-4">
           <Dumbbell size={20} className="text-primary-strong" />
           <p className="flex-1 text-sm">
             Bạn có buổi <b>{active.name}</b> đang tập dở ({active.sets.length} set).
@@ -378,7 +375,10 @@ export default function Workouts() {
           <Button size="sm" onClick={() => nav("/workouts/session?resume=1")}>Tiếp tục</Button>
         </Card>
       )}
-      <TodayAdviceCard className="mb-5" />
+      <div className="mb-8 grid gap-6 lg:grid-cols-12 xl:gap-8">
+        <TodayAdviceCard hero className="lg:col-span-7" />
+        <AskCoachCard className="lg:col-span-5" />
+      </div>
       <Tabs
         value={tab}
         onChange={(v) => setSp({ tab: v })}
@@ -390,14 +390,14 @@ export default function Workouts() {
           { value: "library", label: "Thư viện bài tập", icon: <Dumbbell size={16} /> },
           { value: "history", label: "Lịch sử & PR", icon: <History size={16} /> },
         ]}
+        extra={<DraftPill />}
       />
-      {tab === "programs" && <Programs setTab={(t) => setSp({ tab: t })} />}
+      {tab === "programs" && <Programs />}
       {tab === "custom" && <CustomTab />}
       {tab === "schedule" && <ScheduleTab />}
       {tab === "bodymap" && <BodyMapTab />}
       {tab === "library" && <Library />}
       {tab === "history" && <HistoryTab />}
-      {tab !== "custom" && <DraftTray />}
     </div>
   );
 }

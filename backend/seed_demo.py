@@ -28,6 +28,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+for _s in (sys.stdout, sys.stderr):  # cửa sổ lệnh Windows mặc định không in được tiếng Việt
+    try:
+        _s.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 from sqlalchemy import select  # noqa: E402
 
@@ -568,10 +573,34 @@ def seed_chats_late(db, user: User, prof: Profile, today: dt.date) -> None:
 # ---------------------------------------------------------------------------
 
 
-def main() -> None:
+def is_stale(db) -> bool:
+    """Demo cần tạo lại khi chưa có, hoặc chưa có check-in hôm nay (dữ liệu đã cũ đi 1 ngày trở lên)."""
+    uid = db.scalars(select(User.id).where(User.email == EMAIL)).first()
+    if not uid:
+        return True
+    return not db.scalars(select(DailyLog.id).where(DailyLog.user_id == uid, DailyLog.date == stats.today(),
+                                                    DailyLog.readiness.is_not(None))).first()
+
+
+def ensure_fresh() -> bool:
+    """Tạo lại demo nếu đã cũ → demo luôn "kết thúc ở hôm nay" dù mở app vào ngày nào. Trả về True nếu đã tạo lại."""
     init_db()
     db = SessionLocal()
+    try:
+        stale = is_stale(db)
+    finally:
+        db.close()
+    if stale:
+        main()
+    return stale
+
+
+def main() -> None:
+    init_db()
+    rng.seed(2026)  # chạy lại trong cùng tiến trình vẫn ra đúng bộ dữ liệu
+    db = SessionLocal()
     old = db.scalars(select(User).where(User.email == EMAIL)).first()
+    old_id = old.id if old else None
     if old:
         db.delete(old)
         db.commit()
@@ -579,7 +608,10 @@ def main() -> None:
     today = stats.today()
     start = today - dt.timedelta(days=DAYS)
 
+    # Giữ nguyên id cũ → ai đang đăng nhập demo không bị đăng xuất khi demo được làm mới mỗi ngày
     user = User(email=EMAIL, name=NAME, password_hash=hash_password(PASSWORD), created_at=utc_at(start, 20))
+    if old_id:
+        user.id = old_id
     db.add(user)
     db.flush()
     prof = Profile(

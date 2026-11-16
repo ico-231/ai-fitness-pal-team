@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import AgentTrace, BodyMetric, Conversation, DailyLog, Goal, Meal, Memory, PendingAction, User, WeeklySchedule, WorkoutPlan, WorkoutSession
 from ..security import get_current_user
+from ..services import schedule as schedsvc
 from ..services import stats
 from .body import metric_out
 from .nutrition import meal_out
@@ -41,6 +42,9 @@ def export(user: User = Depends(get_current_user), db: Session = Depends(get_db)
                    "deadline": g.deadline.isoformat() if g.deadline else None, "status": g.status}
                   for g in db.scalars(select(Goal).where(Goal.user_id == uid))],
         "ai_memories": [m.content for m in db.scalars(select(Memory).where(Memory.user_id == uid))],
+        "weekly_schedule": [{"day": d["label"], "plan": d["plan"]["name"] if d["plan"] else None}
+                            for d in schedsvc.schedule_out(db, uid)["days"]],
+        "favorite_meals": (stats.get_profile(db, user).settings or {}).get("favorite_meals", []),
     }
     return JSONResponse(data, headers={"Content-Disposition": 'attachment; filename="fitbro-data.json"'})
 
@@ -56,8 +60,10 @@ def wipe(body: WipeIn, user: User = Depends(get_current_user), db: Session = Dep
         db.delete(conv)  # xoá kèm tin nhắn
     for model in (DailyLog, Meal, BodyMetric, Goal, WorkoutPlan, PendingAction, Memory, WeeklySchedule, AgentTrace):
         db.execute(delete(model).where(model.user_id == uid))
+    # Lượt AI đã dùng hôm nay giữ nguyên (xoá dữ liệu không phải cách để có thêm lượt). Món yêu thích là dữ liệu → xoá.
+    p = stats.get_profile(db, user)
+    p.settings = {k: v for k, v in (p.settings or {}).items() if k != "favorite_meals"}
     if body.reset_profile:
-        p = stats.get_profile(db, user)
         p.onboarded = False
     db.commit()
     return {"ok": True}

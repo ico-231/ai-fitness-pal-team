@@ -920,3 +920,89 @@ Nhóm gửi bản tổng hợp nhận xét sau khi dùng thử. Bảng dưới g
 | Kiểm tra responsive, thành phần bị mất | Quét 15 trang ở 375px, không tràn ngang; nút mở danh sách chat trên điện thoại không còn đè nội dung; màn hình tuỳ chỉnh bài gọn trên điện thoại | |
 | (Phát hiện khi tự test) Hình que Camera AI lệch về một bên | Vẽ ảnh camera và khung xương trên cùng canvas | Mục 9, điểm 6 |
 | (Câu hỏi của nhóm) Bài có Camera AI có tự bật không | Có, từ v3.3; tắt được trong Cài đặt | Mục 9, điểm 7 |
+
+### 17.1. Thay logo và ảnh nền (giao diện kính mờ)
+Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn màn hình với các tấm kính mờ nổi lên trên.
+
+**Đang dùng:**
+- **Ảnh nền:** khu tập ngoài trời của Aibek Skakov trên Pexels (giấy phép Pexels, dùng miễn phí). Đã nén thành `bg/bg-light.webp` (2400px, WebP). Thả file `bg-light.jpg` mới vào cùng thư mục thì app ưu tiên dùng file đó.
+- **Logo:** `logo.svg`, vẽ lại bằng SVG theo thiết kế nhóm gửi; cũng dùng làm favicon. Có file gốc thì đặt `logo.png`, app sẽ ưu tiên dùng. Không cần sửa code, chỉ cần đặt file vào thư mục `frontend/public/` rồi build lại:
+
+| File | Dùng cho | Gợi ý |
+|---|---|---|
+| `frontend/public/logo.png` (ưu tiên) hoặc `logo.svg` | Logo ở thanh điều hướng, trang đăng nhập, thanh trên điện thoại | Ảnh vuông, tối thiểu 256×256, đã bo góc sẵn hoặc nền trong suốt |
+| `frontend/public/bg/bg-light.jpg` (hoặc `.webp`) | Ảnh nền giao diện sáng | Ảnh ngang, rộng ≥ 1920px, dưới ~600 KB |
+| `frontend/public/bg/bg-dark.jpg` (tuỳ chọn) | Ảnh nền giao diện tối | Thiếu file này thì dùng ảnh sáng phủ lớp tối |
+
+- Thiếu logo → hiện biểu tượng quả tạ mặc định. Thiếu ảnh nền → dùng nền "aurora" vẽ bằng CSS.
+- Ảnh nền có lớp phủ mờ (`.bg-scrim` trong `frontend/src/index.css`) để chữ dễ đọc, và hiệu ứng phóng rất chậm (Ken Burns). Hiệu ứng tự tắt khi máy bật chế độ giảm chuyển động.
+- Muốn chỉnh điểm canh ảnh (để chủ thể không bị che), đặt biến CSS `--bg-pos` (vd `--bg-pos: 30% 60%`) cho `.bg-photo`.
+
+### 17.2. Giao diện v4 — kính mờ trên ảnh nền (theo góp ý "đẹp, mượt kiểu macOS")
+| Phần | Thay đổi |
+|---|---|
+| Hệ màu | Token mới trong `frontend/src/index.css`: nền xám ngọc trai / than, nút chính màu mực (sáng) hoặc xanh chanh (tối), điểm nhấn xanh chanh `--volt`. Sáng/tối theo cài đặt máy, đổi được ở Cài đặt. |
+| Nền & kính | `Backdrop` (Layout.tsx): ảnh nền thật + lớp phủ + nền "aurora" dự phòng. Mọi `.card` thành kính mờ (blur 28px, viền sáng mảnh). Hộp thoại vẫn đặc để dễ đọc. |
+| Chữ & số | Tiêu đề trang hai tông (mảnh + đậm) qua `PageHeader lead/title`; số liệu dùng font Space Grotesk (`.num`), số quan trọng tô xanh chanh (`.num-accent`). |
+| Điều hướng | Desktop: 2 khối kính rời bên trái (trên: logo + 6 trang chính; dưới: Hướng dẫn, Cài đặt, sáng/tối, tài khoản). Điện thoại: thanh trên + dải kính ở đáy. |
+| Chuyển động | Các khối hiện lần lượt khi đổi trang (`.stagger`), ảnh nền phóng rất chậm, rê chuột nhấc nhẹ; tự tắt khi bật "giảm chuyển động". |
+| Tổng quan | Bản đồ cơ thể lớn ở giữa có ghim số set; xung quanh là điểm sẵn sàng, 3 vòng calo/đạm/nước, kỷ lục, mục tiêu; ô "Hỏi HeadBro" ở đáy. |
+| Trợ lý AI | Bố cục 3 cột kiểu Ridgeline: thông số hôm nay — khung chat — bản đồ cơ, kỷ lục, gợi ý. Lịch sử thu vào nút "Lịch sử" có ô tìm kiếm. |
+| Các trang khác | Hôm nay (vòng điểm sẵn sàng, nước, chuỗi ngày), Dinh dưỡng (vòng calo + macro), Tập luyện (thẻ "Hôm nay" lớn), InBody, Buổi tập (đồng hồ lớn, nút xanh chanh), Camera AI, Đăng nhập, Onboarding đều dựng lại theo cùng phong cách. |
+| Khối dùng chung | `frontend/src/components/Widgets.tsx` (điểm sẵn sàng, vòng mini, kỷ lục, mục tiêu, 7 ngày, bản đồ cơ thu nhỏ, gợi ý). |
+
+### 17.3. Cải tiến sau khi rà soát toàn bộ
+| Hạng mục | Thay đổi |
+|---|---|
+| Đổi mật khẩu | `PUT /api/me/password` + mục "Đổi mật khẩu" trong Cài đặt. Phải nhập đúng mật khẩu hiện tại; tài khoản Google chưa có mật khẩu thì "Đặt mật khẩu". |
+| Chat: tạo lại & sửa câu hỏi | Câu trả lời cuối có nút **Tạo lại**; mỗi câu hỏi có nút **Sửa** (sửa tại chỗ, Enter gửi lại). API `POST /api/chat/send` nhận `replace_from` = id câu hỏi: xoá câu đó và mọi tin sau nó rồi xử lý như tin mới, nên lịch sử luôn khớp với màn hình. Giới hạn tin nhắn/ngày đếm theo số lượt đã xử lý (bảng trace) để "Tạo lại" không lách được giới hạn. |
+| Tốc độ tải | Thư viện biểu đồ chỉ tải khi mở bảng chi tiết báo cáo; khung chat của ngăn "Hỏi AI" chỉ tải khi mở. Gói chính giảm từ 687 KB xuống ~294 KB (nén: 204 → 91 KB). Ảnh nền chuyển sang WebP (469 → 234 KB). |
+| Biểu đồ | Theo hệ màu mới: cột gần nhất tô đậm, cột cũ nhạt, lưới mờ; cân nặng dùng màu xanh chanh. |
+| Bản tối | Ảnh bài tập (GIF nền trắng) được giảm sáng để không chói. |
+| Hộp thoại | Hiển thị qua React portal ở cấp trang, không bị giới hạn bởi phần tử cha có kính mờ. |
+| Truy cập | Thêm nhãn cho ô lọc dụng cụ ở Thư viện bài tập. |
+| Test mới | `test_change_password`, `test_update_custom_plan`, `test_auto_camera_setting`, `test_regenerate_and_edit_question` — tổng 46 test. |
+
+### 17.4. Nâng cấp chức năng (rà logic từng tính năng)
+| Hạng mục | Thay đổi |
+|---|---|
+| Sửa / xoá set trong buổi tập | Danh sách "Đã ghi ở bài này" dưới nút ghi set: bút chì để sửa số, thùng rác để xoá. API `PUT`/`DELETE /api/workouts/sessions/{sid}/sets/{set_id}`; buổi đã xong thì tự tính lại tổng khối lượng. Xoá set thì app quay lại làm đúng set còn thiếu. |
+| Set khởi động | Ô "Set khởi động" trước set chính đầu tiên của bài. Cột mới `workout_sets.is_warmup`; set khởi động không tính vào số set, khối lượng, kỷ lục, gợi ý tăng tải và bản đồ cơ. Database cũ (kể cả Neon) được tự thêm cột khi khởi động (`db._add_missing_columns`). |
+| Gợi ý tăng tải đúng mốc | `GET /api/exercises/{id}?target_reps=&target_sec=` lấy mục tiêu của chương trình đang tập (trước đây luôn so với 10 rep). Bài giữ (plank): gợi ý thêm 5 giây khi đã giữ đủ. |
+| Đồng hồ khi tắt màn hình | Đếm ngược theo thời điểm kết thúc thay vì đếm từng giây, nên chuyển app hay khoá máy rồi quay lại vẫn đúng. Giữ màn hình sáng trong lúc tập (Screen Wake Lock), xin lại khi quay về tab. |
+| Kỷ lục bài không tạ | Kỷ lục có 3 loại: `weight` (1RM ước tính), `reps` (bài không tạ), `time` (bài giữ). API trả `kind`, `value`, `unit`; `e1rm` chỉ có với loại tạ. |
+| Mục tiêu tự đạt | Mục tiêu theo chỉ số cơ thể đạt 100% tự chuyển "Đã đạt" và app chúc mừng 1 lần (`just_achieved`). Mục tiêu số buổi/tuần và mục tiêu tự theo dõi không tự đóng. |
+| Bản nhẹ theo điểm sẵn sàng | Điểm sẵn sàng "Trung bình" thì bớt 1 set mỗi bài và giảm tạ gợi ý 10%; "Cần phục hồi" thì còn nửa số set và giảm 20%. Bật sẵn, tắt được ở màn tổng quan buổi tập; chương trình gốc giữ nguyên. |
+| Sửa số đo InBody | Nút bút chì ở Lịch sử đo (`PUT /api/body/metrics/{id}`). Thêm, sửa hay xoá lần cân đều cập nhật cân nặng hồ sơ theo lần cân mới nhất, nên calo và đạm mục tiêu không bị lệch. |
+| Chép ngày ăn, món yêu thích | Nút "Chép bữa hôm qua" (`POST /api/nutrition/copy-day`). Lưu món yêu thích trong chi tiết bữa ăn, ghi lại ở tab "Yêu thích" của hộp Ghi bữa ăn. Món yêu thích lưu trong cài đặt hồ sơ, không cần bảng mới. |
+| Calo ngày tập / nghỉ | Theo lịch tập tuần: ngày tập +150 kcal, ngày nghỉ −150 kcal, điều chỉnh qua tinh bột, đạm giữ nguyên (`stats.day_targets`). Chưa có lịch và chưa tập thì giữ nguyên. Tắt được trong Cài đặt (`calorie_cycling`). |
+| Test mới | `test_edit_delete_set_and_warmup`, `test_overload_uses_plan_target`, `test_bodyweight_and_time_prs`, `test_goal_auto_achieved_and_metric_edit`, `test_copy_day_and_favorites`, `test_calorie_cycling`. Tổng 52 test. |
+
+### 17.5. Rà soát vòng 2
+| Hạng mục | Thay đổi |
+|---|---|
+| Buổi tập bỏ dở | Buổi không ghi set nào trong 4 giờ được tự kết thúc khi mở app (ghi chú "Tự kết thúc vì bỏ dở"); buổi không có set thì xoá. Giờ kết thúc lấy theo set cuối + 2 phút, nên thời lượng và báo cáo phút tập không bị phồng lên hàng chục giờ. |
+| Giới hạn AI ngoài chat | Phân tích ảnh/mô tả bữa ăn, đọc phiếu InBody, gợi ý bài: tối đa 40 lượt/người/ngày (`AI_TOOLS_DAILY_LIMIT`), đếm trong bảng mới `ai_usage` (tự tạo khi khởi động). Hết lượt thì báo 429 dễ hiểu; riêng gợi ý bài vẫn chạy bằng luật, không lỗi. Chỉ tính lượt khi AI trả kết quả thành công. |
+| Xuất / xoá dữ liệu | File xuất có thêm lịch tập tuần và món yêu thích. "Xoá sạch dữ liệu" xoá luôn món yêu thích (lượt AI đã dùng trong ngày giữ nguyên). |
+| AI dùng đúng mục tiêu | Công cụ `get_nutrition_day` của trợ lý dùng mục tiêu theo ngày tập/nghỉ, khớp con số trên màn hình Dinh dưỡng. |
+| Nhắc hạn mục tiêu | Nhắc nhở mới trên Tổng quan: mục tiêu còn ≤ 7 ngày, hoặc đã quá hạn mà chưa đạt (kèm nút hỏi HeadBro đặt lại hạn). |
+| Chặn ngày tương lai | Không ghi bữa ăn, chép ngày ăn hay nhập số đo cho ngày trong tương lai (400). |
+| Test mới | `test_stale_session_auto_closed_with_real_duration`, `test_ai_tools_daily_quota`, `test_no_future_dates`, `test_wipe_clears_favorites_and_export_has_schedule`, `test_goal_deadline_insight`. Tổng 57 test. |
+
+### 17.6. Đăng nhập, bản đồ cơ, tab Hướng dẫn mới
+| Hạng mục | Thay đổi |
+|---|---|
+| Đăng nhập / đăng ký | Một khung kính ở giữa màn hình: logo, tiêu đề, mô tả 1 dòng, form, dòng chuyển Đăng nhập/Đăng ký; bên dưới là 4 nhãn tính năng. |
+| Bản đồ cơ | Vẽ lại theo giải phẫu: thân người liền khối, cơ chia bó (6 múi bụng, đùi trước/sau 2 bó, bắp chân 2 đầu, cơ dựng sống). Token mới `--body-fill`. |
+| Tab Hướng dẫn | Nội dung tách riêng ở `frontend/src/content/guide.ts`: 9 chương, 70 thẻ (là gì · dùng khi nào · các bước · mẹo · lưu ý · nút mở trang · câu hỏi mẫu cho HeadBro), 32 lỗi trong mục riêng "Lỗi & khắc phục". Có tìm kiếm không dấu, khối "Bắt đầu trong 5 bước" theo dữ liệu thật, mục lục dính, đường dẫn riêng cho từng thẻ (`/guide#ten-the`), phần "Bên trong FitBro" thu gọn. Kế hoạch: `KE_HOACH_TAB_HUONG_DAN.md`. |
+| Nút "?" | Cạnh tiêu đề mọi trang chính, mở đúng chương hướng dẫn (`HelpButton` trong `ui.tsx`). |
+
+### 17.7. Chuyển database sang Supabase
+- Project Supabase **fitbro** (vùng us-east-1, gần server Vercel; gói Free): https://supabase.com/dashboard/project/inssdzhbyjalopgwdodt
+- App đọc `SUPABASE_DB_URL` trước, không có mới dùng `DATABASE_URL` (trên Vercel biến này do tích hợp Neon quản lý).
+- Kết nối qua Supabase pooler (cổng 6543): app tự tắt prepared statement và không giữ pool riêng (`app/db.py`).
+- Khi chạy trên Supabase, app tự bật RLS cho mọi bảng để chặn REST API công khai của Supabase; backend vẫn truy cập bình thường.
+- Chuyển dữ liệu: `backend/scripts/migrate_db.py` — hỏi chuỗi kết nối nguồn/đích bằng ô nhập ẩn, tạo bảng, chép theo thứ tự khoá ngoại, so số dòng. Đích phải trống (hoặc `--force`).
+- Bảng đã được tạo sẵn trên Supabase (migration `fitbro_schema`, RLS bật cho cả 16 bảng). Database bắt đầu trống, không chuyển dữ liệu từ Neon.
+- Tài khoản demo (demo@fitbro.vn / demo123, ~12 tuần dữ liệu chi tiết) tự tạo khi server kết nối lần đầu và **tự làm mới mỗi ngày**: khi demo chưa có check-in hôm nay, server tạo lại để dữ liệu luôn kết thúc đúng hôm nay (lúc khởi động và ở request đầu tiên của ngày mới). Id tài khoản giữ nguyên nên người đang đăng nhập demo không bị đăng xuất. Tắt bằng `SEED_DEMO=false`. Code: `seed_demo.ensure_fresh()`, `refresh_demo_if_stale()` trong `app/main.py`.
+

@@ -9,7 +9,7 @@ from ..db import get_db
 from ..models import User, WorkoutPlan, WorkoutSession, WorkoutSet, _now
 from ..security import get_current_user
 from ..services import exercises as exsvc
-from ..services import formulas, stats
+from ..services import formulas, quota, stats
 from ..services import templates as tplsvc
 
 router = APIRouter(prefix="/api", tags=["workouts"])
@@ -41,14 +41,16 @@ def list_exercises(
 
 
 @router.get("/exercises/{ex_id}")
-def exercise_detail(ex_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def exercise_detail(ex_id: str, target_reps: int = 0, target_sec: int = 0,
+                    user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """target_reps / target_sec: mục tiêu của chương trình đang tập, để gợi ý tăng tải so đúng mốc."""
     e = exsvc.get_exercise(ex_id)
     if not e:
         raise HTTPException(404, "Không tìm thấy bài tập")
     last = stats.last_performance(db, user.id, ex_id)
     pr = next((p for p in stats.personal_records(db, user.id) if p["exercise_id"] == ex_id), None)
     return {**exsvc.public(e), "last": last, "pr": pr,
-            "overload": formulas.overload_suggestion(last, 10, e["compound"])}
+            "overload": formulas.overload_suggestion(last, max(0, min(target_reps, 100)), e["compound"], max(0, min(target_sec, 3600)))}
 
 
 # ---------------------------------------------------------------- plans
@@ -146,6 +148,14 @@ class SetIn(BaseModel):
     duration_sec: int = Field(0, ge=0, le=7200)
     form_score: float | None = Field(None, ge=0, le=100)
     rpe: float | None = Field(None, ge=1, le=10)
+    is_warmup: bool = False
+
+
+class SetEditIn(BaseModel):
+    weight_kg: float | None = Field(None, ge=0, le=1000)
+    reps: int | None = Field(None, ge=0, le=500)
+    duration_sec: int | None = Field(None, ge=0, le=7200)
+    is_warmup: bool | None = None
 
 
 class FinishIn(BaseModel):
@@ -155,7 +165,7 @@ class FinishIn(BaseModel):
 def set_out(s: WorkoutSet) -> dict:
     return {"id": s.id, "exercise_id": s.exercise_id, "exercise_name": s.exercise_name, "set_index": s.set_index,
             "weight_kg": s.weight_kg, "reps": s.reps, "duration_sec": s.duration_sec, "form_score": s.form_score,
-            "rpe": s.rpe, "created_at": s.created_at.isoformat()}
+            "rpe": s.rpe, "is_warmup": bool(s.is_warmup), "created_at": s.created_at.isoformat()}
 
 
 def session_out(s: WorkoutSession) -> dict:
@@ -172,8 +182,33 @@ def _own_session(db: Session, user: User, sid: str) -> WorkoutSession:
     return s
 
 
+# Buổi không có hoạt động (ghi set) quá 4 giờ coi như đã bỏ dở: tự đóng lại để báo cáo không bị sai.
+STALE_AFTER = stats.dt.timedelta(hours=4)
+
+
+def _last_activity(s: WorkoutSession):
+    return max([s.started_at, *[x.created_at for x in s.sets]])
+
+
+def _close_stale(db: Session, user: User) -> None:
+    now = _now()
+    changed = False
+    for s in db.scalars(select(WorkoutSession).where(WorkoutSession.user_id == user.id, WorkoutSession.status == "active")):
+        if now - _last_activity(s) < STALE_AFTER:
+            continue
+        if s.sets:
+            _finalize(s)
+            s.notes = (s.notes + " " if s.notes else "") + "(Tự kết thúc vì bỏ dở)"
+        else:
+            db.delete(s)
+        changed = True
+    if changed:
+        db.commit()
+
+
 @router.get("/workouts/active")
 def active_session(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    _close_stale(db, user)
     s = db.scalars(select(WorkoutSession).where(WorkoutSession.user_id == user.id, WorkoutSession.status == "active")
                    .order_by(WorkoutSession.started_at.desc())).first()
     return session_out(s) if s else None
@@ -193,6 +228,21 @@ def start_session(body: SessionIn, user: User = Depends(get_current_user), db: S
     return session_out(s)
 
 
+def _pr_check(db: Session, user: User, st: WorkoutSet) -> dict:
+    """So set vừa ghi/sửa với kỷ lục cũ cùng loại (tạ / rep / giây), tính từ các buổi đã hoàn thành."""
+    pv = None if st.is_warmup else stats.pr_value(st.weight_kg, st.reps, st.duration_sec)
+    if not pv:
+        return {"e1rm": None, "is_pr": False, "previous_best": None, "pr_kind": None, "pr_value": None, "pr_unit": None}
+    kind, val = pv
+    prev = None
+    for x in stats.pr_sets(db, user.id, st.exercise_id):
+        xv = stats.pr_value(x.weight_kg, x.reps, x.duration_sec)
+        if xv and xv[0] == kind and (prev is None or xv[1] > prev):
+            prev = xv[1]
+    return {"e1rm": val if kind == "weight" else None, "is_pr": prev is not None and val > prev, "previous_best": prev,
+            "pr_kind": kind, "pr_value": val, "pr_unit": stats.PR_UNIT[kind]}
+
+
 @router.post("/workouts/sessions/{sid}/sets")
 def log_set(sid: str, body: SetIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     s = _own_session(db, user, sid)
@@ -201,32 +251,57 @@ def log_set(sid: str, body: SetIn, user: User = Depends(get_current_user), db: S
         raise HTTPException(400, "Bài tập không hợp lệ")
     st = WorkoutSet(session_id=s.id, user_id=user.id, exercise_id=e["id"], exercise_name=e["name"], set_index=body.set_index,
                     weight_kg=body.weight_kg, reps=body.reps, duration_sec=body.duration_sec, form_score=body.form_score,
-                    rpe=body.rpe, muscles={"primary": e["primary"], "secondary": e["secondary"]})
+                    rpe=body.rpe, is_warmup=body.is_warmup, muscles={"primary": e["primary"], "secondary": e["secondary"]})
     db.add(st)
     db.commit()
-    # Báo PR ngay khi vượt kỷ lục cũ (kỷ lục tính từ các buổi đã hoàn thành)
-    e1 = formulas.one_rep_max(body.weight_kg, body.reps)
-    best_prev = next((x["e1rm"] for x in stats.personal_records(db, user.id) if x["exercise_id"] == e["id"]), None)
-    return {**set_out(st), "e1rm": e1, "is_pr": bool(e1 and best_prev is not None and e1 > best_prev), "previous_best": best_prev}
+    return {**set_out(st), **_pr_check(db, user, st)}
+
+
+@router.put("/workouts/sessions/{sid}/sets/{set_id}")
+def edit_set(sid: str, set_id: str, body: SetEditIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Sửa set đã ghi (gõ nhầm tạ/rep). Buổi đã xong thì tính lại tổng khối lượng."""
+    s = _own_session(db, user, sid)
+    st = db.get(WorkoutSet, set_id)
+    if not st or st.session_id != sid:
+        raise HTTPException(404, "Không tìm thấy set")
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(st, k, v)
+    if s.status == "completed":
+        _recalc(s)
+    db.commit()
+    return {**set_out(st), **_pr_check(db, user, st)}
 
 
 @router.delete("/workouts/sessions/{sid}/sets/{set_id}")
 def delete_set(sid: str, set_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _own_session(db, user, sid)
+    s = _own_session(db, user, sid)
     st = db.get(WorkoutSet, set_id)
     if st and st.session_id == sid:
         db.delete(st)
+        db.flush()
+        db.refresh(s)
+        if s.status == "completed":
+            _recalc(s)
         db.commit()
     return {"ok": True}
 
 
-def _finalize(s: WorkoutSession) -> None:
-    s.status = "completed"
-    s.ended_at = _now()
-    s.duration_sec = max(0, int((s.ended_at - s.started_at).total_seconds()))
-    s.total_volume = round(sum(x.weight_kg * x.reps for x in s.sets), 1)
+def _recalc(s: WorkoutSession) -> None:
+    """Tổng khối lượng (không gồm set khởi động) và điểm form trung bình."""
+    s.total_volume = round(sum(x.weight_kg * x.reps for x in s.sets if not x.is_warmup), 1)
     forms = [x.form_score for x in s.sets if x.form_score is not None]
     s.avg_form_score = round(sum(forms) / len(forms)) if forms else None
+
+
+def _finalize(s: WorkoutSession) -> None:
+    """Kết thúc buổi. Nếu buổi đã bỏ dở lâu (quên bấm Kết thúc), giờ kết thúc = lúc ghi set cuối + 2 phút,
+    không phải lúc đóng → thời lượng và báo cáo phút tập không bị phồng lên hàng chục giờ."""
+    s.status = "completed"
+    now = _now()
+    last = _last_activity(s)
+    s.ended_at = now if now - last < STALE_AFTER else last + stats.dt.timedelta(minutes=2)
+    s.duration_sec = max(0, int((s.ended_at - s.started_at).total_seconds()))
+    _recalc(s)
 
 
 @router.post("/workouts/sessions/{sid}/finish")
@@ -243,6 +318,8 @@ def finish_session(sid: str, body: FinishIn, user: User = Depends(get_current_us
     prs = [p for p in stats.pr_events(db, user.id, d, d) if any(x.exercise_id == p["exercise_id"] for x in s.sets)]
     muscles: dict[str, float] = {}
     for x in s.sets:
+        if x.is_warmup:
+            continue
         for m in (x.muscles or {}).get("primary", []):
             muscles[m] = muscles.get(m, 0) + 1
         for m in (x.muscles or {}).get("secondary", []):
@@ -283,4 +360,9 @@ class SuggestIn(BaseModel):
 async def suggest(body: SuggestIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if body.muscle not in exsvc.MUSCLES:
         raise HTTPException(400, "Nhóm cơ không hợp lệ")
-    return await analyzers.suggest_for_muscle(db, user, body.muscle)
+    # hết lượt AI hôm nay → vẫn gợi ý được bằng luật (không gọi AI), không báo lỗi
+    use_ai = quota.remaining(db, user.id) > 0
+    res = await analyzers.suggest_for_muscle(db, user, body.muscle, use_ai=use_ai)
+    if res.get("method") == "ai":
+        quota.consume(db, user.id, "suggest")
+    return res

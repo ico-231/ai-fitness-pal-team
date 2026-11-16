@@ -6,6 +6,10 @@ export interface Targets {
   carbs: number;
   fat: number;
   water_ml: number;
+  /** Mục tiêu theo ngày: "train" = ngày tập (+kcal), "rest" = ngày nghỉ (−kcal), null = không điều chỉnh. */
+  day_type?: "train" | "rest" | null;
+  adjust_kcal?: number;
+  base_calories?: number;
 }
 
 export interface Settings {
@@ -13,6 +17,7 @@ export interface Settings {
   voice_rate: number;
   prep_seconds: number;
   auto_camera: boolean;
+  calorie_cycling: boolean;
   theme: "system" | "light" | "dark";
   reminders: { checkin: string; workout: string; water_every_min: number; enabled: boolean };
 }
@@ -97,6 +102,7 @@ export interface WorkoutSet {
   reps: number;
   duration_sec: number;
   form_score: number | null;
+  is_warmup?: boolean;
   created_at: string;
 }
 
@@ -172,12 +178,17 @@ export interface MuscleVolume {
   untrained: string[];
 }
 
+/** Kỷ lục: kind=weight → value là 1RM ước tính (kg); reps → số rep (bài không tạ); time → số giây (bài giữ). */
 export interface PR {
   exercise_id: string;
   exercise_name: string;
-  e1rm: number;
+  kind: "weight" | "reps" | "time";
+  value: number;
+  unit: string;
+  e1rm: number | null;
   weight_kg: number;
   reps: number;
+  duration_sec: number;
   date: string;
   previous?: number;
 }
@@ -195,6 +206,7 @@ export interface Goal {
   status: string;
   plan: string;
   source: string;
+  just_achieved?: boolean;
 }
 
 // ---- Chat ----

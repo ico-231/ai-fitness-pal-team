@@ -44,30 +44,32 @@ export default function CameraPage() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" icon={<ArrowLeft size={15} />} onClick={() => nav(-1)} className="mb-2">
-        Quay lại
-      </Button>
-      <PageHeader title={<span className="first-letter:uppercase">Camera AI · {exName(ex)}</span>} subtitle="Đếm rep và chấm điểm form theo thời gian thực. Video không rời khỏi máy của bạn." />
+      <button type="button" onClick={() => nav(-1)} className="glass mb-5 inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition hover:-translate-x-0.5">
+        <ArrowLeft size={15} /> Quay lại
+      </button>
+      <PageHeader lead="Camera AI," help="camera" title={<span className="first-letter:uppercase">{exName(ex)}</span>} subtitle="Đếm rep và chấm điểm form theo thời gian thực. Video không rời khỏi máy của bạn." />
       {!key ? (
         <Card className="p-6 text-sm text-muted">Bài này chưa hỗ trợ Camera AI. Các bài hỗ trợ: squat, lunge, push-up, curl, shoulder press, deadlift, plank, jumping jack.</Card>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          <CameraCoach exerciseKey={key} onUpdate={setRes} />
-          <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="overflow-hidden rounded-[28px] shadow-[var(--glass-shadow)]">
+            <CameraCoach exerciseKey={key} onUpdate={setRes} />
+          </div>
+          <div className="space-y-5">
             <Card className="overflow-hidden">
               <ExerciseImage ex={ex} className="h-44 w-full" />
-              <div className="p-4 text-sm text-muted">{EXERCISES[key].camera}</div>
+              <div className="p-5 text-sm text-muted"><p className="eyebrow mb-1">Đặt camera</p>{EXERCISES[key].camera}</div>
             </Card>
-            <Card className="space-y-3 p-4">
-              <p className="font-semibold">Kết quả set này</p>
-              <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="rounded-xl bg-surface-2 p-3">
+            <Card className="space-y-4 p-5">
+              <p className="eyebrow">Kết quả set này</p>
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="rounded-[20px] bg-[var(--glass-fill)] p-4">
                   <p className="text-xs text-muted">{EXERCISES[key].mode === "hold" ? "Giữ đúng form" : "Rep"}</p>
-                  <p className="text-2xl font-bold">{EXERCISES[key].mode === "hold" ? `${res.holdSec}s` : res.reps}</p>
+                  <p className="num num-accent mt-1 text-[36px] font-semibold leading-none">{EXERCISES[key].mode === "hold" ? `${res.holdSec}s` : res.reps}</p>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3">
+                <div className="rounded-[20px] bg-[var(--glass-fill)] p-4">
                   <p className="text-xs text-muted">Điểm form TB</p>
-                  <p className="text-2xl font-bold">{res.avgScore ?? "—"}</p>
+                  <p className="num mt-1 text-[36px] font-semibold leading-none">{res.avgScore ?? "—"}</p>
                 </div>
               </div>
               {!ex.equipment.includes("body") && (

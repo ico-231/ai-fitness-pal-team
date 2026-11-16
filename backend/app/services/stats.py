@@ -81,6 +81,35 @@ def targets(p: Profile) -> dict:
     }
 
 
+# Ngày tập ăn thêm, ngày nghỉ ăn bớt — điều chỉnh qua tinh bột, đạm giữ nguyên.
+CYCLE_KCAL = {"train": 150, "rest": -150}
+
+
+def day_targets(db: Session, user: User, day: dt.date) -> dict:
+    """Mục tiêu dinh dưỡng của một ngày cụ thể.
+
+    Ngày tập = lịch tuần có buổi tập hôm đó, hoặc đã hoàn thành buổi tập hôm đó → +150 kcal.
+    Ngày nghỉ = có lịch tuần nhưng hôm đó nghỉ và chưa tập → −150 kcal. Chưa có lịch và chưa tập → giữ nguyên.
+    Tắt được trong Cài đặt (calorie_cycling). Mục tiêu tự đặt tay cũng được điều chỉnh vì là mức trung bình.
+    """
+    from ..models import WeeklySchedule
+
+    p = get_profile(db, user)
+    base = targets(p)
+    if not (p.settings or {}).get("calorie_cycling", True):
+        return {**base, "day_type": None, "adjust_kcal": 0, "base_calories": base["calories"]}
+    trained = bool(completed_sessions(db, user.id, day, day))
+    sch = db.get(WeeklySchedule, user.id)
+    days = (sch.days if sch else {}) or {}
+    has_schedule = any((v or {}).get("plan_id") for v in days.values())
+    planned = bool((days.get(str(day.weekday())) or {}).get("plan_id"))
+    kind = "train" if trained or planned else "rest" if has_schedule else None
+    adj = CYCLE_KCAL.get(kind, 0)
+    carbs = max(0, round(base["carbs"] + adj / 4))
+    return {**base, "calories": base["calories"] + adj, "carbs": carbs, "day_type": kind, "adjust_kcal": adj,
+            "base_calories": base["calories"]}
+
+
 def latest_weight(db: Session, p: Profile) -> float | None:
     m = db.scalars(
         select(BodyMetric)
@@ -171,6 +200,7 @@ def sets_between(db: Session, uid: str, start: dt.date, end: dt.date) -> list[Wo
             .where(
                 WorkoutSet.user_id == uid,
                 WorkoutSession.status == "completed",
+                WorkoutSet.is_warmup.is_(False),
                 WorkoutSet.created_at >= s,
                 WorkoutSet.created_at < e,
             )
@@ -235,47 +265,76 @@ def _vi_name(ex_id: str, fallback: str) -> str:
     return (e and e.get("name_vi")) or fallback
 
 
+def pr_value(weight_kg: float, reps: int, duration_sec: int) -> tuple[str, float] | None:
+    """Giá trị kỷ lục của 1 set: có tạ → 1RM ước tính; không tạ → số rep; bài giữ (plank) → số giây."""
+    if weight_kg and weight_kg > 0 and reps:
+        return "weight", formulas.one_rep_max(weight_kg, reps)
+    if reps and reps > 0:
+        return "reps", float(reps)
+    if duration_sec and duration_sec > 0:
+        return "time", float(duration_sec)
+    return None
+
+
+PR_UNIT = {"weight": "kg", "reps": "rep", "time": "giây"}
+
+
+def pr_sets(db: Session, uid: str, exercise_id: str | None = None):
+    """Các set tính kỷ lục: buổi đã hoàn thành, không phải set khởi động."""
+    q = (select(WorkoutSet)
+         .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
+         .where(WorkoutSet.user_id == uid, WorkoutSession.status == "completed", WorkoutSet.is_warmup.is_(False)))
+    if exercise_id:
+        q = q.where(WorkoutSet.exercise_id == exercise_id)
+    return db.scalars(q.order_by(WorkoutSet.created_at))
+
+
 def personal_records(db: Session, uid: str) -> list[dict]:
-    """PR = 1RM ước tính (Epley) tốt nhất của mỗi bài, tính từ toàn bộ lịch sử set."""
-    rows = db.scalars(
-        select(WorkoutSet)
-        .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
-        .where(WorkoutSet.user_id == uid, WorkoutSession.status == "completed", WorkoutSet.weight_kg > 0)
-        .order_by(WorkoutSet.created_at)
-    )
-    best: dict[str, dict] = {}
-    for s in rows:
-        e1 = formulas.one_rep_max(s.weight_kg, s.reps)
-        b = best.get(s.exercise_id)
-        if not b or e1 > b["e1rm"]:
-            best[s.exercise_id] = {
-                "exercise_id": s.exercise_id, "exercise_name": _vi_name(s.exercise_id, s.exercise_name), "e1rm": e1,
-                "weight_kg": s.weight_kg, "reps": s.reps, "date": local_date(s.created_at).isoformat(),
+    """Kỷ lục của mỗi bài, tính từ toàn bộ lịch sử set (không gồm set khởi động).
+
+    kind = weight (1RM ước tính, Epley) | reps (bài không tạ) | time (bài giữ). `e1rm` chỉ có với kind=weight.
+    Mỗi bài lấy 1 kỷ lục: ưu tiên có tạ, rồi rep, rồi giây. Danh sách: kỷ lục tạ (cao → thấp) trước.
+    """
+    best: dict[tuple[str, str], dict] = {}
+    for s in pr_sets(db, uid):
+        pv = pr_value(s.weight_kg, s.reps, s.duration_sec)
+        if not pv:
+            continue
+        kind, val = pv
+        b = best.get((s.exercise_id, kind))
+        if not b or val > b["value"]:
+            best[(s.exercise_id, kind)] = {
+                "exercise_id": s.exercise_id, "exercise_name": _vi_name(s.exercise_id, s.exercise_name), "kind": kind,
+                "value": val, "unit": PR_UNIT[kind], "e1rm": val if kind == "weight" else None,
+                "weight_kg": s.weight_kg, "reps": s.reps, "duration_sec": s.duration_sec, "date": local_date(s.created_at).isoformat(),
             }
-    return sorted(best.values(), key=lambda x: x["e1rm"], reverse=True)
+    order = {"weight": 0, "reps": 1, "time": 2}
+    per_ex: dict[str, dict] = {}
+    for (ex_id, kind), rec in best.items():
+        if ex_id not in per_ex or order[kind] < order[per_ex[ex_id]["kind"]]:
+            per_ex[ex_id] = rec
+    return sorted(per_ex.values(), key=lambda x: (order[x["kind"]], -x["value"]))
 
 
 def pr_events(db: Session, uid: str, start: dt.date, end: dt.date) -> list[dict]:
-    """Các lần phá kỷ lục (1RM ước tính cao hơn mọi lần trước đó) trong khoảng thời gian."""
-    rows = db.scalars(
-        select(WorkoutSet)
-        .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
-        .where(WorkoutSet.user_id == uid, WorkoutSession.status == "completed", WorkoutSet.weight_kg > 0)
-        .order_by(WorkoutSet.created_at)
-    )
-    best: dict[str, float] = {}
+    """Các lần phá kỷ lục (cao hơn mọi lần trước đó cùng loại) trong khoảng thời gian."""
+    best: dict[tuple[str, str], float] = {}
     events = []
-    for s in rows:
-        e1 = formulas.one_rep_max(s.weight_kg, s.reps)
-        prev = best.get(s.exercise_id)
+    for s in pr_sets(db, uid):
+        pv = pr_value(s.weight_kg, s.reps, s.duration_sec)
+        if not pv:
+            continue
+        kind, val = pv
+        prev = best.get((s.exercise_id, kind))
         d = local_date(s.created_at)
-        if prev is not None and e1 > prev and start <= d <= end:
+        if prev is not None and val > prev and start <= d <= end:
             events.append({
-                "exercise_id": s.exercise_id, "exercise_name": _vi_name(s.exercise_id, s.exercise_name), "e1rm": e1,
-                "previous": prev, "weight_kg": s.weight_kg, "reps": s.reps, "date": d.isoformat(),
+                "exercise_id": s.exercise_id, "exercise_name": _vi_name(s.exercise_id, s.exercise_name), "kind": kind,
+                "value": val, "unit": PR_UNIT[kind], "e1rm": val if kind == "weight" else None,
+                "previous": prev, "weight_kg": s.weight_kg, "reps": s.reps, "duration_sec": s.duration_sec, "date": d.isoformat(),
             })
-        if prev is None or e1 > prev:
-            best[s.exercise_id] = e1
+        if prev is None or val > prev:
+            best[(s.exercise_id, kind)] = val
     return events
 
 
@@ -284,14 +343,15 @@ def last_performance(db: Session, uid: str, exercise_id: str) -> list[dict]:
     last = db.scalars(
         select(WorkoutSet)
         .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
-        .where(WorkoutSet.user_id == uid, WorkoutSet.exercise_id == exercise_id, WorkoutSession.status == "completed")
+        .where(WorkoutSet.user_id == uid, WorkoutSet.exercise_id == exercise_id, WorkoutSession.status == "completed",
+               WorkoutSet.is_warmup.is_(False))
         .order_by(WorkoutSet.created_at.desc())
     ).first()
     if not last:
         return []
     sets = db.scalars(
         select(WorkoutSet)
-        .where(WorkoutSet.session_id == last.session_id, WorkoutSet.exercise_id == exercise_id)
+        .where(WorkoutSet.session_id == last.session_id, WorkoutSet.exercise_id == exercise_id, WorkoutSet.is_warmup.is_(False))
         .order_by(WorkoutSet.set_index)
     )
     return [
@@ -479,7 +539,7 @@ def today_summary(db: Session, user: User) -> dict:
         "readiness": readiness_detail(log),
         "water_ml": log.water_ml if log else 0,
         "nutrition": nut,
-        "targets": targets(p),
+        "targets": day_targets(db, user, t),
         "workouts": {
             "count": len(sessions),
             "minutes": round(sum(s.duration_sec for s in sessions) / 60),
