@@ -421,6 +421,8 @@ body {
   inset: -3%;
   width: 106%;
   height: 106%;
+  /* Tailwind preflight đặt img { max-width: 100% } → ảnh bị co còn 100% và hụt 3% ở mép phải */
+  max-width: none;
   object-fit: cover;
   object-position: var(--bg-pos, 50% 50%);
   animation: bg-in 1.2s ease both, kenburns 48s ease-in-out infinite alternate;
