@@ -188,9 +188,14 @@ export interface ChatViewProps {
   /** Gọi ngay sau khi `initial` đã được gửi / điền vào ô nhập → nơi giữ state xoá nó, tránh gửi lại khi khung chat dựng lại */
   onInitialSent?: () => void;
   emptyState?: ReactNode;
+  /**
+   * Kiểu trang (Claude/Gemini): khi chưa có tin nhắn, vẽ màn chào với ô nhập nằm GIỮA màn hình
+   * (hàm nhận sẵn ô nhập để đặt vào bố cục). Có tin nhắn rồi thì ô nhập nổi ở đáy, không viền ngăn cách.
+   */
+  hero?: (composer: ReactNode) => ReactNode;
 }
 
-export function ChatView({ conversationId, onConversation, compact, page, pageContext, initial, onInitialSent, emptyState }: ChatViewProps) {
+export function ChatView({ conversationId, onConversation, compact, page, pageContext, initial, onInitialSent, emptyState, hero }: ChatViewProps) {
   const { messages, loading, sending, send, stop, routeInfo, updateCard } = useChat(conversationId, onConversation);
   const { config } = useAuth();
   const [text, setText] = useState("");
@@ -251,10 +256,96 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   };
 
   const lastUserIdx = messages.map((m) => m.role).lastIndexOf("user");
+  const isPage = !!hero && !compact;
+  const showHero = isPage && !loading && messages.length === 0;
+
+  // Ô nhập dùng chung cho cả 3 kiểu: ngăn nổi (compact), màn chào giữa trang (hero), đáy trang khi đang trò chuyện
+  const composer = (
+    <div className={clsx(!compact && "mx-auto w-full", !compact && !showHero && "max-w-3xl")}>
+      {!config?.ai_enabled && (
+        <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
+      )}
+      {image && (
+        <div className="relative mb-2 inline-block">
+          <img src={image} className="h-20 rounded-lg border border-border" alt="" />
+          <button onClick={() => setImage(null)} aria-label="Bỏ ảnh" className="absolute -right-2 -top-2 rounded-full bg-surface-3 p-0.5">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+      <div
+        className={clsx(
+          "flex items-end gap-2 border border-[var(--glass-border)] bg-surface transition focus-within:border-[color-mix(in_srgb,var(--text)_22%,transparent)]",
+          isPage ? "rounded-[28px] p-2 shadow-[var(--shadow-lg)]" : "rounded-[22px] p-1.5 shadow-[var(--shadow)]",
+        )}
+      >
+        <button className={clsx("grid shrink-0 place-items-center rounded-full text-muted hover:bg-surface-3 hover:text-text", isPage ? "h-10 w-10" : "h-9 w-9")} title="Gửi ảnh (món ăn, phiếu InBody...)" aria-label="Gửi ảnh" onClick={() => fileRef.current?.click()}>
+          <ImagePlus size={18} />
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            if (f) setImage(await fileToDataUrl(f));
+            e.target.value = "";
+          }}
+        />
+        <textarea
+          value={text}
+          autoFocus={showHero && !touch}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={1}
+          aria-label="Tin nhắn cho trợ lý FitBro"
+          placeholder={listening ? "Đang nghe..." : showHero ? (touch ? "Hỏi HeadBro bất cứ điều gì..." : "Hỏi HeadBro về tập luyện, ăn uống, tiến độ...") : touch ? "Nhắn cho HeadBro..." : "Nhắn cho HeadBro... (Enter để gửi)"}
+          className={clsx(
+            "flex-1 resize-none bg-transparent px-1 outline-none focus-visible:outline-none",
+            isPage ? "max-h-52 py-2.5 text-[15.5px]" : "max-h-40 min-h-9 py-2 text-[14.5px]",
+            showHero && "min-h-[72px]",
+          )}
+          style={{ fieldSizing: "content" } as React.CSSProperties}
+        />
+        <button className={clsx("grid shrink-0 place-items-center rounded-full hover:bg-surface-3", isPage ? "h-10 w-10" : "h-9 w-9", listening ? "text-danger" : "text-muted")} title="Nói" aria-label="Nhập bằng giọng nói" onClick={toggleMic}>
+          {listening ? <MicOff size={18} /> : <Mic size={18} />}
+        </button>
+        {sending ? (
+          <button onClick={stop} className={clsx("grid shrink-0 place-items-center rounded-full bg-surface-3 text-text", isPage ? "h-10 w-10" : "h-9 w-9")} title="Dừng trả lời">
+            <Square size={15} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            disabled={!text.trim() && !image}
+            onClick={submit}
+            className={clsx("grid shrink-0 place-items-center rounded-full bg-ink text-on-ink transition disabled:opacity-35", isPage ? "h-10 w-10" : "h-9 w-9 rounded-xl")}
+            title="Gửi"
+          >
+            <Send size={17} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Màn chào kiểu Claude/Gemini: lời chào + ô nhập ở giữa màn hình, gợi ý bên dưới
+  if (showHero) {
+    return (
+      <div ref={scroller} className="flex h-full min-h-0 flex-col overflow-y-auto px-4 sm:px-6">
+        <div className="m-auto w-full max-w-[760px] pb-[10vh] pt-8">{hero!(composer)}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div ref={scroller} className={clsx("flex-1 overflow-y-auto", compact ? "px-3 py-3" : "px-4 py-5 sm:px-6")}>
+      <div ref={scroller} className={clsx("flex-1 overflow-y-auto", compact ? "px-3 py-3" : "px-4 py-6 sm:px-6")}>
         <div className={clsx("mx-auto space-y-5", !compact && "max-w-3xl")}>
           {loading && (
             <div className="flex justify-center py-8 text-muted">
@@ -285,69 +376,16 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
         </div>
       </div>
 
-      <div className={clsx("border-t border-border bg-[var(--glass-strong)] backdrop-blur-2xl", compact ? "p-2.5" : "p-3 sm:p-4")}>
-        <div className={clsx("mx-auto", !compact && "max-w-3xl")}>
-          {!config?.ai_enabled && (
-            <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
-          )}
-          {image && (
-            <div className="relative mb-2 inline-block">
-              <img src={image} className="h-20 rounded-lg border border-border" alt="" />
-              <button onClick={() => setImage(null)} className="absolute -right-2 -top-2 rounded-full bg-surface-3 p-0.5">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-          <div className="flex items-end gap-2 rounded-[22px] border border-[var(--glass-border)] bg-surface p-1.5 shadow-[var(--shadow)]">
-            <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface-3 hover:text-text" title="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}>
-              <ImagePlus size={18} />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (f) setImage(await fileToDataUrl(f));
-                e.target.value = "";
-              }}
-            />
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-              rows={1}
-              aria-label="Tin nhắn cho trợ lý FitBro"
-              placeholder={listening ? "Đang nghe..." : touch ? "Nhắn cho HeadBro..." : "Nhắn cho HeadBro... (Enter để gửi)"}
-              className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-[14.5px] outline-none focus-visible:outline-none"
-              style={{ fieldSizing: "content" } as React.CSSProperties}
-            />
-            <button className={clsx("grid h-9 w-9 shrink-0 place-items-center rounded-xl hover:bg-surface-3", listening ? "text-danger" : "text-muted")} title="Nói" onClick={toggleMic}>
-              {listening ? <MicOff size={18} /> : <Mic size={18} />}
-            </button>
-            {sending ? (
-              <button onClick={stop} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-surface-3 text-text" title="Dừng trả lời">
-                <Square size={15} fill="currentColor" />
-              </button>
-            ) : (
-              <button
-                disabled={!text.trim() && !image}
-                onClick={submit}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-on-ink disabled:opacity-40"
-                title="Gửi"
-              >
-                <Send size={17} />
-              </button>
-            )}
-          </div>
+      {isPage ? (
+        // Trang: ô nhập nổi ở đáy, không có dải viền ngăn cách; nền mờ dần để nội dung cuộn "chìm" dưới ô nhập
+        <div className="relative px-4 pb-4 pt-2 sm:px-6 sm:pb-5">
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-[var(--bg)] to-transparent" />
+          {composer}
+          <p className="mt-2 hidden text-center text-[11px] text-muted sm:block">HeadBro có thể nhầm lẫn. Hỏi bác sĩ khi có vấn đề sức khoẻ.</p>
         </div>
-      </div>
+      ) : (
+        <div className={clsx("border-t border-border bg-[var(--glass-strong)] backdrop-blur-2xl", compact ? "p-2.5" : "p-3 sm:p-4")}>{composer}</div>
+      )}
     </div>
   );
 }

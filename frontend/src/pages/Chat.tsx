@@ -1,55 +1,46 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
-import { ChevronDown, Dumbbell, History, MessageSquarePlus, Pencil, Salad, Search, Sparkles, Target, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, Dumbbell, History, MessageSquarePlus, Pencil, Salad, Search, Target, Trash2, TrendingUp } from "lucide-react";
 import { del, api } from "../lib/api";
 import { useApi, useInvalidateAll } from "../lib/hooks";
-import { AGENTS } from "../lib/constants";
-import { timeAgo } from "../lib/format";
+import { greeting, timeAgo } from "../lib/format";
+import { useAuth } from "../lib/auth";
 import type { AgentKey, Conversation } from "../lib/types";
 import { ChatView } from "../components/chat/ChatView";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { confirmDialog, HelpButton, promptDialog } from "../components/ui";
 import type { ChatHandoff } from "../components/AIProvider";
 
-const STARTERS: [string, AgentKey][] = [
-  ["Hôm nay mình muốn tập tay, gợi ý bài cho mình", "coachbro"],
-  ["Lên lịch tập cả tuần cho mình", "coachbro"],
-  ["Trưa nay mình ăn 1 tô bún bò Huế, ghi lại giúp mình", "nutribro"],
-  ["Lên thực đơn món Việt cho cả ngày hôm nay", "nutribro"],
-  ["Giúp mình đặt mục tiêu giảm mỡ cụ thể", "headbro"],
-  ["Muốn tăng cơ thì nên tập và ăn thế nào?", "headbro"],
+// Gợi ý dưới ô nhập: nhãn ngắn (hiện trên viên) + câu đầy đủ (gửi đi), nhóm theo chuyên gia
+const STARTERS: { label: string; text: string; agent: AgentKey; icon: typeof Dumbbell }[] = [
+  { label: "Gợi ý bài tập tay", text: "Hôm nay mình muốn tập tay, gợi ý bài cho mình", agent: "coachbro", icon: Dumbbell },
+  { label: "Lên lịch tập tuần", text: "Lên lịch tập cả tuần cho mình", agent: "coachbro", icon: CalendarDays },
+  { label: "Ghi bữa ăn", text: "Trưa nay mình ăn 1 tô bún bò Huế, ghi lại giúp mình", agent: "nutribro", icon: Salad },
+  { label: "Đặt mục tiêu", text: "Giúp mình đặt mục tiêu giảm mỡ cụ thể", agent: "headbro", icon: Target },
+  { label: "Tuần này thế nào?", text: "Tuần này mình tập và ăn uống thế nào, cần cải thiện gì?", agent: "headbro", icon: TrendingUp },
 ];
 
-function Welcome({ onPick }: { onPick: (t: string) => void }) {
-  const areas: { k: AgentKey; title: string; icon: typeof Dumbbell }[] = [
-    { k: "headbro", title: "Tổng quan & mục tiêu", icon: Target },
-    { k: "coachbro", title: "Tập luyện", icon: Dumbbell },
-    { k: "nutribro", title: "Dinh dưỡng", icon: Salad },
-  ];
+function Welcome({ composer, onPick }: { composer: ReactNode; onPick: (t: string) => void }) {
+  const { user } = useAuth();
+  const first = (user?.name || "").trim().split(/\s+/).pop();
   return (
-    <div className="pb-4 pt-6 text-center sm:pt-10">
-      <h2 className="text-[28px] font-bold leading-tight tracking-[-0.035em] sm:text-[36px]">
-        <span className="font-light text-muted">Hôm nay</span> HeadBro
-        <br />
-        giúp gì cho bạn?
-      </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-        Hỏi gì cũng được: tập luyện, ăn uống, tiến độ. HeadBro tự điều phối chuyên gia phía sau và trả lời dựa trên dữ liệu của bạn.
+    <div className="flex flex-col items-center">
+      <h1 className="flex items-center gap-3 text-center text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[38px]">
+        <AgentAvatar agent="headbro" size={38} />
+        <span>
+          <span className="font-light text-muted">{greeting()}{first ? `, ${first}` : ""}.</span> Hôm nay tập gì?
+        </span>
+      </h1>
+      <p className="mt-2 max-w-lg text-center text-sm text-muted">
+        HeadBro tự gọi chuyên gia tập luyện hoặc dinh dưỡng và trả lời theo dữ liệu thật của bạn.
       </p>
-      <div className="mx-auto mt-6 grid max-w-xl gap-2.5 text-left sm:grid-cols-3">
-        {areas.map(({ k, title, icon: I }) => (
-          <div key={k} className="rounded-[20px] bg-[var(--glass-fill)] p-3.5">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-volt text-on-volt"><I size={15} /></span>
-            <p className="mt-2.5 text-sm font-semibold">{title}</p>
-            <p className="mt-0.5 text-[11px] text-muted">{AGENTS[k].domain}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mx-auto mt-4 flex max-w-xl flex-wrap justify-center gap-2">
-        {STARTERS.map(([t]) => (
-          <button key={t} onClick={() => onPick(t)} className="flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 text-[13px] font-medium shadow-[var(--shadow)] transition hover:-translate-y-0.5">
-            <Sparkles size={13} className="text-muted" /> {t}
+      <div className="mt-7 w-full">{composer}</div>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {STARTERS.map(({ label, text, icon: I }) => (
+          <button key={label} type="button" onClick={() => onPick(text)} title={text}
+            className="flex items-center gap-1.5 rounded-full border border-[var(--glass-border)] bg-surface px-3.5 py-2 text-[13px] font-medium text-muted transition hover:border-[color-mix(in_srgb,var(--text)_20%,transparent)] hover:text-text">
+            <I size={14} /> {label}
           </button>
         ))}
       </div>
@@ -153,13 +144,12 @@ export default function Chat() {
 
   return (
     // Trang Trợ lý AI chỉ còn khung chat (theo góp ý: bỏ các khối chỉ số hai bên cho gọn, tập trung vào hội thoại)
-    <div className="flex h-[calc(100dvh/var(--z)-57px)] justify-center p-2 sm:p-4 lg:h-screen-z lg:pl-0 lg:pr-5">
-      <section className="card rise relative flex w-full min-w-0 max-w-[1100px] flex-col overflow-hidden" style={{ animationDelay: "80ms" }}>
-        <header className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <AgentAvatar agent="headbro" size={34} />
-          <div className="mr-auto min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold leading-tight">HeadBro</p>
-            <p className="hidden truncate text-[11px] text-muted sm:block">Trợ lý chính FitBro · điều phối chuyên gia tập luyện & dinh dưỡng</p>
+    <div className="flex h-[calc(100dvh/var(--z)-57px)] flex-col lg:h-screen-z lg:pr-2">
+      <section className="relative flex min-h-0 w-full flex-1 flex-col">
+        <header className="flex items-center gap-2 px-3 py-3 sm:px-5">
+          <div className="mr-auto flex min-w-0 items-center gap-2">
+            <AgentAvatar agent="headbro" size={28} />
+            <p className="truncate text-[15px] font-semibold">HeadBro</p>
           </div>
           <HelpButton to="headbro" className="!h-9 !w-9 !bg-transparent" />
           <HistoryButton current={id} />
@@ -179,7 +169,7 @@ export default function Chat() {
           pageContext={handoffCtx}
           initial={pick}
           onInitialSent={() => setPick(null)}
-          emptyState={<Welcome onPick={ask} />}
+          hero={(composer) => <Welcome composer={composer} onPick={ask} />}
         />
       </section>
 
