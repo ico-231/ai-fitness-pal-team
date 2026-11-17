@@ -8,7 +8,7 @@ import type { Goal } from "../lib/types";
 import { LineSeries } from "../components/Charts";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, CardHeader, Empty, Field, Modal, PageHeader, Progress, Segmented, Spinner, toast, confirmDialog } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Empty, Field, Modal, PageHeader, Progress, Segmented, Spinner, toast, confirmDialog, DecimalInput } from "../components/ui";
 
 interface Metric { id: string; date: string; [k: string]: number | string | null | Record<string, number> }
 interface Summary {
@@ -87,13 +87,13 @@ function MetricModal({ open, onClose, editing }: { open: boolean; onClose: () =>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Field label="Ngày đo"><input className="input" type="date" max={todayISO()} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
         {FIELDS.map(([k, label]) => (
-          <Field key={k} label={label}><input className="input" type="number" step="0.1" value={f[k] || ""} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></Field>
+          <Field key={k} label={label}><DecimalInput className="input" value={f[k] || ""} onValue={(n) => setF({ ...f, [k]: n == null ? "" : String(n) })} /></Field>
         ))}
       </div>
       <p className="mb-2 mt-4 text-sm font-semibold">Khối nạc từng phần (kg) — để phân tích mất cân đối <span className="font-normal text-muted">(tuỳ chọn, có trên phiếu InBody)</span></p>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
         {SEG.map(([k, label]) => (
-          <Field key={k} label={label}><input className="input" type="number" step="0.01" value={seg[k] || ""} onChange={(e) => setSeg({ ...seg, [k]: e.target.value })} /></Field>
+          <Field key={k} label={label}><DecimalInput className="input" value={seg[k] || ""} onValue={(n) => setSeg({ ...seg, [k]: n == null ? "" : String(n) })} /></Field>
         ))}
       </div>
       <Field label="Ghi chú" className="mt-3"><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
@@ -120,7 +120,7 @@ function GoalModal({ open, onClose, goal }: { open: boolean; onClose: () => void
         <Field label="Tên mục tiêu"><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="Vd: Giảm còn 68kg" /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Theo dõi bằng chỉ số"><select className="input" value={f.metric} onChange={(e) => setF({ ...f, metric: e.target.value })}>{Object.entries(METRIC_GOALS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
-          <Field label="Giá trị mục tiêu"><input className="input" type="number" step="0.1" value={f.target_value} onChange={(e) => setF({ ...f, target_value: e.target.value })} /></Field>
+          <Field label="Giá trị mục tiêu"><DecimalInput className="input" value={f.target_value} onValue={(n) => setF({ ...f, target_value: n == null ? "" : String(n) })} /></Field>
         </div>
         <Field label="Hạn chót"><input className="input" type="date" value={f.deadline} onChange={(e) => setF({ ...f, deadline: e.target.value })} /></Field>
         <Field label="Kế hoạch hành động"><textarea className="input" rows={3} value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value })} placeholder="- Tập 4 buổi/tuần&#10;- Ăn đủ 130g đạm" /></Field>

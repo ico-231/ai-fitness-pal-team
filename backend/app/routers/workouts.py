@@ -40,6 +40,14 @@ def list_exercises(
     return {"total": total, "items": [exsvc.public(e, full=False) for e in items]}
 
 
+@router.get("/exercises/{ex_id}/progress")
+def exercise_progress(ex_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Tiến độ mức tạ / rep / giây của 1 bài qua các buổi đã tập — để vẽ biểu đồ tăng tiến."""
+    if not exsvc.get_exercise(ex_id):
+        raise HTTPException(404, "Không tìm thấy bài tập")
+    return stats.exercise_progress(db, user.id, ex_id)
+
+
 @router.get("/exercises/{ex_id}")
 def exercise_detail(ex_id: str, target_reps: int = 0, target_sec: int = 0,
                     user: User = Depends(get_current_user), db: Session = Depends(get_db)):

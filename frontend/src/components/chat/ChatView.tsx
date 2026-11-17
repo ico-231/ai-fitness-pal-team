@@ -185,10 +185,12 @@ export interface ChatViewProps {
   page?: string;
   pageContext?: string;
   initial?: { text: string; agent?: string; autoSend?: boolean } | null;
+  /** Gọi ngay sau khi `initial` đã được gửi / điền vào ô nhập → nơi giữ state xoá nó, tránh gửi lại khi khung chat dựng lại */
+  onInitialSent?: () => void;
   emptyState?: ReactNode;
 }
 
-export function ChatView({ conversationId, onConversation, compact, page, pageContext, initial, emptyState }: ChatViewProps) {
+export function ChatView({ conversationId, onConversation, compact, page, pageContext, initial, onInitialSent, emptyState }: ChatViewProps) {
   const { messages, loading, sending, send, stop, routeInfo, updateCard } = useChat(conversationId, onConversation);
   const { config } = useAuth();
   const [text, setText] = useState("");
@@ -202,13 +204,17 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   const sentInitial = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) {
+      sentInitial.current = null; // đã tiêu thụ → lần chọn sau (kể cả trùng câu) vẫn gửi được
+      return;
+    }
     const key = `${initial.text}|${initial.agent}`;
     if (sentInitial.current === key) return;
     sentInitial.current = key;
     if (initial.agent) setAgent(initial.agent);
     if (initial.autoSend && initial.text) send({ text: initial.text, agent: initial.agent, page, pageContext });
     else setText(initial.text);
+    onInitialSent?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 

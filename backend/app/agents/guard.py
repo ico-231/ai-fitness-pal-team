@@ -79,12 +79,13 @@ CRISIS_MSG = """Cảm ơn bạn đã chia sẻ. Những gì bạn đang trải q
 
 Mình là trợ lý thể hình nên không thể thay thế chuyên gia, nhưng mình luôn ở đây khi bạn muốn quay lại với việc chăm sóc bản thân."""
 
-EATING_MSG = """Cảm ơn bạn đã tin tưởng chia sẻ. Những hành vi như nhịn ăn kéo dài hay cố tình nôn sau khi ăn có thể ảnh hưởng nghiêm trọng tới sức khỏe, và cần được **chuyên gia y tế** hỗ trợ.
+EATING_MSG = """Mình hiểu bạn muốn có kết quả nhanh, nhưng nhịn ăn nhiều ngày hoặc cắt ăn quá khắt khe có thể gây tụt đường huyết, mất cơ, rối loạn điện giải, và cân thường tăng lại rất nhanh sau đó. Nếu bạn đang thấy khó kiểm soát việc ăn uống (sợ ăn, ăn rồi tìm cách bù trừ), hãy nói chuyện với **bác sĩ hoặc chuyên gia dinh dưỡng** nhé.
 
-- Hãy trao đổi với bác sĩ hoặc chuyên gia dinh dưỡng lâm sàng/tâm lý.
-- Chia sẻ với người thân bạn tin tưởng.
+Cách an toàn mà vẫn hiệu quả:
+- Thâm hụt vừa phải khoảng 300–500 kcal/ngày, giảm chừng 0,5–1% cân nặng mỗi tuần.
+- Đủ đạm (1,6–2,2 g/kg) và vẫn tập tạ để giữ cơ.
 
-Mình sẽ không đưa ra chế độ ăn kiêng khắt khe trong trường hợp này. Khi bạn sẵn sàng, mình có thể giúp bạn xây dựng thói quen ăn uống lành mạnh, đủ chất dưới sự theo dõi của chuyên gia."""
+Bạn muốn mình tính mức calo phù hợp cho bạn không?"""
 
 DRUG_MSG = """Mình không tư vấn liều dùng steroid, hormone, SARMs hay chất cấm — chúng có rủi ro nghiêm trọng cho tim mạch, gan và nội tiết, và cần bác sĩ theo dõi.
 

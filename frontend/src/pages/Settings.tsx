@@ -6,8 +6,9 @@ import { apiUrl, del, post, put, tokenStore } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import { voice } from "../lib/media";
+import { getUiZoom, setUiZoom, type UiZoom } from "../lib/zoom";
 import type { Profile, Settings as S } from "../lib/types";
-import { Button, Card, CardHeader, Field, Modal, PageHeader, Segmented, Toggle, toast, confirmDialog } from "../components/ui";
+import { Button, Card, CardHeader, Field, Modal, PageHeader, Segmented, Toggle, toast, confirmDialog, DecimalInput } from "../components/ui";
 import { MemoryCard } from "../components/MemoryCard";
 
 export default function Settings() {
@@ -20,6 +21,7 @@ export default function Settings() {
     target_fat: p.targets.fat, target_water_ml: p.targets.water_ml,
   });
   const [busy, setBusy] = useState(false);
+  const [zoom, setZoom] = useState<UiZoom>(getUiZoom);
   const [wipe, setWipe] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const s = p.settings;
@@ -67,7 +69,7 @@ export default function Settings() {
     }
   };
 
-  const n = (k: keyof typeof f) => <input className="input" type="number" value={f[k] as number} onChange={(e) => setF({ ...f, [k]: +e.target.value })} />;
+  const n = (k: keyof typeof f) => <DecimalInput className="input" value={f[k] as number} onValue={(v) => setF({ ...f, [k]: v ?? 0 })} />;
 
   return (
     <div className="space-y-8">
@@ -130,6 +132,10 @@ export default function Settings() {
           <div className="space-y-4 px-5 pb-5">
             <Field label="Chủ đề">
               <Segmented value={s.theme} onChange={(v) => { applyTheme(v); setSetting({ theme: v }); }} options={[{ value: "system", label: "Theo máy" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} />
+            </Field>
+            <Field label="Cỡ giao diện (máy này)">
+              <Segmented value={zoom} onChange={(v) => { setZoom(v); setUiZoom(v); }}
+                options={[{ value: "auto", label: "Tự động" }, { value: "0.8", label: "80%" }, { value: "0.9", label: "90%" }, { value: "1", label: "100%" }]} />
             </Field>
             <Toggle
               checked={s.reminders.enabled}

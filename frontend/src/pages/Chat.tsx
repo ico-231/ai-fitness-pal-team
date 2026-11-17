@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { ChevronDown, Dumbbell, History, MessageSquarePlus, Pencil, Salad, Search, Sparkles, Target, Trash2 } from "lucide-react";
 import { del, api } from "../lib/api";
@@ -11,6 +11,7 @@ import { ChatView } from "../components/chat/ChatView";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { MuscleMini, PRCard, ReadinessCard, SuggestCard, TodayRings, WeekDots, useOverview } from "../components/Widgets";
 import { confirmDialog, HelpButton, promptDialog } from "../components/ui";
+import type { ChatHandoff } from "../components/AIProvider";
 
 const STARTERS: [string, AgentKey][] = [
   ["Hôm nay mình muốn tập tay, gợi ý bài cho mình", "coachbro"],
@@ -73,9 +74,9 @@ function HistoryButton({ current }: { current?: string }) {
   const list = (convs || []).filter((c) => c.title.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <div className="relative">
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
-        className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--glass-fill)] px-3.5 text-sm font-medium transition hover:bg-surface-3">
-        <History size={15} /> Lịch sử
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Lịch sử trò chuyện"
+        className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--glass-fill)] px-3 text-sm font-medium transition hover:bg-surface-3 sm:px-3.5">
+        <History size={15} /> <span className="hidden sm:inline">Lịch sử</span>
         {convs && <span className="num rounded-full bg-surface px-1.5 text-[11px] text-muted">{convs.length}</span>}
         <ChevronDown size={14} className={clsx("text-muted transition", open && "rotate-180")} />
       </button>
@@ -131,7 +132,20 @@ function HistoryButton({ current }: { current?: string }) {
 export default function Chat() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [pick, setPick] = useState<{ text: string; autoSend: boolean } | null>(null);
+  const loc = useLocation();
+  const [pick, setPick] = useState<{ text: string; agent?: string; autoSend: boolean } | null>(null);
+  const [handoffCtx, setHandoffCtx] = useState<string | undefined>();
+  // Câu hỏi chuyển từ trang khác (vd. ô "Hỏi HeadBro" ở Tổng quan): nhận 1 lần rồi xoá state để F5 / quay lại không gửi lại
+  useEffect(() => {
+    const h = loc.state as ChatHandoff | null;
+    if (!h?.text) return;
+    if (id) nav("/chat", { replace: true, state: h }); // luôn mở cuộc trò chuyện mới
+    else {
+      setPick({ text: h.text, agent: h.agent, autoSend: h.autoSend });
+      setHandoffCtx(h.context);
+      nav("/chat", { replace: true, state: null });
+    }
+  }, [loc.state, id, nav]);
   // Cuộc trò chuyện vừa được tạo từ khung "mới": đổi URL nhưng GIỮ khung chat đang stream (không dựng lại)
   const created = useRef<string | null>(null);
   const viewKey = id && id === created.current ? "new" : id || "new";
@@ -140,7 +154,7 @@ export default function Chat() {
   const ask = (text: string) => setPick({ text, autoSend: true });
 
   return (
-    <div className="flex h-[calc(100dvh-57px)] gap-5 p-2 sm:p-4 lg:h-dvh lg:pl-0 lg:pr-5 xl:gap-6">
+    <div className="flex h-[calc(100dvh/var(--z)-57px)] gap-5 p-2 sm:p-4 lg:h-screen-z lg:pl-0 lg:pr-5 xl:gap-6">
       {/* Cột trái: thông số hôm nay */}
       <aside className="rise hidden w-[280px] shrink-0 flex-col gap-5 overflow-y-auto pb-2 [scrollbar-width:none] xl:flex">
         {ov && (
@@ -157,12 +171,12 @@ export default function Chat() {
         <header className="flex items-center gap-3 border-b border-border px-4 py-3">
           <AgentAvatar agent="headbro" size={34} />
           <div className="mr-auto min-w-0 flex-1">
-            <p className="text-[15px] font-semibold leading-tight">HeadBro</p>
+            <p className="truncate text-[15px] font-semibold leading-tight">HeadBro</p>
             <p className="hidden truncate text-[11px] text-muted xl:block">Trợ lý chính FitBro · điều phối chuyên gia tập luyện & dinh dưỡng</p>
           </div>
           <HelpButton to="headbro" className="!h-9 !w-9 !bg-transparent" />
           <HistoryButton current={id} />
-          <button type="button" onClick={() => { nav("/chat"); setPick(null); }} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới"
+          <button type="button" onClick={() => { nav("/chat"); setPick(null); setHandoffCtx(undefined); }} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới"
             className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-ink px-3.5 text-sm font-medium text-on-ink transition hover:opacity-90">
             <MessageSquarePlus size={15} /> <span className="hidden sm:inline">Mới</span>
           </button>
@@ -175,7 +189,9 @@ export default function Chat() {
             nav(`/chat/${cid}`, { replace: true });
           }}
           page="chat"
+          pageContext={handoffCtx}
           initial={pick}
+          onInitialSent={() => setPick(null)}
           emptyState={<Welcome onPick={ask} />}
         />
       </section>

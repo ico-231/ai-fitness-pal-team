@@ -102,10 +102,30 @@ function Figure({ shapes, label, data, selected, onSelect, colorOf, big, pins, p
     const prev = placed[placed.length - 1];
     placed.push({ ...p, y: prev ? Math.max(p.c[1], prev.y + 24) : p.c[1] });
   }
-  const vb = pins ? (pinSide === "left" ? "-38 8 198 380" : "40 8 198 380") : "40 8 120 380";
+  // Nhãn ghim: bên trái căn mép phải sát cơ thể (x = 40), bên phải căn mép trái (x = 160).
+  // Khung nhìn (viewBox) nới theo đúng nhãn dài nhất → không nhãn nào bị cắt cụt đầu.
+  const left = pinSide === "left";
+  const labelOf = (m: string) => `${MUSCLES[m]} · ${fmt(data?.[m]?.sets ?? 0, 1)}`;
+  const widthOf = (text: string) => text.length * 4.7 + 16;
+  const pinBoxes = placed.map((p) => {
+    const text = labelOf(p.m);
+    const w = widthOf(text);
+    return { ...p, text, w, x: left ? 40 - w : 160 };
+  });
+  let vb = "40 8 120 380";
+  if (pinBoxes.length) {
+    const minX = Math.min(36, ...pinBoxes.map((b) => b.x - 4));
+    const maxX = Math.max(164, ...pinBoxes.map((b) => b.x + b.w + 4));
+    vb = `${minX} 8 ${maxX - minX} 380`;
+  }
   return (
-    <div className="flex flex-col items-center">
-      <svg viewBox={vb} overflow="visible" className={clsx("w-auto", big ? "h-[270px] sm:h-[440px] xl:h-[520px]" : "h-[300px] sm:h-[340px]")} role="img" aria-label={label}>
+    <div className={clsx("flex flex-col items-center", pins && "min-w-0 flex-1")}>
+      <svg viewBox={vb} overflow="visible" role="img" aria-label={label}
+        className={clsx(
+          pins
+            ? "h-auto w-full max-h-[270px] sm:max-h-[440px] xl:max-h-[520px]" // co theo bề ngang cột, không tràn ra ngoài
+            : clsx("w-auto", big ? "h-[270px] sm:h-[440px] xl:h-[520px]" : "h-[300px] sm:h-[340px]"),
+        )}>
         {big && <ellipse cx="100" cy="387" rx="40" ry="4" fill="var(--text)" opacity="0.1" />}
         <Silhouette />
         {shapes.map((s, i) => {
@@ -130,20 +150,14 @@ function Figure({ shapes, label, data, selected, onSelect, colorOf, big, pins, p
             </path>
           );
         })}
-        {placed.map((p) => {
-          const left = pinSide === "left";
-          const tx = left ? -34 : 166;
-          const text = `${MUSCLES[p.m]} · ${fmt(data?.[p.m]?.sets ?? 0, 1)}`;
-          const w = text.length * 4.2 + 14;
-          return (
-            <g key={p.m} className="pointer-events-none">
-              <line x1={p.c[0]} y1={p.c[1]} x2={left ? tx + w : tx} y2={p.y} stroke="var(--text)" strokeWidth="0.6" strokeDasharray="2 2" opacity="0.5" />
-              <circle cx={p.c[0]} cy={p.c[1]} r="2.6" fill="var(--ink)" stroke="var(--surface)" strokeWidth="1" />
-              <rect x={tx} y={p.y - 8} width={w} height="16" rx="8" fill="var(--surface)" stroke="var(--card-border)" />
-              <text x={tx + 7} y={p.y + 3} fontSize="8" fontWeight="600" fill="var(--text)">{text}</text>
-            </g>
-          );
-        })}
+        {pinBoxes.map((b) => (
+          <g key={b.m} className="pin-in pointer-events-none">
+            <line x1={b.c[0]} y1={b.c[1]} x2={left ? b.x + b.w : b.x} y2={b.y} stroke="var(--text)" strokeWidth="0.6" strokeDasharray="2 2" opacity="0.5" />
+            <circle cx={b.c[0]} cy={b.c[1]} r="2.6" fill="var(--ink)" stroke="var(--surface)" strokeWidth="1" />
+            <rect x={b.x} y={b.y - 8} width={b.w} height="16" rx="8" fill="var(--surface)" stroke="var(--card-border)" />
+            <text x={b.x + b.w / 2} y={b.y + 3} textAnchor="middle" fontSize="8" fontWeight="600" fill="var(--text)">{b.text}</text>
+          </g>
+        ))}
       </svg>
       <span className="mt-1 text-xs font-medium text-muted">{label}</span>
       <span className="h-5 text-xs font-semibold">{hover ? `${MUSCLES[hover]}${data ? ` · ${fmt(data[hover]?.sets ?? 0, 1)} set` : ""}` : ""}</span>
@@ -169,7 +183,7 @@ export function BodyMap({ data, selected, onSelect, highlight, big, pins }: {
     return HEAT_COLORS[0];
   };
   return (
-    <div className={clsx("flex justify-center", big ? "gap-0 sm:gap-4" : "gap-2 sm:gap-8")}>
+    <div className={clsx("flex justify-center", pins && "w-full", big ? "gap-0 sm:gap-4" : "gap-2 sm:gap-8")}>
       <Figure shapes={FRONT} label="Mặt trước" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} big={big}
         pins={pins?.filter((m) => FRONT.some((x) => x.m === m))} pinSide="left" />
       <Figure shapes={BACK} label="Mặt sau" data={data} selected={selected} onSelect={onSelect} colorOf={colorOf} big={big}

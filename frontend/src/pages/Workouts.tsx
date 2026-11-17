@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
-import { CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy } from "lucide-react";
+import { CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
 import { del, get, post } from "../lib/api";
 import { useAction, useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
@@ -13,9 +13,10 @@ import { ExerciseCard, ExerciseImage, ExerciseModal, PlanCard } from "../compone
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { AddToDraftButton, BuilderModal, DraftPill, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
-import { Badge, Button, Card, CardHeader, Empty, PageHeader, Spinner, Tabs, Toggle, toast, confirmDialog } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Empty, PageHeader, Pager, Spinner, Tabs, toast, confirmDialog, usePaged } from "../components/ui";
 
-type Tab = "programs" | "custom" | "schedule" | "bodymap" | "library" | "history";
+const TABS = ["programs", "custom", "schedule", "bodymap", "library", "history"] as const;
+type Tab = (typeof TABS)[number];
 
 /** Thẻ "Nhờ HeadBro thiết kế buổi tập riêng" ở hàng đầu trang Tập luyện. */
 function AskCoachCard({ className }: { className?: string }) {
@@ -217,12 +218,13 @@ function Library() {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(sp.get("focus") || "");
   const [equipment, setEquipment] = useState("");
-  const [mine, setMine] = useState(false);
   const [camera, setCamera] = useState(false);
   const [limit, setLimit] = useState(24);
   const [exId, setExId] = useState<string | null>(null);
   const { data: meta } = useApi<{ equipment: Record<string, string>; total: number }>(["exmeta"], "/api/exercises/meta", { staleTime: 3600_000 });
-  const params = new URLSearchParams({ q, focus, equipment, mine: String(mine), camera: String(camera), limit: String(limit) });
+  const params = new URLSearchParams({ q, focus, equipment, camera: String(camera), limit: String(limit) });
+  const filtered = !!(q || focus || equipment || camera);
+  const reset = () => { setQ(""); setFocus(""); setEquipment(""); setCamera(false); setLimit(24); setSp({ tab: "library" }, { replace: true }); };
   const { data, isFetching } = useApi<{ total: number; items: Exercise[] }>(["exercises", params.toString()], `/api/exercises?${params}`);
 
   useEffect(() => {
@@ -232,32 +234,73 @@ function Library() {
 
   return (
     <div>
-      <div className="mb-4 space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <div className="relative min-w-56 flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input className="input pl-9" placeholder={`Tìm trong ${meta?.total || 1324} bài tập (vd: hít đất, đẩy ngực, squat, curl...)`} value={q} onChange={(e) => { setQ(e.target.value); setLimit(24); }} />
+      {/* Khối tìm kiếm + bộ lọc: một tấm kính có nền đủ đặc để chữ đọc rõ trên ảnh nền */}
+      <div className="card no-lift mb-5 space-y-3 p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label className="relative flex min-w-0 flex-1 items-center">
+            <Search size={18} className="pointer-events-none absolute left-4 text-muted" />
+            <input
+              className="h-12 w-full rounded-full border border-[var(--card-border)] bg-surface pl-11 pr-11 text-[15px] text-text shadow-[inset_0_1px_2px_rgb(15_23_42/0.06)] outline-none transition placeholder:text-muted focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
+              placeholder={`Tìm trong ${fmt(meta?.total || 1324)} bài tập — vd: hít đất, squat, curl`}
+              aria-label="Tìm bài tập"
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setLimit(24); }}
+            />
+            {q && (
+              <button type="button" onClick={() => setQ("")} aria-label="Xoá từ khoá" className="absolute right-2 grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text">
+                <X size={16} />
+              </button>
+            )}
+          </label>
+          <div className="relative">
+            <Wrench size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+            <select
+              aria-label="Lọc theo dụng cụ"
+              className="h-12 w-full appearance-none rounded-full border border-[var(--card-border)] bg-surface pl-10 pr-10 text-sm font-medium text-text outline-none transition focus:border-[var(--primary)] sm:w-56"
+              value={equipment}
+              onChange={(e) => { setEquipment(e.target.value); setLimit(24); }}
+            >
+              <option value="">Mọi dụng cụ</option>
+              {Object.entries(meta?.equipment || {}).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted" />
           </div>
-          <select aria-label="Lọc theo dụng cụ" className="input w-auto" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
-            <option value="">Mọi dụng cụ</option>
-            {Object.entries(meta?.equipment || {}).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           {[["", "Tất cả"], ...Object.entries(FOCUS).filter(([k]) => k !== "full")].map(([k, v]) => (
             <button
               key={k}
+              type="button"
+              aria-pressed={focus === k}
               onClick={() => { setFocus(k); setLimit(24); setSp(k ? { tab: "library", focus: k } : { tab: "library" }, { replace: true }); }}
-              className={clsx("rounded-full border px-3 py-1 text-[13px] font-medium", focus === k ? "border-transparent bg-ink text-on-ink" : "border-border text-muted hover:text-text")}
+              className={clsx(
+                "h-9 shrink-0 rounded-full border px-3.5 text-[13px] font-medium transition",
+                focus === k
+                  ? "border-transparent bg-ink text-on-ink shadow-sm"
+                  : "border-[var(--card-border)] bg-surface text-text hover:border-[var(--primary)]/50",
+              )}
             >
               {v}
             </button>
           ))}
-          <span className="mx-1 h-5 w-px bg-border" />
-          <Toggle checked={mine} onChange={setMine} label={<span className="text-[13px]">Hợp dụng cụ của tôi</span>} />
-          <Toggle checked={camera} onChange={setCamera} label={<span className="flex items-center gap-1 text-[13px]"><Camera size={13} /> Có Camera AI</span>} />
+          <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-[var(--card-border)]" />
+          <button
+            type="button"
+            aria-pressed={camera}
+            onClick={() => { setCamera(!camera); setLimit(24); }}
+            className={clsx(
+              "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition",
+              camera ? "border-transparent bg-volt text-on-volt shadow-sm" : "border-[var(--card-border)] bg-surface text-text hover:border-[var(--primary)]/50",
+            )}
+          >
+            <Camera size={14} /> Có Camera AI
+          </button>
+        </div>
+        <div className="flex items-center justify-between px-1 text-xs text-muted">
+          <span>{data ? <><b className="num font-semibold text-text">{fmt(data.total)}</b> bài phù hợp</> : "Đang tìm..."}</span>
+          {filtered && <button type="button" onClick={reset} className="font-medium text-text underline-offset-4 hover:underline">Bỏ lọc</button>}
         </div>
       </div>
       {!data ? (
@@ -266,7 +309,6 @@ function Library() {
         <Empty icon={<Search size={20} />} title="Không tìm thấy bài tập" text="Thử từ khoá tiếng Anh khác hoặc bỏ bớt bộ lọc." />
       ) : (
         <>
-          <p className="mb-2 text-xs text-muted">{data.total} bài phù hợp</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {data.items.map((ex) => (
               <ExerciseCard key={ex.id} ex={ex} onClick={() => setExId(ex.id)} />
@@ -289,17 +331,21 @@ function HistoryTab() {
   const { data: prs } = useApi<PR[]>(["prs"], "/api/workouts/prs");
   const [open, setOpen] = useState<string | null>(null);
   const remove = useAction((id: string) => del(`/api/workouts/sessions/${id}`), { success: "Đã xoá buổi tập" });
+  const pg = usePaged(data, 8);
+  // Kỷ lục cũng chia trang (10 bài/trang ≈ cao bằng 8 buổi tập) để hai cột luôn ngang nhau, không để dải trắng
+  const pr = usePaged(prs, 10);
+  const [chartEx, setChartEx] = useState<string | null>(null);
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader title="Lịch sử buổi tập" icon={<History size={16} />} />
-        <div className="px-3 pb-3">
+        <div className="flex flex-1 flex-col px-3 pb-3">
           {!data ? (
             <Spinner />
           ) : !data.length ? (
             <Empty title="Chưa có buổi tập nào" text="Chọn một chương trình và bấm Bắt đầu tập." />
           ) : (
-            data.map((s) => {
+            pg.slice.map((s) => {
               const byEx: Record<string, typeof s.sets> = {};
               s.sets.forEach((x) => (byEx[x.exercise_name] = [...(byEx[x.exercise_name] || []), x]));
               return (
@@ -331,32 +377,49 @@ function HistoryTab() {
               );
             })
           )}
+          {data && data.length > 0 && (
+            <div className="mt-auto"><Pager page={pg.page} pages={pg.pages} onChange={(p) => { setOpen(null); pg.setPage(p); }}
+              label={<>Buổi <b className="num text-text">{pg.from}–{pg.to}</b> / {pg.total}</>} /></div>
+          )}
         </div>
       </Card>
-      <Card>
-        <CardHeader title="Kỷ lục cá nhân" subtitle="1RM ước tính (công thức Epley)" icon={<Trophy size={16} />} />
-        <div className="px-5 pb-4">
+      <Card className="flex flex-col">
+        <CardHeader title="Kỷ lục cá nhân" subtitle="Bấm một bài để xem biểu đồ mức tạ tăng dần" icon={<Trophy size={16} />} />
+        <div className="flex flex-1 flex-col px-3 pb-3">
           {prs?.length ? (
-            <ul className="divide-y divide-border text-sm">
-              {prs.map((p) => (
-                <li key={p.exercise_id} className="flex justify-between py-2">
-                  <span className="truncate pr-2 first-letter:uppercase">{p.exercise_name}</span>
-                  <span className="shrink-0 text-right font-semibold">{prValue(p)}<span className="block text-[11px] font-normal text-muted">{prLabel(p.kind)}</span></span>
+            <ul className="text-sm">
+              {pr.slice.map((p) => (
+                <li key={p.exercise_id}>
+                  <button type="button" onClick={() => setChartEx(p.exercise_id)}
+                    className="group flex w-full items-center gap-2 rounded-2xl px-2 py-2 text-left transition hover:bg-surface-2">
+                    <LineChart size={15} className="shrink-0 text-muted transition group-hover:text-primary-strong" />
+                    <span className="min-w-0 flex-1 truncate first-letter:uppercase">{p.exercise_name}</span>
+                    <span className="shrink-0 text-right font-semibold">{prValue(p)}<span className="block text-[11px] font-normal text-muted">{prLabel(p.kind)}</span></span>
+                  </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="py-3 text-sm text-muted">Chưa có PR.</p>
+            <p className="px-2 py-3 text-sm text-muted">Chưa có PR.</p>
+          )}
+          {!!prs?.length && (
+            <div className="mt-auto">
+              <Pager page={pr.page} pages={pr.pages} onChange={pr.setPage}
+                label={<>Bài <b className="num text-text">{pr.from}–{pr.to}</b> / {pr.total}</>} />
+            </div>
           )}
         </div>
       </Card>
+      <ExerciseModal id={chartEx} onClose={() => setChartEx(null)} />
     </div>
   );
 }
 
 export default function Workouts() {
   const [sp, setSp] = useSearchParams();
-  const tab = (sp.get("tab") as Tab) || (sp.get("focus") ? "library" : "programs");
+  // link cũ / gõ sai tên tab (vd ?tab=week) → về tab mặc định thay vì trang trống
+  const rawTab = sp.get("tab");
+  const tab: Tab = rawTab && (TABS as readonly string[]).includes(rawTab) ? (rawTab as Tab) : sp.get("focus") ? "library" : "programs";
   const nav = useNavigate();
   const [active, setActive] = useState<WorkoutSession | null>(null);
   useEffect(() => {

@@ -1006,3 +1006,16 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 - Bảng đã được tạo sẵn trên Supabase (migration `fitbro_schema`, RLS bật cho cả 16 bảng). Database bắt đầu trống (không chuyển dữ liệu từ database cũ); demo tự tạo khi server khởi động — chỉ 1 tiến trình được tạo nhờ khoá `app_locks`.
 - Tài khoản demo (demo@fitbro.vn / demo123, ~12 tuần dữ liệu chi tiết) tự tạo khi server kết nối lần đầu và **tự làm mới mỗi ngày**: khi demo chưa có check-in hôm nay, server tạo lại để dữ liệu luôn kết thúc đúng hôm nay (lúc khởi động và ở request đầu tiên của ngày mới). Id tài khoản giữ nguyên nên người đang đăng nhập demo không bị đăng xuất. Tắt bằng `SEED_DEMO=false`. Code: `seed_demo.ensure_fresh()`, `refresh_demo_if_stale()` trong `app/main.py`.
 
+### 17.8. Theo góp ý nhóm (file BTN. CĐTT.pdf) + chuyển động kiểu macOS
+| Hạng mục | Thay đổi |
+|---|---|
+| Thư viện bài tập | Thanh tìm kiếm + bộ lọc gom vào một khối kính nền đặc, chữ rõ trên ảnh nền; ô tìm có nút xoá; chip nhóm cơ nền rõ (cuộn ngang trên điện thoại); "Có Camera AI" thành chip; nút **Bỏ lọc**. Bỏ "Hợp dụng cụ của tôi" (đã có ô lọc dụng cụ). |
+| Chia trang | Lịch sử buổi tập 8 buổi/trang, Thư viện món Việt 10 món/trang (`usePaged` + `Pager` trong `ui.tsx`). |
+| Tiến độ mức tạ | API `GET /api/exercises/{id}/progress` (`stats.exercise_progress`): mỗi buổi 1 điểm — mức tạ nặng nhất, 1RM ước tính, khối lượng (bỏ set khởi động). Biểu đồ trong chi tiết bài tập; bấm bài trong **Kỷ lục cá nhân** để mở. |
+| Tổng quan | Khối "Hôm nay": vòng calo + 3 thanh đạm / tinh bột / chất béo + thanh nước. Thao tác nhanh còn: check-in, ghi bữa ăn, tập luyện (bỏ +250ml nước và ghi cân nặng). |
+| Check-in sáng | Mọi thang đọc cùng chiều: 1 (trái) = tệ nhất → 5 (phải) = tốt nhất. Mệt mỏi / đau cơ / căng thẳng vẫn lưu kiểu cũ, giao diện hiển thị 6 − giá trị. Thêm ô **Cân nặng sáng nay** (tuỳ chọn) → lưu vào số đo cơ thể. |
+| Sáng / tối | Bỏ nút ở thanh điều hướng; chỉ đổi trong Cài đặt. |
+| Chuyển động | Chuyển trang và chuyển tab dùng View Transitions (`lib/transition.ts`), dự phòng 500 ms nếu trình duyệt không vẽ kịp. Khối nổi khi rê chuột, nút thu nhỏ khi bấm (lò xo). Thanh điều hướng Liquid Glass + viên chỉ báo trượt. Máy bật "giảm chuyển động" chỉ còn mờ dần. |
+| Kính mờ | Sửa lỗi build chỉ giữ `-webkit-backdrop-filter` (Chrome/Edge không đọc); mức làm mờ 8–10px để khối vẫn trong suốt. |
+| Icon tab | `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`; đường dẫn có `?v=4` để trình duyệt tải icon mới. |
+

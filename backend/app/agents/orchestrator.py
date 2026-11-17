@@ -49,11 +49,15 @@ HISTORY_LIMIT = 12
 
 def sanitize(text: str) -> str:
     t = (text or "").replace("\r\n", "\n").strip()
-    t = re.sub(r"^\s*\[?(HeadBro|CoachBro|NutriBro)\]?\s*[:：]\s*", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"^\s*(\[(HeadBro|CoachBro|NutriBro)\]\s*[:：]?|(HeadBro|CoachBro|NutriBro)\s*[:：])\s*", "", t, flags=re.IGNORECASE)
+    # model đôi khi mở đầu bằng 1 từ tiếng Anh rồi nói tiếp tiếng Việt ("For bài...", "The 82,5kg...") → "Với ..."
+    t = re.sub(r"^(For|With|The)\s+(?=\d|bài|bạn|mức|buổi|[^\x00-\x7F])", "Với ", t)
     lines = []
     for line in t.split("\n"):
         s = line.rstrip()
         if re.fullmatch(r"\s*([-*_])\1{2,}\s*", s):  # đường kẻ ngang
+            continue
+        if re.fullmatch(r"\s*```[\w-]*\s*", s):  # dấu mở/đóng khối code (model hay để sót, app không cần khối code)
             continue
         s = re.sub(r"^\s{0,3}#{1,6}\s+", "", s)  # tiêu đề → dòng thường
         s = re.sub(r"^(\s*)[*•]\s+", r"\1- ", s)  # gạch đầu dòng * → -
@@ -311,7 +315,8 @@ async def run_agent(
     if flags:
         content = guard.apply_output_guard(content, flags)
     if error and not content:
-        content = f"Xin lỗi, mình chưa trả lời được lúc này. {error}"
+        # lời từ chối của nhà cung cấp đã là câu trả lời hoàn chỉnh; lỗi khác thì báo kèm lời xin lỗi
+        content = error if error == llm.REFUSAL_TEXT else f"Xin lỗi, mình chưa trả lời được lúc này. {error}"
     if not content:
         content = "Mình đã chuẩn bị thông tin bên dưới cho bạn." if ctx.cards else "Mình chưa có câu trả lời phù hợp, bạn thử hỏi cụ thể hơn nhé."
     return {"agent": agent, "content": content, "cards": ctx.cards, "trace": trace, "error": error, "flags": flags}
@@ -319,6 +324,7 @@ async def run_agent(
 
 FOLLOWUP_PROMPT = """Dựa vào câu hỏi và câu trả lời bên dưới, gợi ý 3 câu người dùng có thể hỏi TIẾP THEO.
 Mỗi câu tiếng Việt, ngôi thứ nhất ("mình"), tối đa 10 từ, cụ thể, hành động được (vd "Tạo buổi tập này cho mình").
+KHÔNG gợi ý lại việc câu trả lời đã làm hoặc đã tạo thẻ (vd đã có thẻ ghi bữa ăn thì đừng gợi ý "Ghi bữa này vào nhật ký").
 Trả về JSON: {"questions": ["...", "...", "..."]}"""
 
 
@@ -462,7 +468,7 @@ async def _handle(
     outputs: list[dict] = []
     last_msg: Message | None = None
     for idx, agent in enumerate(decision["agents"]):
-        ctx = ToolContext(db=db, user=user, profile=prof, agent=agent, conversation_id=conv.id)
+        ctx = ToolContext(db=db, user=user, profile=prof, agent=agent, conversation_id=conv.id, question=text or "")
         with tracing.stage(agent), tracing.span("agent", agent):
             out = await run_agent(
                 agent, ctx, history=history, text=text, image=image, page=page, page_context=page_context,

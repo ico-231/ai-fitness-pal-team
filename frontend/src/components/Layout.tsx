@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { supportsViewTransition, withTransition } from "../lib/transition";
 import clsx from "clsx";
 import { BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, Menu, MessagesSquare, Moon, Scale, Settings, Sun, Utensils, X } from "lucide-react";
 import { put } from "../lib/api";
@@ -18,20 +19,76 @@ const NAV = [
 ];
 const MOBILE = [NAV[0], NAV[2], NAV[1], NAV[4], NAV[3]];
 const MAIN_NAV = NAV.slice(0, 6);
+
+/**
+ * Viên chỉ báo "kính lỏng": đo vị trí mục đang mở (NavLink có aria-current="page") trong khung chứa
+ * rồi trượt tới đó theo kiểu lò xo, kèm co giãn nhẹ như giọt nước. Không có mục nào đang mở → ẩn.
+ */
+function LiquidIndicator({ container, variant = "volt" }: { container: RefObject<HTMLElement | null>; variant?: "volt" | "ink" }) {
+  const loc = useLocation();
+  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const pill = useRef<HTMLSpanElement>(null);
+  const prev = useRef<{ x: number; y: number } | null>(null);
+  // lần đo đầu: đặt thẳng vào chỗ, không trượt từ góc trên (bật chuyển động từ khung hình sau)
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    if (!box || live) return;
+    // setTimeout thay vì requestAnimationFrame: rAF không chạy khi tab đang ẩn → viên sẽ không bao giờ trượt
+    const id = window.setTimeout(() => setLive(true), 60);
+    return () => window.clearTimeout(id);
+  }, [box, live]);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      // dùng chính phần tử cha của viên chỉ báo: ref của thẻ cha chưa được gắn khi effect của con chạy lần đầu
+      const root = pill.current?.parentElement ?? container.current;
+      const el = root?.querySelector<HTMLElement>('[aria-current="page"][data-pill]');
+      setBox(el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : null);
+      return el;
+    };
+    const el = measure();
+    // co giãn như giọt nước theo hướng di chuyển (dọc ở thanh bên, ngang ở thanh dưới điện thoại)
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; // giảm chuyển động: vẫn trượt, bỏ co giãn
+    if (el && prev.current && pill.current && !reduce && typeof pill.current.animate === "function") {
+      const vertical = Math.abs(el.offsetTop - prev.current.y) > Math.abs(el.offsetLeft - prev.current.x);
+      const s = vertical ? ["0.9 1.16", "1.04 0.96"] : ["1.14 0.9", "0.97 1.04"];
+      pill.current.animate([{ scale: "1 1" }, { scale: s[0] }, { scale: s[1] }, { scale: "1 1" }], {
+        duration: 620,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      });
+    }
+    if (el) prev.current = { x: el.offsetLeft, y: el.offsetTop };
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [loc.pathname, container]);
+
+  return (
+    <span
+      ref={pill}
+      aria-hidden
+      className={clsx("liquid-pill", variant === "ink" && "ink")}
+      style={{
+        ...(box ? { transform: `translate(${box.x}px, ${box.y}px)`, width: box.w, height: box.h, opacity: 1 } : { opacity: 0 }),
+        ...(live ? {} : { transition: "none" }),
+      }}
+    />
+  );
+}
 const OTHER_NAV = NAV.slice(6);
 
 /** Ảnh logo đặt tại frontend/public/logo.png (vuông, nền trong suốt hoặc bo góc sẵn). */
-export function LogoMark({ size = 40 }: { size?: number }) {
+export function LogoMark({ size = 40 }: { size?: number | string }) {
   // ưu tiên logo.png (file gốc của nhóm), không có thì logo.svg, cuối cùng là biểu tượng quả tạ
   const SRC = ["/logo.png", "/logo.svg"];
   const [i, setI] = useState(0);
   const err = i >= SRC.length;
   return err ? (
     <div className="grid place-items-center rounded-2xl bg-ink text-on-ink" style={{ width: size, height: size }}>
-      <Dumbbell size={size / 2} strokeWidth={2.4} />
+      <Dumbbell size="50%" strokeWidth={2.4} />
     </div>
   ) : (
-    <img src={SRC[i]} alt="" width={size} height={size} onError={() => setI(i + 1)}
+    <img src={SRC[i]} alt="" width={typeof size === "number" ? size : undefined} height={typeof size === "number" ? size : undefined} onError={() => setI(i + 1)}
       className="shrink-0 rounded-[24%] shadow-[0_6px_18px_-6px_rgb(132_204_22/0.6)]" style={{ width: size, height: size }} />
   );
 }
@@ -83,43 +140,7 @@ export function ThemeToggle({ full }: { full?: boolean }) {
   );
 }
 
-/**
- * Ảnh nền do người dùng cung cấp: frontend/public/bg/bg-light.jpg (bắt buộc nếu muốn dùng ảnh)
- * và bg-dark.jpg (tuỳ chọn; thiếu thì dùng ảnh sáng + lớp phủ tối). Không có ảnh → giữ nền aurora.
- */
-function BgPhoto() {
-  const [dark, setDark] = useState(() => document.documentElement.dataset.theme === "dark");
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => {
-    const mo = new MutationObserver(() => setDark(document.documentElement.dataset.theme === "dark"));
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => mo.disconnect();
-  }, []);
-  useEffect(() => {
-    let alive = true;
-    const tryLoad = (urls: string[]) => {
-      const [u, ...rest] = urls;
-      if (!u) return alive && setSrc(null);
-      const img = new Image();
-      img.onload = () => alive && setSrc(u);
-      img.onerror = () => tryLoad(rest);
-      img.src = u;
-    };
-    // ưu tiên file .jpg người dùng thả vào; không có thì dùng bản .webp có sẵn (nhẹ hơn ~40%)
-    const light = ["/bg/bg-light.jpg", "/bg/bg-light.webp"];
-    tryLoad(dark ? ["/bg/bg-dark.jpg", "/bg/bg-dark.webp", ...light] : light);
-    return () => { alive = false; };
-  }, [dark]);
-  if (!src) return null;
-  return (
-    <div className="bg-photo-wrap" aria-hidden>
-      <img key={src} src={src} alt="" className="bg-photo" />
-      <span className="bg-scrim" />
-    </div>
-  );
-}
-
-/** Nền toàn màn hình (aurora + ảnh thật nếu có) — dùng cho khung app, trang đăng nhập, onboarding. */
+/** Nền toàn màn hình (aurora) — dùng cho khung app, trang đăng nhập, onboarding. */
 export function Backdrop() {
   return (
     <div className="aurora no-print" aria-hidden>
@@ -130,7 +151,6 @@ export function Backdrop() {
       <span className="contour" />
       <span className="grain" />
       <span className="vignette" />
-      <BgPhoto />
     </div>
   );
 }
@@ -167,7 +187,28 @@ export function Layout() {
   const loc = useLocation();
   useReminders();
   useEffect(() => setOpen(false), [loc.pathname]);
+  const navigate = useNavigate();
+  // Mọi liên kết nội bộ (thanh điều hướng, nút "?"...) đổi trang qua View Transition → trang cũ mờ đi, trang mới nổi lên.
+  // Bắt ở pha capture rồi preventDefault: <Link> của React Router thấy defaultPrevented nên không tự điều hướng lần nữa.
+  useEffect(() => {
+    if (!supportsViewTransition()) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
+      if (url.pathname === location.pathname && url.search === location.search) return; // cùng trang (vd #muc-luc)
+      e.preventDefault();
+      withTransition(() => navigate(url.pathname + url.search + url.hash));
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [navigate]);
   const fullBleed = loc.pathname.startsWith("/chat");
+  const railTop = useRef<HTMLElement>(null); // khối điều hướng trên của thanh bên
+  const railBottom = useRef<HTMLElement>(null);
+  const bottomBar = useRef<HTMLElement>(null);
   // Giao diện "immersive": nền ảnh/aurora + mọi card thành kính mờ (áp cho toàn app)
   const immersive = true;
 
@@ -203,10 +244,11 @@ export function Layout() {
       to={n.to}
       end={n.end}
       aria-label={n.label}
+      data-pill
       className={({ isActive }) =>
         clsx(
-          "group relative grid h-11 w-11 place-items-center rounded-2xl transition",
-          isActive ? "bg-volt text-on-volt shadow-[0_6px_18px_-6px_rgb(132_204_22/0.7)]" : "text-muted hover:bg-[var(--glass-fill)] hover:text-text",
+          "group relative z-10 grid h-[var(--rail-btn)] w-[var(--rail-btn)] shrink-0 place-items-center rounded-2xl transition",
+          isActive ? "text-on-volt" : "text-muted hover:bg-[var(--glass-fill)] hover:text-text",
         )
       }
     >
@@ -237,35 +279,39 @@ export function Layout() {
   return (
     <div className={clsx("min-h-full", immersive && "immersive")}>
       {immersive && <Backdrop />}
-      {/* Điều hướng desktop: 2 khối kính rời — trên: logo + trang chính; dưới: hướng dẫn, cài đặt, tài khoản */}
-      <aside className="no-print fixed left-4 top-4 z-30 hidden w-[64px] flex-col items-center gap-1.5 rounded-[26px] px-2 pb-2.5 pt-2.5 lg:flex" data-nav="main">
-        <div className={clsx("absolute inset-0 -z-10 rounded-[26px]", immersive ? "glass" : "border border-[var(--card-border)] bg-surface shadow-[var(--shadow)]")} />
-        <NavLink to="/" aria-label="FitBro AI — Tổng quan" className="mb-2 transition hover:scale-105">
-          <LogoMark size={44} />
-        </NavLink>
-        {MAIN_NAV.map(railLink)}
-      </aside>
-      <aside className="no-print fixed bottom-4 left-4 z-30 hidden w-[64px] flex-col items-center gap-1.5 rounded-[26px] px-2 py-2.5 lg:flex" data-nav="other">
-        <div className={clsx("absolute inset-0 -z-10 rounded-[26px]", immersive ? "glass" : "border border-[var(--card-border)] bg-surface shadow-[var(--shadow)]")} />
-        {OTHER_NAV.map(railLink)}
-        <ThemeToggle />
-        <div className="group relative mt-1">
-          {user?.avatar_url ? (
-            <img src={user.avatar_url} className="h-10 w-10 rounded-full" alt={user?.name || ""} referrerPolicy="no-referrer" />
-          ) : (
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-full bg-volt text-sm font-bold text-on-volt" aria-label={`Tài khoản ${user?.name || ""}`}>{user?.name?.[0]?.toUpperCase()}</button>
-          )}
-          <div className="invisible absolute bottom-0 left-[calc(100%+12px)] z-50 w-56 rounded-[20px] border border-[var(--card-border)] bg-surface p-2 opacity-0 shadow-[var(--shadow-lg)] transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-            {userBox}
+      {/* Điều hướng desktop: MỘT cột cố định cao hết màn hình, gồm 2 khối kính rời — trên: logo + trang chính;
+          dưới (đẩy xuống đáy bằng mt-auto): hướng dẫn, cài đặt, tài khoản. Hai khối cùng một luồng flex nên
+          không bao giờ chồng nhau trên màn thấp (laptop 14"); kích thước nút co theo chiều cao (--rail-btn). */}
+      <aside className="rail no-print fixed bottom-4 left-4 top-4 z-30 hidden w-[64px] flex-col gap-3 lg:flex">
+        <nav ref={railTop} aria-label="Điều hướng chính" className="relative flex flex-col items-center gap-[var(--rail-gap)] rounded-[26px] px-2 py-2.5" data-nav="main">
+          <div className={clsx("absolute inset-0 -z-10 rounded-[26px]", immersive ? "liquid" : "border border-[var(--card-border)] bg-surface shadow-[var(--shadow)]")} />
+          <LiquidIndicator container={railTop} />
+          <NavLink to="/" aria-label="FitBro AI — Tổng quan" className="relative z-10 mb-1.5 transition hover:scale-105">
+            <LogoMark size="var(--rail-logo)" />
+          </NavLink>
+          {MAIN_NAV.map(railLink)}
+        </nav>
+        <nav ref={railBottom} aria-label="Khác" className="relative mt-auto flex flex-col items-center gap-[var(--rail-gap)] rounded-[26px] px-2 py-2.5" data-nav="other">
+          <div className={clsx("absolute inset-0 -z-10 rounded-[26px]", immersive ? "liquid" : "border border-[var(--card-border)] bg-surface shadow-[var(--shadow)]")} />
+          <LiquidIndicator container={railBottom} />
+          {OTHER_NAV.map(railLink)}
+          <div className="group relative mt-1">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} className="h-[var(--rail-avatar)] w-[var(--rail-avatar)] rounded-full" alt={user?.name || ""} referrerPolicy="no-referrer" />
+            ) : (
+              <button type="button" className="grid h-[var(--rail-avatar)] w-[var(--rail-avatar)] place-items-center rounded-full bg-volt text-sm font-bold text-on-volt" aria-label={`Tài khoản ${user?.name || ""}`}>{user?.name?.[0]?.toUpperCase()}</button>
+            )}
+            <div className="invisible absolute bottom-0 left-[calc(100%+12px)] z-50 w-56 rounded-[20px] border border-[var(--card-border)] bg-surface p-2 opacity-0 shadow-[var(--shadow-lg)] transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+              {userBox}
+            </div>
           </div>
-        </div>
+        </nav>
       </aside>
 
       {/* Topbar mobile */}
       <header className="glass no-print sticky top-0 z-30 flex items-center justify-between border-x-0 border-t-0 px-4 py-2.5 lg:hidden">
         <Logo />
         <div className="flex items-center gap-1">
-          <ThemeToggle />
           <button onClick={() => setOpen(true)} aria-label="Mở menu" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2">
             <Menu size={20} />
           </button>
@@ -286,11 +332,11 @@ export function Layout() {
         </div>
       )}
 
-      <main className={clsx("relative z-10 lg:pl-[92px]", fullBleed ? "" : "pb-40 lg:pb-24")}>
+      <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "" : "pb-40 lg:pb-24")}>
         {fullBleed ? (
           <Outlet />
         ) : (
-          <div key={loc.pathname} className="stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
+          <div key={loc.pathname} className="page-main stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
             <Outlet />
           </div>
         )}
@@ -298,14 +344,16 @@ export function Layout() {
 
       {/* Bottom nav mobile */}
       {!fullBleed && (
-        <nav className="glass no-print fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 rounded-full p-1.5 shadow-[var(--shadow-lg)] lg:hidden">
+        <nav ref={bottomBar} className="liquid no-print fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 rounded-full p-1.5 lg:hidden">
+          <LiquidIndicator container={bottomBar} variant="ink" />
           {MOBILE.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
+              data-pill
               className={({ isActive }) =>
-                clsx("flex flex-col items-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition", isActive ? "bg-ink text-on-ink" : "text-muted")
+                clsx("relative z-10 flex flex-col items-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition", isActive ? "text-on-ink" : "text-muted")
               }
             >
               <n.icon size={19} />

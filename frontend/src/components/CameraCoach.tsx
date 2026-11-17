@@ -27,6 +27,8 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
   const rafRef = useRef<number>(0);
   const counterRef = useRef(new RepCounter(def));
   const lastSpoken = useRef(0);
+  // lỗi form gần nhất: giữ hiển thị ~1 giây kể cả khi khung hình sau hết lỗi, để không chỉ lóe lên rồi về xanh
+  const lastIssue = useRef<{ msg: string; at: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [err, setErr] = useState("");
   const [reps, setReps] = useState(0);
@@ -68,8 +70,11 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
           const counter = counterRef.current;
           const { repDone, score: s } = counter.update(f, now);
           setReady(f.ready);
-          // vẽ khung xương: xanh = đúng form, cam = có lỗi
-          const color = !f.ready ? "#94a3b8" : f.issues.length ? "#fb923c" : "#22c55e";
+          const rom = counter.activeIssue(now); // lỗi biên độ (xuống chưa đủ sâu / chưa đứng thẳng hẳn)
+          if (f.ready && (f.issues[0] || rom)) lastIssue.current = { msg: f.issues[0] || rom!, at: now };
+          const shown = f.ready && lastIssue.current && now - lastIssue.current.at < 1000 ? lastIssue.current.msg : null;
+          // vẽ khung xương: xanh = đúng form, cam = có lỗi (kể cả lỗi vừa xảy ra trong ~1 giây trước)
+          const color = !f.ready ? "#94a3b8" : shown ? "#fb923c" : "#22c55e";
           ctx.lineWidth = 5;
           ctx.strokeStyle = color;
           for (const [a, b] of CONNECTIONS) {
@@ -90,9 +95,9 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
           }
           if (f.ready) {
             setScore(s);
-            setIssue(f.issues[0] || null);
-            if (f.issues[0] && now - lastSpoken.current > 4000) {
-              voice.speak(f.issues[0]);
+            setIssue(shown);
+            if (shown && now - lastSpoken.current > 4000) {
+              voice.speak(shown);
               lastSpoken.current = now;
             }
           }
@@ -145,6 +150,7 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
 
   const reset = () => {
     counterRef.current = new RepCounter(def);
+    lastIssue.current = null;
     setReps(0);
     setHoldSec(0);
     setScore(null);

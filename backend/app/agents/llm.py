@@ -116,6 +116,10 @@ def _friendly(e: Exception) -> LLMError:
     if isinstance(e, LLMError):
         return e
     msg = str(e)
+    # Nhà cung cấp từ chối nội dung (có thể xảy ra giữa lúc stream, không chỉ lúc tạo request)
+    if _is_refusal(e):
+        log.warning("Nhà cung cấp từ chối nội dung: %s", msg[:200])
+        return ProviderRefusal(REFUSAL_TEXT)
     if "401" in msg or "invalid api key" in msg.lower() or "unauthorized" in msg.lower():
         return LLMError("API key của mô hình AI không hợp lệ. Kiểm tra lại LLM_API_KEY.")
     if "404" in msg and "model" in msg.lower():
@@ -124,7 +128,9 @@ def _friendly(e: Exception) -> LLMError:
         return LLMError("Mô hình AI đang quá tải hoặc hết hạn mức. Thử lại sau ít phút.")
     if "timeout" in msg.lower() or "timed out" in msg.lower():
         return LLMError("Mô hình AI phản hồi quá lâu. Thử lại nhé.")
-    return LLMError(f"Lỗi khi gọi mô hình AI: {msg[:200]}")
+    # Không in nguyên văn lỗi kỹ thuật (thường là tiếng Anh, có thể lộ cấu hình) cho người dùng — chỉ ghi log
+    log.warning("Lỗi gọi mô hình AI: %s", msg[:500])
+    return LLMError("Mô hình AI đang gặp sự cố tạm thời. Bạn gửi lại câu hỏi sau ít giây nhé.")
 
 
 # ---------------------------------------------------------------------------

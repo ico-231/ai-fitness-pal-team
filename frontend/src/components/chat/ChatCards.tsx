@@ -252,7 +252,9 @@ function ConfirmCard({ card, onStatus }: { card: Extract<CardT, { kind: "confirm
   const p = card.payload as Record<string, string | number>;
   return (
     <div className="rounded-xl border border-primary/40 bg-primary-soft/40 p-3.5">
-      <p className="text-[13px] font-semibold text-muted">Cần bạn xác nhận</p>
+      <p className="text-[13px] font-semibold text-muted">
+        {card.status === "confirmed" ? "Đã lưu" : card.status === "cancelled" ? "Đã huỷ" : "Cần bạn xác nhận"}
+      </p>
       <p className="mt-0.5 text-sm font-medium">{card.summary}</p>
       {card.action_type === "log_meal" && p.meal_type && <p className="mt-0.5 text-xs text-muted">{MEAL_TYPES[p.meal_type as string]} · ngày {p.date}</p>}
       {card.action_type === "save_goal" && p.plan && <p className="mt-1 whitespace-pre-line text-xs text-muted">{p.plan}</p>}

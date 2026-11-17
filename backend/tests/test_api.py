@@ -347,3 +347,19 @@ def test_goal_deadline_insight(client, auth):
     client.post("/api/goals", headers=auth, json={"title": "Eo 78cm", "metric": "waist_cm", "target_value": 78, "deadline": soon})
     ins = client.get("/api/insights", headers=auth).json()
     assert any("Eo 78cm" in x["title"] and "Còn 3 ngày" in x["title"] for x in ins)
+
+
+def test_exercise_progress(client, auth):
+    for w in (60, 62.5, 65):
+        _session(client, auth, [
+            {"exercise_id": "0043", "set_index": 1, "weight_kg": 20, "reps": 10, "is_warmup": True},
+            {"exercise_id": "0043", "set_index": 1, "weight_kg": w, "reps": 8},
+            {"exercise_id": "0043", "set_index": 2, "weight_kg": w, "reps": 8},
+        ])
+    p = client.get("/api/exercises/0043/progress", headers=auth).json()
+    assert p["kind"] == "weight" and p["sessions"] == 3
+    assert [x["top_weight"] for x in p["points"]] == [60, 62.5, 65]  # set khởi động 20kg không tính
+    assert p["points"][0]["sets"] == 2 and p["change"] > 0 and p["change_pct"] > 0
+    empty = client.get("/api/exercises/0025/progress", headers=auth).json()
+    assert empty["points"] == [] and empty["kind"] is None
+    assert client.get("/api/exercises/khong-co/progress", headers=auth).status_code == 404

@@ -123,7 +123,8 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
           case "token":
             if (current && ev.agent === currentAgent) {
               const id = current;
-              patch(id, (m) => ({ ...m, content: m.content + (ev.delta as string) }));
+              // model đôi khi mở đầu bằng "[CoachBro] " — server làm sạch ở bản cuối, ở đây làm sạch luôn lúc đang chạy chữ
+              patch(id, (m) => ({ ...m, content: (m.content + (ev.delta as string)).replace(/^\s*(\[(HeadBro|CoachBro|NutriBro)\]\s*[:：]?|(HeadBro|CoachBro|NutriBro)\s*[:：])\s*/i, "") }));
             }
             break;
           case "tool_call":
@@ -257,7 +258,13 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
     );
   }, []);
 
-  const stop = useCallback(() => abortRef.current?.abort(), []);
+  // Dừng: ngắt luồng hiển thị VÀ báo server huỷ lượt đang chạy (nếu không, server vẫn viết tiếp và lưu đủ câu trả lời)
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    const cid = convRef.current;
+    if (cid)
+      fetch(apiUrl(`/api/chat/conversations/${cid}/stop`), { method: "POST", headers: { Authorization: `Bearer ${tokenStore.get()}` } }).catch(() => {});
+  }, []);
 
   return { messages, loading, sending, send, stop, routeInfo, updateCard, setMessages };
 }

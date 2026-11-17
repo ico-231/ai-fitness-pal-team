@@ -7,7 +7,7 @@ import { useApi, useInvalidateAll } from "../lib/hooks";
 import { EXERCISES } from "../lib/pose";
 import type { Exercise, WorkoutSession } from "../lib/types";
 import { CameraCoach, type CameraResult } from "../components/CameraCoach";
-import { Button, Card, Field, PageHeader, Spinner, toast } from "../components/ui";
+import { Button, Card, Field, PageHeader, Spinner, toast, DecimalInput } from "../components/ui";
 import { ExerciseImage } from "../components/Exercise";
 
 export default function CameraPage() {
@@ -74,7 +74,7 @@ export default function CameraPage() {
               </div>
               {!ex.equipment.includes("body") && (
                 <Field label="Mức tạ (kg)">
-                  <input className="input" type="number" min={0} step={0.5} value={weight} onChange={(e) => setWeight(+e.target.value)} />
+                  <DecimalInput className="input" value={weight} onValue={(n) => setWeight(n ?? 0)} />
                 </Field>
               )}
               <Button className="w-full" icon={<Save size={16} />} loading={saving} onClick={save}>

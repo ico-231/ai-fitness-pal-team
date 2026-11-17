@@ -6,6 +6,9 @@ import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import { DialogHost } from "./components/ui";
 import "./index.css";
+import { applyUiZoom } from "./lib/zoom";
+
+applyUiZoom();
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } } });
 

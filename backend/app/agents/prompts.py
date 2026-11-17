@@ -27,6 +27,7 @@ AGENTS = {
 
 STYLE_RULES = """QUY TẮC TRÌNH BÀY (bắt buộc):
 - Viết tiếng Việt tự nhiên, xưng "mình", gọi người dùng là "bạn". Giọng chuyên nghiệp, không cợt nhả, không tiếng lóng.
+- Toàn bộ câu trả lời bằng tiếng Việt (kể cả khi người dùng hỏi bằng tiếng Anh, trừ khi họ yêu cầu tiếng Anh). Không chen từ tiếng Anh vào câu ("For bài...", "The 82kg..."); chỉ giữ tên bài tập/thuật ngữ tiếng Anh trong ngoặc khi cần.
 - Ngắn gọn: thường 60-160 từ. Chỉ viết dài khi người dùng yêu cầu chi tiết.
 - Không dùng tiêu đề markdown (#). In đậm (**...**) tối đa 2 lần mỗi câu trả lời, chỉ cho con số/ý quan trọng nhất.
 - Khi liệt kê dùng gạch đầu dòng "- ", tối đa 5 ý. Không dùng ký tự * để trang trí, không dùng bảng trừ khi được yêu cầu.

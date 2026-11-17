@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { Activity, Award, Beef, Crown, Droplets, Dumbbell, Flag, Flame, Goal, Info, Minus, Plus, RotateCcw, Ruler, Sparkles, StretchHorizontal, Sunrise, Target, Timer, Trophy, Utensils, Weight, Zap, type LucideIcon } from "lucide-react";
+import { Activity, Award, Beef, CalendarDays, Crown, Droplets, Dumbbell, Flag, Flame, Goal, Info, Minus, Play, Plus, RotateCcw, Ruler, Sparkles, StretchHorizontal, Sunrise, Target, Timer, Trophy, Utensils, Weight, Zap, type LucideIcon } from "lucide-react";
 import { del, post } from "../lib/api";
 import { useAction, useApi } from "../lib/hooks";
-import { shortDate, weekday, fmt } from "../lib/format";
+import { exName, shortDate, fmt } from "../lib/format";
 import type { Plan, Readiness } from "../lib/types";
 import { useAI } from "../components/AIProvider";
-import { Button, Card, Field, PageHeader, Progress, Ring, ScalePicker, Spinner } from "../components/ui";
+import { Button, Card, Field, PageHeader, Progress, Ring, ScalePicker, Spinner, DecimalInput, parseDecimal } from "../components/ui";
 
 interface DailyData {
   date: string;
@@ -37,7 +37,19 @@ function CheckinForm({ initial, onDone }: { initial?: Readiness | null; onDone: 
     stress: (i.stress as number) ?? 2,
     note: initial?.note || "",
   });
-  const save = useAction((body: typeof f) => post("/api/daily/checkin", body), { success: "Đã check-in, trang Tổng quan đã cập nhật", onSuccess: onDone });
+  const [weight, setWeight] = useState("");
+  // Cân nặng ghi kèm check-in (thay cho nút "Ghi cân nặng" riêng ở Tổng quan — theo góp ý nhóm)
+  const save = useAction(
+    async (body: typeof f) => {
+      await post("/api/daily/checkin", body);
+      const w = parseDecimal(weight) ?? NaN;
+      if (w >= 25 && w <= 300) await post("/api/body/metrics", { weight_kg: w, note: "Cân lúc check-in sáng" });
+    },
+    { success: "Đã check-in, trang Tổng quan đã cập nhật", onSuccess: onDone },
+  );
+  // Các thang đều đọc cùng một chiều: 1 = tệ nhất (trái) → 5 = tốt nhất (phải), giống "Chất lượng giấc ngủ".
+  // Mệt mỏi / đau cơ / căng thẳng lưu theo kiểu cũ (1 = ít), nên hiển thị đảo lại: hiển thị = 6 − giá trị lưu.
+  const flip = (v: number) => 6 - v;
   return (
     <div className="space-y-4">
       <Field label={`Đêm qua bạn ngủ bao lâu? — ${f.sleep_hours} giờ`}>
@@ -47,13 +59,16 @@ function CheckinForm({ initial, onDone }: { initial?: Readiness | null; onDone: 
         <ScalePicker value={f.sleep_quality} onChange={(v) => setF({ ...f, sleep_quality: v })} labels={["😫", "😕", "😐", "🙂", "😴"]} low="Rất tệ" high="Rất ngon" />
       </Field>
       <Field label="Mức độ mệt mỏi">
-        <ScalePicker value={f.fatigue} onChange={(v) => setF({ ...f, fatigue: v })} labels={["⚡", "🙂", "😐", "😓", "🥵"]} low="Tràn năng lượng" high="Kiệt sức" />
+        <ScalePicker value={flip(f.fatigue)} onChange={(v) => setF({ ...f, fatigue: flip(v) })} labels={["🥵", "😓", "😐", "🙂", "⚡"]} low="Kiệt sức" high="Tràn năng lượng" />
       </Field>
       <Field label="Đau nhức cơ (DOMS)">
-        <ScalePicker value={f.soreness} onChange={(v) => setF({ ...f, soreness: v })} labels={["1", "2", "3", "4", "5"]} low="Không đau" high="Rất đau" />
+        <ScalePicker value={flip(f.soreness)} onChange={(v) => setF({ ...f, soreness: flip(v) })} labels={["1", "2", "3", "4", "5"]} low="Rất đau" high="Không đau" />
       </Field>
       <Field label="Căng thẳng">
-        <ScalePicker value={f.stress} onChange={(v) => setF({ ...f, stress: v })} labels={["😌", "🙂", "😐", "😟", "😰"]} low="Thư giãn" high="Rất căng thẳng" />
+        <ScalePicker value={flip(f.stress)} onChange={(v) => setF({ ...f, stress: flip(v) })} labels={["😰", "😟", "😐", "🙂", "😌"]} low="Rất căng thẳng" high="Thư giãn" />
+      </Field>
+      <Field label="Cân nặng sáng nay (kg) — tuỳ chọn" hint="Cân sau khi thức dậy, trước khi ăn để số liệu ổn định">
+        <DecimalInput className="input" value={weight} onValue={(_, raw) => setWeight(raw)} placeholder="Vd: 68,5" />
       </Field>
       <Field label="Ghi chú (tuỳ chọn)">
         <input className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Vd: hơi đau vai trái" />
@@ -61,6 +76,57 @@ function CheckinForm({ initial, onDone }: { initial?: Readiness | null; onDone: 
       <Button className="w-full" size="lg" loading={save.isPending} onClick={() => save.mutate(f)}>
         Tính điểm sẵn sàng
       </Button>
+    </div>
+  );
+}
+
+interface ScheduleDay { label: string; plan: { id: string; name: string; est_minutes: number; count: number } | null; rest: boolean; done: boolean; note: string }
+
+/** Lịch tập hôm nay (theo lịch tuần): tên buổi, thời lượng, vài bài đầu, nút bắt đầu — hoặc ngày nghỉ. */
+function TodayPlan({ readiness }: { readiness: Readiness | null }) {
+  const nav = useNavigate();
+  const { data: sch } = useApi<{ today: ScheduleDay; has_schedule: boolean }>(["schedule"], "/api/schedule");
+  const planId = sch?.today.plan?.id;
+  const { data: plan } = useApi<Plan>(["plan", planId], planId ? `/api/workouts/plans/${planId}` : null);
+  if (!sch) return null;
+  const t = sch.today;
+  const light = readiness && readiness.intensity <= 0.7;
+  return (
+    <div className="mt-auto pt-6">
+      <div className="rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-fill)] p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="eyebrow flex items-center gap-1.5"><CalendarDays size={13} /> Lịch tập hôm nay · {t.label}</p>
+          <button type="button" onClick={() => nav("/workouts?tab=schedule")} className="text-[11px] font-medium text-muted hover:text-text">Sửa lịch →</button>
+        </div>
+        {!sch.has_schedule ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted">Chưa có lịch tập tuần. Lên lịch để mỗi ngày biết tập gì.</p>
+            <Button size="sm" variant="secondary" onClick={() => nav("/workouts?tab=schedule")}>Lên lịch tuần</Button>
+          </div>
+        ) : !t.plan ? (
+          <p className="mt-2 text-sm text-muted">Hôm nay là <b className="font-semibold text-text">ngày nghỉ</b> theo lịch — nghỉ ngơi, giãn cơ nhẹ, ăn đủ đạm và ngủ sớm.</p>
+        ) : (
+          <div className="mt-2.5 flex flex-wrap items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-semibold leading-tight tracking-[-0.01em]">{t.plan.name}</p>
+              <p className="mt-0.5 text-xs text-muted">
+                {t.plan.count} bài · khoảng {t.plan.est_minutes} phút{t.done ? " · đã tập xong ✓" : ""}{light && !t.done ? " · nên dùng bản nhẹ" : ""}
+              </p>
+              {plan && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {plan.items.slice(0, 4).map((it) => (
+                    <span key={it.exercise_id} className="rounded-full bg-surface/80 px-2.5 py-0.5 text-[11px] first-letter:uppercase">{exName(it.exercise)}</span>
+                  ))}
+                  {plan.items.length > 4 && <span className="rounded-full px-1.5 py-0.5 text-[11px] text-muted">+{plan.items.length - 4} bài</span>}
+                </div>
+              )}
+            </div>
+            {!t.done && (
+              <Button icon={<Play size={15} />} onClick={() => nav(`/workouts/session?plan=${t.plan!.id}`)}>Bắt đầu tập</Button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -111,7 +177,7 @@ export default function Daily() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] xl:gap-8">
         {/* Check-in / điểm sẵn sàng */}
-        <Card className="p-6 sm:p-7">
+        <Card className="flex flex-col p-6 sm:p-7">
           <div className="mb-5 flex items-start justify-between gap-3">
             <div>
               <p className="eyebrow">Check-in buổi sáng</p>
@@ -169,6 +235,8 @@ export default function Daily() {
               )}
             </div>
           )}
+          {/* Lịch tập hôm nay: lấp khoảng trống cuối khối, gắn với điểm sẵn sàng ngay phía trên */}
+          {!editing && <TodayPlan readiness={r} />}
         </Card>
 
         <div className="space-y-6">
@@ -206,32 +274,7 @@ export default function Daily() {
               </div>
               {!data.streak.today_active && data.streak.current > 0 && <p className="max-w-[9rem] text-right text-[11px] text-muted">Hoạt động hôm nay để giữ chuỗi</p>}
             </div>
-            {cal && (
-              <div className="mt-5">
-                <div className="grid grid-cols-7 gap-1.5">
-                  {cal.days.map((d) => {
-                    const active = d.checkin != null || d.workout > 0 || d.meals > 0 || d.water > 0;
-                    const trained = d.workout > 0;
-                    return (
-                      <div
-                        key={d.date}
-                        title={`${shortDate(d.date)}: ${d.checkin != null ? `sẵn sàng ${d.checkin}` : "chưa check-in"}, ${d.workout} buổi tập, ${d.meals} bữa ăn`}
-                        className="relative flex aspect-square flex-col items-center justify-center rounded-xl text-[10.5px] transition hover:scale-105"
-                        style={{ background: trained ? "var(--volt)" : active ? "var(--glass-fill)" : "transparent", color: trained ? "var(--on-volt)" : undefined, border: active ? "none" : "1px dashed var(--glass-border)" }}
-                      >
-                        <span className={trained ? "opacity-70" : "text-muted"}>{weekday(d.date)}</span>
-                        <span className="num font-semibold">{+d.date.slice(8)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 flex justify-center gap-4 text-[11px] text-muted">
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-volt" /> Có tập</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[var(--glass-fill)] ring-1 ring-[var(--glass-border)]" /> Có ghi chép</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[var(--glass-border)]" /> Nghỉ</span>
-                </div>
-              </div>
-            )}
+            {cal && <StreakCalendar days={cal.days} />}
           </Card>
         </div>
       </div>
@@ -243,7 +286,7 @@ export default function Daily() {
             <h2 className="text-xl font-semibold tracking-[-0.02em]">Hoạt động nhanh</h2>
             <p className="text-sm text-muted">Bấm để vào buổi tập có đồng hồ đếm giờ và giọng PT</p>
           </div>
-          <Button size="sm" variant="ghost" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "coachbro", text: "Tư vấn cho mình một buổi cardio/HIIT phù hợp với thể trạng hôm nay, có thời gian từng hiệp." })}>
+          <Button size="sm" variant="secondary" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "coachbro", text: "Tư vấn cho mình một buổi cardio/HIIT phù hợp với thể trạng hôm nay, có thời gian từng hiệp." })}>
             Nhờ HeadBro tư vấn cardio
           </Button>
         </div>
@@ -292,6 +335,65 @@ export default function Daily() {
           })}
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * Lịch 5 tuần trọn (T2 → CN), mỗi cột đúng một thứ. Ô: có tập = volt, có ghi chép = volt nhạt, nghỉ = viền nét đứt,
+ * hôm nay có viền đậm, ngày chưa tới để trống mờ.
+ */
+function StreakCalendar({ days }: { days: CalendarDay[] }) {
+  if (!days.length) return null;
+  const todayIso = days[days.length - 1].date; // API trả tới hết hôm nay (giờ địa phương của server)
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const t = new Date(todayIso + "T00:00:00");
+  const dow = (t.getDay() + 6) % 7; // 0 = Thứ 2
+  const start = new Date(t);
+  start.setDate(t.getDate() - dow - 28);
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const cells = Array.from({ length: 35 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const k = iso(d);
+    return { date: k, day: d.getDate(), data: byDate.get(k), future: k > todayIso, today: k === todayIso };
+  });
+  const HEAD = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+  return (
+    <div className="mt-5">
+      <div className="mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[10.5px] font-medium text-muted">
+        {HEAD.map((h) => <span key={h}>{h}</span>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {cells.map((c) => {
+          const d = c.data;
+          const trained = !!d && d.workout > 0;
+          const logged = !!d && !trained && (d.checkin != null || d.meals > 0 || d.water > 0);
+          return (
+            <div
+              key={c.date}
+              title={c.future ? undefined : d ? `${shortDate(c.date)}: ${d.checkin != null ? `sẵn sàng ${d.checkin}` : "chưa check-in"}, ${d.workout} buổi tập, ${d.meals} bữa ăn` : shortDate(c.date)}
+              className={clsx(
+                "num grid aspect-square place-items-center rounded-xl text-[12px] font-semibold transition",
+                !c.future && "hover:scale-105",
+                trained && "bg-volt text-on-volt",
+                logged && "bg-[color-mix(in_srgb,var(--volt)_28%,transparent)] text-text",
+                !trained && !logged && !c.future && "border border-dashed border-[var(--glass-border)] font-normal text-muted",
+                c.future && "text-muted opacity-30",
+                c.today && "ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--surface)]",
+              )}
+            >
+              {c.day}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-muted">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-volt" /> Có tập</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[color-mix(in_srgb,var(--volt)_28%,transparent)]" /> Có ghi chép</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[var(--muted)]" /> Nghỉ</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] ring-2 ring-[var(--text)]" /> Hôm nay</span>
+      </div>
     </div>
   );
 }

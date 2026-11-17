@@ -1,18 +1,18 @@
 import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity, ArrowRight, CheckCircle2, Circle, Droplets, Dumbbell, Pause, Printer, Scale, Sparkles, Trophy, Utensils, Volume2, Weight,
+  Activity, ArrowRight, CheckCircle2, Circle, Dumbbell, Pause, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight,
 } from "lucide-react";
-import { get, post } from "../lib/api";
+import { get } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useAction, useApi } from "../lib/hooks";
+import { useApi } from "../lib/hooks";
 import { fmt, greeting, minutes, shortDate } from "../lib/format";
 import { voice } from "../lib/media";
 import type { Insight, MuscleVolume } from "../lib/types";
 import { BodyMap, HeatLegend } from "../components/BodyMap";
 import type { DetailKind, Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
-import { Button, Card, CardHeader, Field, Modal, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
+import { Button, Card, CardHeader, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { GoalsCard, PRCard, ReadinessCard, TodayRings, type Overview } from "../components/Widgets";
 
@@ -49,7 +49,7 @@ function Insights({ items }: { items: Insight[] }) {
               </Button>
             )}
             {it.ask && (
-              <Button size="sm" variant="outline" icon={<Sparkles size={13} />} onClick={() => ai.open({ agent: it.ask!.agent, text: it.ask!.text })}>
+              <Button size="sm" variant="outline" icon={<Sparkles size={13} />} onClick={() => ai.open({ agent: it.ask!.agent, text: it.ask!.text, full: true })}>
                 Hỏi
               </Button>
             )}
@@ -60,21 +60,11 @@ function Insights({ items }: { items: Insight[] }) {
   );
 }
 
+/** Thao tác nhanh: chỉ giữ việc hay làm nhất. Nước uống & cân nặng đã có ở Check-in sáng / Dinh dưỡng (theo góp ý nhóm). */
 function QuickActions() {
   const nav = useNavigate();
-  const [weightOpen, setWeightOpen] = useState(false);
-  const [w, setW] = useState("");
-  const water = useAction(() => post("/api/daily/water", { delta_ml: 250 }), { success: "+250ml nước" });
-  const weight = useAction(() => post("/api/body/metrics", { weight_kg: +w }), {
-    success: "Đã lưu cân nặng",
-    onSuccess: () => {
-      setWeightOpen(false);
-      setW("");
-    },
-  });
   const items = [
-    { label: "+250ml nước", icon: <Droplets size={17} className="text-info" />, run: () => water.mutate(undefined as never) },
-    { label: "Ghi cân nặng", icon: <Scale size={17} className="text-head" />, run: () => setWeightOpen(true) },
+    { label: "Check-in sáng", icon: <Sunrise size={17} className="text-energy-strong" />, run: () => nav("/daily") },
     { label: "Ghi bữa ăn", icon: <Utensils size={17} className="text-nutri" />, run: () => nav("/nutrition") },
     { label: "Tập luyện", icon: <Dumbbell size={17} className="text-coach" />, run: () => nav("/workouts") },
   ];
@@ -84,26 +74,11 @@ function QuickActions() {
         <button key={x.label} type="button" onClick={x.run} aria-label={x.label}
           className="group relative grid h-9 w-9 place-items-center rounded-full transition hover:bg-[var(--glass-fill)]">
           {x.icon}
-          <span className="pointer-events-none absolute top-[calc(100%+8px)] z-20 whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-on-ink opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100">
+          <span className="pointer-events-none absolute top-[calc(100%+8px)] z-20 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-on-ink opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:block">
             {x.label}
           </span>
         </button>
       ))}
-      <Modal
-        open={weightOpen}
-        onClose={() => setWeightOpen(false)}
-        title="Ghi cân nặng hôm nay"
-        footer={
-          <Button disabled={!w} loading={weight.isPending} onClick={() => weight.mutate(undefined as never)}>
-            Lưu
-          </Button>
-        }
-      >
-        <Field label="Cân nặng (kg)">
-          <input className="input" type="number" step="0.1" autoFocus value={w} onChange={(e) => setW(e.target.value)} />
-        </Field>
-        <p className="mt-2 text-xs text-muted">Mẹo: cân vào buổi sáng sau khi thức dậy để số liệu ổn định.</p>
-      </Modal>
     </div>
   );
 }
@@ -191,7 +166,7 @@ function AskBar({ insights }: { insights: Insight[] }) {
     { label: "Nhóm cơ nào đang tập ít?", text: "Nhóm cơ nào mình đang tập ít? Gợi ý bài bù lại." },
     { label: "Còn thiếu bao nhiêu đạm?", text: "Hôm nay mình còn thiếu bao nhiêu đạm, nên ăn gì?" },
   ];
-  const send = (text: string) => text.trim() && ai.open({ text: text.trim() });
+  const send = (text: string) => text.trim() && ai.open({ text: text.trim(), full: true });
   return (
     <div className="glass no-print mx-auto w-full max-w-3xl rounded-[26px] p-2 shadow-[var(--shadow-lg)]">
       <div className="flex gap-1.5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:none]">
@@ -326,7 +301,7 @@ export default function Dashboard() {
             {/* Cột phải */}
             <div className="rise space-y-6" style={{ animationDelay: "280ms" }}>
               <PRCard prs={ov.prs} />
-              <GoalsCard goals={ov.goals} onEmpty={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu cụ thể. Hãy hỏi mình từng bước." })} />
+              <GoalsCard goals={ov.goals} onEmpty={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu cụ thể. Hãy hỏi mình từng bước.", full: true })} />
             </div>
           </div>
 

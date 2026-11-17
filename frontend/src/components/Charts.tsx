@@ -8,21 +8,33 @@ const tooltipStyle = {
   labelStyle: { color: "var(--muted)" },
 };
 
-export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", height = 220, target, label }: {
+export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", height = 220, target, label, selected, onSelect }: {
   data: Record<string, unknown>[]; dataKey: string; color?: string; unit?: string; height?: number; target?: number; label?: string;
+  /** ngày (giá trị "date") đang chọn → cột đó tô đậm thay cho cột cuối */
+  selected?: string;
+  /** bấm vào một cột (cả khoảng cột, không cần trúng thanh) → trả về "date" của cột đó */
+  onSelect?: (date: string) => void;
 }) {
+  const hi = selected != null ? data.findIndex((x) => x.date === selected) : data.length - 1;
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }} style={onSelect ? { cursor: "pointer" } : undefined}
+        onClick={onSelect ? (st) => {
+          // recharts 3: activeTooltipIndex có thể là null/chuỗi → không dùng Number(null) (= 0, nhảy nhầm về cột đầu)
+          const raw = st?.activeTooltipIndex;
+          const i = raw == null || raw === "" ? NaN : Number(raw);
+          const d = Number.isInteger(i) ? data[i]?.date : st?.activeLabel;
+          if (d != null) onSelect(String(d));
+        } : undefined}>
         <CartesianGrid strokeDasharray="2 6" stroke={grid} vertical={false} />
         <XAxis dataKey="date" tickFormatter={(d) => shortDate(String(d))} {...axis} minTickGap={12} />
         <YAxis {...axis} width={48} />
         <Tooltip {...tooltipStyle} cursor={{ fill: grid, radius: 8 }} labelFormatter={(d) => shortDate(String(d))} formatter={(v) => [`${Number(v).toLocaleString("vi-VN")} ${unit}`, label || dataKey]} />
         {target ? <ReferenceLine y={target} stroke="var(--text)" strokeOpacity={0.45} strokeDasharray="4 4" label={{ value: "Mục tiêu", fill: "var(--muted)", fontSize: 11, position: "insideTopRight" }} /> : null}
-        {/* cột gần nhất tô đậm, các cột trước nhạt hơn (kiểu biểu đồ Ridgeline) */}
+        {/* cột đang chọn (mặc định: gần nhất) tô đậm, các cột khác nhạt hơn */}
         <Bar dataKey={dataKey} fill={color} radius={[8, 8, 8, 8]} maxBarSize={30}>
           {data.map((_, i) => (
-            <Cell key={i} fill={i === data.length - 1 ? color : `color-mix(in srgb, ${color} 45%, transparent)`} />
+            <Cell key={i} fill={i === hi ? color : `color-mix(in srgb, ${color} 45%, transparent)`} />
           ))}
         </Bar>
       </BarChart>

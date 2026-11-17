@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ButtonHTMLAttributes, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CircleHelp, Loader2, X } from "lucide-react";
+import { withTransition } from "../lib/transition";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
 export function clickable(onClick?: () => void) {
@@ -200,7 +201,7 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={clsx("fade-in flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-[var(--card-border)] bg-surface shadow-2xl sm:rounded-[28px]", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
+        className={clsx("fade-in flex max-h-[calc(92dvh/var(--z))] w-full flex-col overflow-hidden rounded-t-[28px] border border-[var(--card-border)] bg-surface shadow-2xl sm:rounded-[28px]", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
@@ -344,6 +345,54 @@ export function PageHeader({ title, subtitle, actions, lead, help }: { title: Re
   );
 }
 
+/** Chia trang danh sách dài: trả về phần tử của trang hiện tại + thanh điều khiển trang. */
+export function usePaged<T>(items: T[] | undefined, perPage: number, resetKey?: unknown) {
+  const [page, setPage] = useState(1);
+  const total = items?.length ?? 0;
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  useEffect(() => setPage(1), [resetKey]);
+  const current = Math.min(page, pages);
+  return {
+    page: current,
+    pages,
+    total,
+    slice: (items || []).slice((current - 1) * perPage, current * perPage),
+    setPage,
+    from: total ? (current - 1) * perPage + 1 : 0,
+    to: Math.min(current * perPage, total),
+  };
+}
+
+/** Thanh chuyển trang: ‹ 1 2 … 8 › — ẩn khi chỉ có 1 trang. */
+export function Pager({ page, pages, onChange, label }: { page: number; pages: number; onChange: (p: number) => void; label?: ReactNode }) {
+  if (pages <= 1) return label ? <p className="px-1 pt-3 text-xs text-muted">{label}</p> : null;
+  const nums: (number | "…")[] = [];
+  for (let i = 1; i <= pages; i++) {
+    if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i);
+    else if (nums[nums.length - 1] !== "…") nums.push("…");
+  }
+  const btn = "grid h-9 min-w-9 place-items-center rounded-full px-2 text-sm font-medium transition disabled:opacity-35";
+  return (
+    <nav aria-label="Chuyển trang" className="flex flex-wrap items-center justify-between gap-2 pt-3">
+      {label ? <p className="px-1 text-xs text-muted">{label}</p> : <span />}
+      <div className="flex items-center gap-1">
+        <button type="button" className={clsx(btn, "hover:bg-surface-2")} disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Trang trước">‹</button>
+        {nums.map((n, i) =>
+          n === "…" ? (
+            <span key={`e${i}`} className="px-1 text-muted">…</span>
+          ) : (
+            <button key={n} type="button" aria-current={n === page ? "page" : undefined} onClick={() => onChange(n)}
+              className={clsx(btn, "num", n === page ? "bg-ink text-on-ink" : "hover:bg-surface-2")}>
+              {n}
+            </button>
+          ),
+        )}
+        <button type="button" className={clsx(btn, "hover:bg-surface-2")} disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Trang sau">›</button>
+      </div>
+    </nav>
+  );
+}
+
 /** Thanh tab dạng viên kính. `extra`: phần tử phụ nằm cuối cùng thanh (vd nút "Buổi tự soạn"). */
 export function Tabs<T extends string>({ value, onChange, tabs, extra }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; icon?: ReactNode }[]; extra?: ReactNode }) {
   return (
@@ -351,7 +400,7 @@ export function Tabs<T extends string>({ value, onChange, tabs, extra }: { value
       {tabs.map((t) => (
         <button
           key={t.value}
-          onClick={() => onChange(t.value)}
+          onClick={() => t.value !== value && withTransition(() => onChange(t.value))}
           aria-pressed={value === t.value}
           className={clsx(
             "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
@@ -461,5 +510,48 @@ export function DialogHost() {
         <input className="input" value={val} autoFocus aria-label={req.title} onChange={(e) => setVal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && close(true)} />
       )}
     </Modal>
+  );
+}
+
+/** Đọc số thập phân người Việt hay gõ: "22,5" hay "22.5" đều = 22.5. Rỗng / không hợp lệ → null. */
+export function parseDecimal(s: string): number | null {
+  const t = s.trim().replace(/\s/g, "").replace(",", ".");
+  if (!t || !/^-?\d*\.?\d*$/.test(t) || t === "." || t === "-") return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Ô nhập số thập phân. Không dùng <input type="number">: trên trình duyệt tiếng Anh nó bỏ dấu phẩy,
+ * gõ "22,5" thành 225. Ô này nhận cả "," và ".", giữ nguyên chữ đang gõ (vd "22,") và chỉ báo số khi hợp lệ.
+ */
+export function DecimalInput({ value, onValue, className, ...rest }: {
+  value: number | string | null | undefined;
+  onValue: (n: number | null, raw: string) => void;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type">) {
+  const show = (v: typeof value) => (v === null || v === undefined || v === "" ? "" : String(v).replace(".", ","));
+  const [text, setText] = useState(() => show(value));
+  // giá trị từ ngoài đổi (vd nút +/−, dữ liệu tải về) → cập nhật ô, trừ khi nó vẫn khớp với chữ đang gõ
+  useEffect(() => {
+    const cur = parseDecimal(text);
+    const next = value === "" || value == null ? null : Number(value);
+    if (cur !== next) setText(show(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <input
+      {...rest}
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      className={className}
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value;
+        if (!/^-?[\d\s]*[.,]?\d*$/.test(raw)) return; // chặn chữ cái
+        setText(raw);
+        onValue(parseDecimal(raw), raw);
+      }}
+    />
   );
 }

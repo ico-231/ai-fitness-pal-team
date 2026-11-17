@@ -11,6 +11,7 @@ Tool có thể:
 from __future__ import annotations
 
 import datetime as dt
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -34,6 +35,7 @@ class ToolContext:
     agent: str
     conversation_id: str | None = None
     cards: list[dict] = field(default_factory=list)
+    question: str = ""  # câu người dùng vừa hỏi (để công cụ sửa lại tham số model chọn sai)
 
     def card(self, card: dict) -> None:
         self.cards.append(card)
@@ -125,6 +127,22 @@ def get_readiness(ctx: ToolContext) -> dict:
 _FOCUS_ENUM = list(exsvc.FOCUS.keys())
 
 
+# Tên nhóm cơ tiếng Việt người dùng hay gõ → (muscle, từ khoá). Model hay hiểu "tay sau" thành "tay" nói chung.
+_VI_MUSCLE = [
+    (r"tay sau|cơ tam đầu|tam đầu", "triceps", ""), (r"tay trước|cơ nhị đầu|nhị đầu|bắp tay trước", "biceps", ""),
+    (r"vai sau", "shoulders", "rear"), (r"cẳng tay", "forearms", ""), (r"đùi sau", "hamstrings", ""),
+    (r"đùi trước", "quads", ""), (r"đùi trong", "adductors", ""), (r"bắp chân|bắp chuối", "calves", ""),
+    (r"\bmông\b", "glutes", ""), (r"lưng xô|cơ xô", "lats", ""), (r"lưng dưới", "lower_back", ""),
+    (r"liên sườn|\beo\b", "obliques", ""), (r"cầu vai", "traps", ""),
+]
+
+
+def _muscle_from_question(q: str) -> tuple[str, str] | None:
+    low = (q or "").lower()
+    hits = [(m, kw) for pat, m, kw in _VI_MUSCLE if re.search(pat, low)]
+    return hits[0] if len(hits) == 1 else None  # nhắc nhiều nhóm cơ thì để model tự quyết
+
+
 @tool(
     "search_exercises",
     "Tìm bài tập trong thư viện 1.324 bài (có ảnh GIF). Kết quả sẽ hiện thành thẻ có ảnh cho người dùng bấm xem. "
@@ -132,7 +150,9 @@ _FOCUS_ENUM = list(exsvc.FOCUS.keys())
     _obj({
         "focus": {"type": "string", "enum": _FOCUS_ENUM, "description": "Nhóm: chest, back, shoulders, arms, legs, abs, cardio, mobility"},
         "query": {"type": "string", "description": "Từ khoá tiếng Anh theo tên bài, vd 'squat', 'curl', 'bench press'"},
-        "muscle": {"type": "string", "enum": list(exsvc.MUSCLES.keys()), "description": "Một nhóm cơ cụ thể"},
+        "muscle": {"type": "string", "enum": list(exsvc.MUSCLES.keys()),
+                   "description": "Một nhóm cơ cụ thể — ƯU TIÊN dùng thay cho focus khi người dùng nêu rõ nhóm cơ. Tên tiếng Việt: "
+                   + ", ".join(f"{k} = {v}" for k, v in exsvc.MUSCLES.items())},
         "limit": {"type": "integer", "description": "Số bài (mặc định 6, tối đa 10)"},
         "respect_equipment": {"type": "boolean", "description": "Lọc theo dụng cụ người dùng có (mặc định true)"},
     }),
@@ -140,6 +160,10 @@ _FOCUS_ENUM = list(exsvc.FOCUS.keys())
 )
 def search_exercises(ctx: ToolContext, focus=None, query="", muscle=None, limit=6, respect_equipment=True) -> dict:
     limit = max(1, min(int(limit or 6), 10))
+    hit = _muscle_from_question(ctx.question)
+    if hit and muscle != hit[0]:
+        muscle, focus = hit[0], None
+        query = hit[1]  # bỏ từ khoá model tự chọn (vd "curl" khi người dùng hỏi tay sau)
     eq = ctx.profile.equipment if respect_equipment else None
     items, total = exsvc.search_exercises(q=query or "", focus=focus, muscle=muscle, profile_equipment=eq, limit=limit)
     if not items and eq:

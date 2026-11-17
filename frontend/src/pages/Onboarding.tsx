@@ -7,7 +7,7 @@ import { useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import type { Targets } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
-import { Button, Field } from "../components/ui";
+import { Button, Field, DecimalInput } from "../components/ui";
 import { useQuery } from "@tanstack/react-query";
 
 function Choice({ options, value, onChange }: { options: Record<string, string>; value: string; onChange: (v: string) => void }) {
@@ -79,7 +79,7 @@ export default function Onboarding() {
               <input className="input" type="number" min={100} max={250} value={f.height_cm} onChange={(e) => set("height_cm", +e.target.value)} />
             </Field>
             <Field label="Cân nặng (kg)">
-              <input className="input" type="number" step="0.1" min={25} max={300} value={f.weight_kg} onChange={(e) => set("weight_kg", +e.target.value)} />
+              <DecimalInput className="input" value={f.weight_kg} onValue={(n) => set("weight_kg", n ?? 0)} />
             </Field>
           </div>
         </div>

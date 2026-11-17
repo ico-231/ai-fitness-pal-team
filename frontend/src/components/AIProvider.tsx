@@ -14,6 +14,17 @@ interface OpenOpts {
   agent?: AgentKey | "auto";
   context?: string;
   autoSend?: boolean; // mặc định true nếu có text
+  /** true → mở trang Trợ lý AI đầy đủ (/chat) thay vì ngăn chat nổi */
+  full?: boolean;
+}
+
+/** Dữ liệu chuyển sang trang /chat qua location.state */
+export interface ChatHandoff {
+  text: string;
+  agent?: AgentKey | "auto";
+  context?: string;
+  autoSend: boolean;
+  page: string;
 }
 
 const Ctx = createContext<{ open: (o?: OpenOpts) => void; close: () => void } | null>(null);
@@ -46,6 +57,12 @@ export function AIProvider({ children }: { children: ReactNode }) {
   const page = PAGE_OF[loc.pathname] || loc.pathname.split("/")[1] || "dashboard";
 
   const open = useCallback((o: OpenOpts = {}) => {
+    if (o.full) {
+      setOpen(false);
+      const state: ChatHandoff | null = o.text ? { text: o.text, agent: o.agent, context: o.context, autoSend: o.autoSend !== false, page } : null;
+      nav("/chat", { state });
+      return;
+    }
     if (o.text || o.context) {
       setConv(null); // ngữ cảnh mới → cuộc trò chuyện mới
       setNonce((n) => n + 1);
@@ -53,7 +70,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
       setContext(o.context);
     }
     setOpen(true);
-  }, []);
+  }, [nav, page]);
   const close = useCallback(() => setOpen(false), []);
   const value = useMemo(() => ({ open, close }), [open, close]);
 
@@ -102,6 +119,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
                 page={page}
                 pageContext={context}
                 initial={initial}
+                onInitialSent={() => setInitial(null)}
                 emptyState={<DrawerEmpty page={page} onPick={(t, a) => setInitial({ text: t, agent: a, autoSend: true })} />}
               />
               </Suspense>

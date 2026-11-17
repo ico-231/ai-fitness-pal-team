@@ -100,6 +100,21 @@ def delete_conversation(cid: str, user: User = Depends(get_current_user), db: Se
     return {"ok": True}
 
 
+# Lượt trả lời đang chạy theo từng cuộc trò chuyện — để nút "Dừng" huỷ được thật (không chỉ ngắt luồng hiển thị)
+_running: dict[str, asyncio.Task] = {}
+
+
+@router.post("/conversations/{cid}/stop")
+async def stop(cid: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Người dùng bấm Dừng: huỷ lượt đang chạy. Các câu trả lời đã xong vẫn được giữ, phần đang viết dở bị bỏ."""
+    _own_conv(db, user, cid)
+    t = _running.get(cid)
+    if t and not t.done():
+        t.cancel()
+        return {"stopped": True}
+    return {"stopped": False}
+
+
 @router.post("/send")
 async def send(body: SendIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Gửi tin nhắn → trả về luồng sự kiện SSE (route, agent_start, token, tool_call, card, agent_message, done)."""
@@ -122,6 +137,11 @@ async def send(body: SendIn, user: User = Depends(get_current_user), db: Session
             target = db.get(Message, body.replace_from)
             if not target or target.conversation_id != conv.id or target.role != "user":
                 raise HTTPException(404, "Không tìm thấy câu hỏi cần thay")
+            # sửa CÂU ĐẦU TIÊN và tên hội thoại vẫn là tên tự đặt từ câu cũ → đặt lại để tên theo câu mới
+            first = db.scalar(select(Message).where(Message.conversation_id == conv.id).order_by(Message.created_at).limit(1))
+            old = (target.content or "").strip()
+            if first is not None and first.id == target.id and conv.title in (old, old[:60] + "…"):
+                conv.title = "Cuộc trò chuyện mới"
             for m in db.scalars(select(Message).where(Message.conversation_id == conv.id, Message.created_at >= target.created_at)):
                 db.delete(m)
             db.commit()
@@ -148,14 +168,22 @@ async def send(body: SendIn, user: User = Depends(get_current_user), db: Session
                 wdb, u, c, text=body.text.strip(), image=image, image_thumb=thumb, page=body.page,
                 page_context=body.page_context, forced_agent=body.agent if body.agent != "auto" else None, emit=emit,
             )
-        except Exception as e:  # pragma: no cover
+        except asyncio.CancelledError:
+            log.info("Người dùng dừng lượt trả lời (conversation %s)", conv_id)
+            wdb.rollback()
+            await queue.put({"type": "done"})
+        except Exception:  # pragma: no cover
             log.exception("chat worker failed")
-            await queue.put({"type": "error", "message": f"Lỗi hệ thống: {e}"})
+            # không đưa nguyên văn lỗi kỹ thuật ra giao diện
+            await queue.put({"type": "error", "message": "Hệ thống gặp lỗi khi xử lý câu hỏi. Bạn thử gửi lại nhé."})
             await queue.put({"type": "done"})
         finally:
             wdb.close()
+            if _running.get(conv_id) is asyncio.current_task():
+                _running.pop(conv_id, None)
 
     task = asyncio.create_task(worker())
+    _running[conv_id] = task
 
     async def stream():
         try:

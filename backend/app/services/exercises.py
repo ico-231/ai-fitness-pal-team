@@ -83,14 +83,16 @@ HOME_EQUIPMENT = {"body weight", "dumbbell", "band", "resistance band", "kettleb
 
 # Bài nào có thể dùng Camera AI (khớp theo tên, xem frontend/src/lib/pose.ts)
 _CAMERA_RULES = [
-    ("squat", r"squat(?!.*row)"),
-    ("pushup", r"push-?up"),
-    ("curl", r"\bcurl\b(?!.*leg)"),
-    ("press", r"(shoulder|overhead|military) press"),
-    ("lunge", r"lunge"),
-    ("deadlift", r"deadlift"),
-    ("plank", r"plank"),
-    ("jumping_jack", r"jack jump|jumping jack"),
+    # (mô hình Camera AI, mẫu tên bài, mẫu LOẠI TRỪ). Mỗi mô hình chỉ chấm đúng kiểu chuyển động của nó;
+    # bài khác kiểu (wrist/leg/preacher curl, single-leg, side plank...) để KHÔNG có camera, thay vì chấm sai rồi luôn "xanh".
+    ("lunge", r"lunge|split squat", r"lateral|side split|jump|twist|swing|curl|triceps|pass through|high knees|step-up"),
+    ("squat", r"\bsquat\b", r"split|single leg|one leg|jump|plyo|curl|lunge|sissy|row|drop|on knees|overhead|pistol|turkish|calf|lying|jerk|curtsey|frankenstein|potty|chair|seated"),
+    ("pushup", r"push-?up", r"handstand|planche|scapula|pike|elbow lift|side push|single arm|one arm|clock|kick|to side plank|plus|on lower arms|wall"),
+    ("curl", r"\bcurl\b", r"wrist|\bleg\b|preacher|peacher|lying|prone|incline|concentration|drag|squat|lunge|spider|side lying|overhead|curl-up|lower back|hamstring|pulldown|press|waiter|kick"),
+    ("press", r"(shoulder|overhead|military) press", r"behind head|twisting|to the side|one arm|alternate"),
+    ("deadlift", r"deadlift", r"single leg|one arm|side"),
+    ("plank", r"\bplank\b", r"side|reverse|twist|tap|leg lift|rear fly"),
+    ("jumping_jack", r"jack jump|jumping jack", r"^$"),
 ]
 
 # Bài phổ biến (hay gặp ở phòng tập / app gym) — được ưu tiên hiển thị trước
@@ -137,7 +139,7 @@ def _load() -> tuple[list[dict], dict[str, dict]]:
             if c and c != primary and c not in sec:
                 sec.append(c)
         name = e["name"]
-        camera = next((k for k, pat in _CAMERA_RULES if re.search(pat, name)), None)
+        camera = next((k for k, pat, ex in _CAMERA_RULES if re.search(pat, name) and not re.search(ex, name)), None)
         is_cardio = e["body_part"] == "cardio"
         is_stretch = "stretch" in name
         items.append({

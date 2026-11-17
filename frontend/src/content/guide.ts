@@ -112,7 +112,7 @@ export const CHAPTERS: GuideChapter[] = [
         title: "Đi lại trong app",
         intro: "Mọi trang đều cách nhau 1 lần bấm.",
         steps: [
-          "Máy tính: thanh dọc bên trái chia 2 khối. Khối trên: Tổng quan, Trợ lý AI, Tập luyện, Hôm nay, Dinh dưỡng, InBody. Khối dưới: Hướng dẫn, Cài đặt, nút sáng/tối và ảnh đại diện (đăng xuất).",
+          "Máy tính: thanh dọc bên trái chia 2 khối. Khối trên: Tổng quan, Trợ lý AI, Tập luyện, Hôm nay, Dinh dưỡng, InBody. Khối dưới: Hướng dẫn, Cài đặt và ảnh đại diện (đăng xuất). Đổi sáng/tối trong **Cài đặt → Giao diện & nhắc nhở**.",
           "Điện thoại: thanh điều hướng ở đáy màn hình; các trang còn lại ở nút menu góc trên.",
           "Nút **Hỏi AI** nổi ở góc dưới phải: mở HeadBro ở bất kỳ trang nào.",
           "Nút **?** cạnh tiêu đề mỗi trang: mở đúng phần hướng dẫn của trang đó.",
@@ -295,7 +295,7 @@ export const CHAPTERS: GuideChapter[] = [
         title: "Thao tác nhanh, nghe tóm tắt, xuất PDF",
         intro: "Làm việc thường ngày mà không cần chuyển trang.",
         steps: [
-          "Hàng biểu tượng cạnh ngày tháng: thêm nước, ghi cân nặng, ghi bữa ăn, tập ngay (rê chuột để xem tên).",
+          "Hàng biểu tượng cạnh ngày tháng: check-in sáng, ghi bữa ăn, tập luyện (rê chuột để xem tên). Nước uống và cân nặng ghi ở trang **Hôm nay**.",
           "Nút loa **Nghe tóm tắt hôm nay**: đọc to tình hình ngày bằng giọng tiếng Việt. Số liệu lấy thẳng từ dữ liệu, không qua AI.",
           "Nút in **Xuất báo cáo PDF**: chọn \"Lưu dưới dạng PDF\" trong hộp thoại in.",
         ],
@@ -318,7 +318,8 @@ export const CHAPTERS: GuideChapter[] = [
         steps: [
           "Mở **Hôm nay** (hoặc bấm **Check-in** ở Tổng quan).",
           "Kéo thanh số giờ ngủ đêm qua.",
-          "Chọn mức 1–5 cho **Chất lượng giấc ngủ**, **Mức độ mệt mỏi**, **Đau nhức cơ (DOMS)**, **Căng thẳng**.",
+          "Chọn mức 1–5 cho **Chất lượng giấc ngủ**, **Mức độ mệt mỏi**, **Đau nhức cơ (DOMS)**, **Căng thẳng**. Mọi thang đọc cùng một chiều: bên trái (1) là tệ nhất, bên phải (5) là tốt nhất.",
+          "Tuỳ chọn: nhập **Cân nặng sáng nay** — cân sau khi thức dậy, trước khi ăn. Số này vào luôn biểu đồ cân nặng ở InBody.",
           "Ghi chú nếu cần (vd \"hơi đau vai trái\") → bấm **Tính điểm sẵn sàng**.",
         ],
         tips: ["Khai nhầm? Bấm nút **Xoá check-in hôm nay** rồi làm lại."],
@@ -359,7 +360,7 @@ export const CHAPTERS: GuideChapter[] = [
           "Bấm nhầm: nút **−** (Bớt 250 ml).",
           "Vòng xanh cho biết đã đạt bao nhiêu % mục tiêu.",
         ],
-        tips: ["Ở Tổng quan cũng có nút thêm nước nhanh."],
+        tips: ["Muốn nhắc uống nước định kỳ: bật trong **Cài đặt → Giao diện & nhắc nhở**."],
         keywords: "nuoc uong water ml lit",
         link: { to: "/daily", label: "Mở Hôm nay" },
       },
@@ -510,9 +511,24 @@ export const CHAPTERS: GuideChapter[] = [
           "Bài có tạ: so bằng **1RM ước tính** = tạ × (1 + rep ÷ 30). Nhờ vậy so được 100kg × 5 với 90kg × 8.",
           "Bài không tạ (hít đất, kéo xà…): so số rep nhiều nhất.",
           "Bài giữ (plank…): so số giây lâu nhất.",
-          "Xem tất cả ở tab **Lịch sử & PR** hoặc thẻ **Kỷ lục cá nhân** ở Tổng quan.",
+          "Xem tất cả ở tab **Lịch sử & PR** hoặc thẻ **Kỷ lục cá nhân** ở Tổng quan. Bấm vào một bài để xem biểu đồ tăng tiến.",
         ],
         keywords: "pr ky luc 1rm epley",
+      },
+      {
+        id: "tien-do-ta",
+        title: "Theo dõi mức tạ tăng dần từng bài",
+        intro: "Biểu đồ cho thấy mức tạ của bạn ở một bài tăng thế nào qua từng buổi — động lực rõ ràng nhất khi tập lâu dài.",
+        when: "Bạn tập một bài đều đặn (vd squat, đẩy ngực) và muốn biết mình có đang tiến bộ không.",
+        steps: [
+          "Tab **Lịch sử & PR** → bấm một bài trong **Kỷ lục cá nhân**; hoặc mở bài bất kỳ đã từng tập trong **Thư viện bài tập**.",
+          "Khung **Tiến độ mức tạ** vẽ 2 đường: **Mức tạ nặng nhất** mỗi buổi và **1RM ước tính**.",
+          "Nhãn xanh/đỏ góc phải cho biết tăng hay giảm bao nhiêu kg (và %) từ buổi đầu tới buổi gần nhất.",
+          "Bài không tạ hiện số rep tốt nhất, bài giữ (plank) hiện số giây.",
+        ],
+        notes: ["Set khởi động không được tính. Cần ít nhất 2 buổi để có đường biểu đồ."],
+        keywords: "tien do muc ta tang tien bieu do progression theo doi",
+        visual: "overload",
       },
       {
         id: "giong-pt",
@@ -601,7 +617,7 @@ export const CHAPTERS: GuideChapter[] = [
         intro: "Hơn 1.300 bài có ảnh động, mô tả cách tập và cơ được tác động.",
         steps: [
           "Gõ tên bài (tiếng Anh hoặc Việt) vào ô tìm kiếm.",
-          "Lọc theo nhóm cơ, dụng cụ, **Hợp dụng cụ của tôi**, **Có Camera AI**.",
+          "Lọc theo nhóm cơ (Ngực, Lưng, Chân & Mông…), chọn dụng cụ ở ô **Mọi dụng cụ**, bật **Có Camera AI** nếu muốn tập có chấm form. **Bỏ lọc** để xem lại tất cả.",
           "Bấm một bài để xem ảnh động, cơ chính/phụ, các bước, lần tập trước, kỷ lục và gợi ý mức tạ hôm nay.",
         ],
         keywords: "thu vien bai tap tim bai gif huong dan",
@@ -612,6 +628,7 @@ export const CHAPTERS: GuideChapter[] = [
         intro: "Xem lại mọi buổi đã tập.",
         steps: [
           "Tab **Lịch sử & PR** → danh sách buổi theo ngày, thời gian, khối lượng.",
+          "Danh sách chia trang, 8 buổi mỗi trang — bấm số trang hoặc ‹ › ở cuối danh sách.",
           "Xoá buổi ghi nhầm: bấm **Xoá buổi tập này** — kỷ lục và thống kê tự tính lại.",
         ],
         keywords: "lich su buoi tap xoa buoi",
@@ -804,6 +821,7 @@ export const CHAPTERS: GuideChapter[] = [
           "Cuộn xuống **Thư viện món Việt** ở trang Dinh dưỡng, gõ tên món.",
           "Bật **Clean** để chỉ xem món ăn sạch.",
           "**Xem chi tiết** để đọc thành phần và mẹo ăn sạch; **Ghi nhanh** để ghi vào hôm nay.",
+          "Thư viện chia trang, 10 món mỗi trang — chuyển trang ở cuối danh sách.",
         ],
         keywords: "thu vien mon viet pho com tam bun clean eating",
       },
@@ -834,7 +852,7 @@ export const CHAPTERS: GuideChapter[] = [
         steps: [
           "Trang **InBody** → **Nhập chỉ số**.",
           "Chọn ngày đo, điền ô nào có số liệu (không cần điền hết) → **Lưu**.",
-          "Chỉ ghi cân nặng nhanh: nút ghi cân nặng ở Tổng quan.",
+          "Chỉ ghi cân nặng nhanh: nhập ô **Cân nặng sáng nay** khi check-in ở trang Hôm nay.",
         ],
         tips: ["Cân vào cùng một giờ mỗi lần (vd sáng sau khi thức dậy) để số liệu so sánh được."],
         keywords: "nhap chi so can nang mo co so do",
@@ -943,7 +961,7 @@ export const CHAPTERS: GuideChapter[] = [
       {
         id: "giao-dien",
         title: "Giao diện và nhắc nhở",
-        intro: "Chọn sáng/tối và để FitBro nhắc bạn đúng giờ.",
+        intro: "Chọn sáng/tối (chỉ đổi ở đây) và để FitBro nhắc bạn đúng giờ.",
         steps: [
           "**Chủ đề**: Sáng / Tối / **Theo máy** (tự đổi theo điện thoại/máy tính).",
           "Bật nhắc nhở → trình duyệt hỏi quyền thông báo → **Cho phép**.",

@@ -2,6 +2,28 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* ---- Mật độ giao diện trên desktop ----
+   Thiết kế gốc canh theo màn 16" ở zoom ~80%. Thay vì để người dùng tự zoom trình duyệt, thu nhỏ cả trang
+   bằng CSS zoom: laptop 13–16" (≥1024 px) = 0.8, màn rất rộng = 0.9, điện thoại/tablet giữ 1.
+   Cài đặt → "Cỡ giao diện" ghi đè bằng --ui-zoom (gắn inline trên <html>, xem lib/zoom.ts).
+   --z = mức zoom thực tế; chỗ nào cần cao đúng bằng màn hình dùng calc(100dvh / var(--z)). */
+:root { --z-auto: 1; }
+@media (min-width: 1024px) { :root { --z-auto: 0.8; } }
+@media (min-width: 2200px) { :root { --z-auto: 0.9; } }
+html {
+  --z: var(--ui-zoom, var(--z-auto));
+  zoom: var(--z);
+}
+@media print { html { zoom: 1; } }
+
+/* Thanh bên desktop: kích thước nút co theo chiều cao thật của màn hình (laptop thấp / cửa sổ thu nhỏ) */
+.rail { --rail-btn: 44px; --rail-logo: 44px; --rail-avatar: 40px; --rail-gap: 6px; }
+@media (max-height: 640px) { .rail { --rail-btn: 38px; --rail-logo: 36px; --rail-avatar: 34px; --rail-gap: 3px; } }
+@media (max-height: 540px) { .rail { --rail-btn: 32px; --rail-logo: 30px; --rail-avatar: 30px; --rail-gap: 2px; } }
+/* Cao đúng bằng màn hình dù trang đang bị zoom (100dvh được tính trước khi thu nhỏ → phải chia lại cho --z) */
+@utility h-screen-z { height: calc(100dvh / var(--z)); }
+@utility min-h-screen-z { min-height: calc(100dvh / var(--z)); }
+
 /* ---- Design tokens (light / dark) — "Volt" (remaster v4) ----
    Bản sáng: nền xám ngọc trai, card trắng bo lớn, nút chính màu mực, điểm nhấn xanh chanh (volt).
    Bản tối: nền than, card xám than, nút chính volt chữ đen.
@@ -10,7 +32,7 @@
    ink / on-ink   = nút chính, bong bóng chat người dùng, toast
    volt / on-volt = ô nổi bật (huy hiệu, chip đang chọn, con số quan trọng) */
 :root {
-  --bg: #eceef0;
+  --bg: #f1f2f4; /* nền trang: trắng ngà rất nhạt — khối trắng đặt lên vẫn tách rõ */
   --surface: #ffffff;
   --surface-2: #f3f4f5;
   --surface-3: #e5e7ea;
@@ -49,18 +71,18 @@
   --heat-4: #3f6212;
   --shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 12px 32px -12px rgb(16 24 40 / 0.12);
   --shadow-lg: 0 2px 4px rgb(16 24 40 / 0.04), 0 24px 48px -16px rgb(16 24 40 / 0.22);
-  --glass: rgb(255 255 255 / 0.68);
-  --glass-strong: rgb(255 255 255 / 0.78);
-  --glass-border: rgb(255 255 255 / 0.7);
+  --glass: rgb(255 255 255 / 0.94);
+  --glass-strong: rgb(255 255 255 / 0.96);
+  --glass-border: rgb(15 23 42 / 0.08);
   --glass-hi: rgb(255 255 255 / 0.9);
-  --glass-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 24px 60px -24px rgb(15 23 42 / 0.28);
+  --glass-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 18px 44px -20px rgb(15 23 42 / 0.22);
   --glass-fill: rgb(15 23 42 / 0.05);
   --accent-num: #3f6212;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0b0c0d;
+  --bg: #050506; /* nền trang: gần đen — khối xám than đặt lên vẫn tách rõ */
   --surface: #151618;
   --surface-2: #1d1f22;
   --surface-3: #2a2d31;
@@ -99,9 +121,9 @@
   --heat-4: #c6f432;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.5);
   --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -16px rgb(0 0 0 / 0.7);
-  --glass: rgb(18 22 16 / 0.52);
-  --glass-strong: rgb(18 22 16 / 0.72);
-  --glass-border: rgb(255 255 255 / 0.09);
+  --glass: rgb(24 25 27 / 0.94);
+  --glass-strong: rgb(24 25 27 / 0.96);
+  --glass-border: rgb(255 255 255 / 0.1);
   --glass-hi: rgb(255 255 255 / 0.07);
   --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 30px 70px -30px rgb(0 0 0 / 0.8);
   --glass-fill: rgb(255 255 255 / 0.06);
@@ -208,7 +230,6 @@ body {
 .glass {
   background: var(--glass);
   backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--glass-border);
   box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
 }
@@ -352,106 +373,12 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(120% 90% at 10% 0%, #f4f7ec 0%, transparent 55%),
-    linear-gradient(160deg, #eef3e6 0%, #e3ece6 45%, #dfe7ee 100%);
+  background: var(--bg);
 }
-.aurora .blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(90px);
-  opacity: 0.75;
-  will-change: transform;
-  animation: drift 38s ease-in-out infinite alternate;
-}
-.aurora .b1 { width: 62vmax; height: 62vmax; left: -18vmax; top: -22vmax; background: radial-gradient(circle, #c6f432 0%, rgb(198 244 50 / 0) 68%); }
-.aurora .b2 { width: 58vmax; height: 58vmax; right: -20vmax; top: -10vmax; background: radial-gradient(circle, #34d399 0%, rgb(52 211 153 / 0) 66%); animation-duration: 46s; animation-delay: -12s; opacity: 0.55; }
-.aurora .b3 { width: 70vmax; height: 70vmax; left: 18vmax; bottom: -42vmax; background: radial-gradient(circle, #5eead4 0%, rgb(94 234 212 / 0) 64%); animation-duration: 52s; animation-delay: -24s; opacity: 0.45; }
-.aurora .b4 { width: 36vmax; height: 36vmax; right: 6vmax; bottom: -8vmax; background: radial-gradient(circle, #fde68a 0%, rgb(253 230 138 / 0) 66%); animation-duration: 41s; animation-delay: -6s; opacity: 0.45; }
-/* hạt nhiễu mịn cho cảm giác "ảnh thật", không bị bệt màu */
-.aurora .grain {
-  position: absolute;
-  inset: -50%;
-  opacity: 0.09;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-/* lưới đường đồng mức mảnh — gợi "địa hình" như bản đồ sân golf */
-.aurora .contour {
-  position: absolute;
-  inset: 0;
-  opacity: 0.35;
-  background:
-    repeating-radial-gradient(circle at 72% 38%, transparent 0 46px, rgb(15 23 42 / 0.05) 46px 47px),
-    repeating-radial-gradient(circle at 18% 82%, transparent 0 58px, rgb(15 23 42 / 0.04) 58px 59px);
-  mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 75%);
-}
-.aurora .vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgb(15 23 42 / 0.08));
-}
-[data-theme="dark"] .aurora {
-  background:
-    radial-gradient(120% 90% at 10% 0%, #1a2412 0%, transparent 55%),
-    linear-gradient(160deg, #0d130c 0%, #0a100d 50%, #070a0b 100%);
-}
-[data-theme="dark"] .aurora .blob { opacity: 0.42; }
-[data-theme="dark"] .aurora .b1 { background: radial-gradient(circle, #6b8e12 0%, rgb(107 142 18 / 0) 68%); }
-[data-theme="dark"] .aurora .b2 { background: radial-gradient(circle, #065f46 0%, rgb(6 95 70 / 0) 66%); opacity: 0.6; }
-[data-theme="dark"] .aurora .b3 { background: radial-gradient(circle, #134e4a 0%, rgb(19 78 74 / 0) 64%); opacity: 0.55; }
-[data-theme="dark"] .aurora .b4 { background: radial-gradient(circle, #3f6212 0%, rgb(63 98 18 / 0) 66%); opacity: 0.35; }
-[data-theme="dark"] .aurora .grain { mix-blend-mode: overlay; opacity: 0.14; }
-[data-theme="dark"] .aurora .contour {
-  background:
-    repeating-radial-gradient(circle at 72% 38%, transparent 0 46px, rgb(198 244 50 / 0.06) 46px 47px),
-    repeating-radial-gradient(circle at 18% 82%, transparent 0 58px, rgb(198 244 50 / 0.045) 58px 59px);
-}
-[data-theme="dark"] .aurora .vignette { background: radial-gradient(ellipse at 50% 40%, transparent 45%, rgb(0 0 0 / 0.55)); }
-/* Ảnh nền thật (frontend/public/bg/) phủ lên aurora, có lớp phủ để chữ dễ đọc */
-.bg-photo-wrap {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-.bg-photo {
-  position: absolute;
-  inset: -3%;
-  width: 106%;
-  height: 106%;
-  /* Tailwind preflight đặt img { max-width: 100% } → ảnh bị co còn 100% và hụt 3% ở mép phải */
-  max-width: none;
-  object-fit: cover;
-  object-position: var(--bg-pos, 50% 50%);
-  animation: bg-in 1.2s ease both, kenburns 48s ease-in-out infinite alternate;
-}
-.bg-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 34% 42% at 52% 52%, rgb(255 255 255 / 0.42), transparent 70%),
-    linear-gradient(115deg, rgb(255 255 255 / 0.62) 0%, rgb(255 255 255 / 0.22) 45%, rgb(255 255 255 / 0.12) 100%),
-    linear-gradient(0deg, rgb(255 255 255 / 0.25), transparent 40%);
-}
-[data-theme="dark"] .bg-scrim {
-  background:
-    radial-gradient(ellipse 34% 42% at 52% 52%, rgb(6 8 6 / 0.35), transparent 70%),
-    linear-gradient(115deg, rgb(6 8 6 / 0.82) 0%, rgb(6 8 6 / 0.55) 50%, rgb(6 8 6 / 0.45) 100%),
-    linear-gradient(0deg, rgb(6 8 6 / 0.5), transparent 45%);
-}
-[data-theme="dark"] .bg-photo {
-  filter: saturate(0.8) brightness(0.9);
-}
-@keyframes bg-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes kenburns {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.06) translate3d(-1%, -1%, 0); }
-}
+/* Nền trắng/đen trơn (theo góp ý): ẩn các mảng màu, vân, hạt nhiễu cũ */
+.aurora > * { display: none; }
+
 @keyframes drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
   50% { transform: translate3d(6vmax, 4vmax, 0) scale(1.08); }
@@ -464,12 +391,28 @@ body {
   --surface-3: color-mix(in srgb, var(--text) 10%, transparent);
   --border: var(--glass-border);
 }
+/* Kính mờ 28px, khối gần như đục: dễ đọc chữ, vẫn tách lớp với nền */
 .immersive .card {
   background: var(--glass);
   backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--glass-border);
   box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+  transition: transform 0.55s var(--spring), box-shadow 0.4s ease, background-color 0.3s ease;
+}
+/* Rê chuột: khối nổi nhẹ lên, bóng đổ sâu hơn (kiểu macOS) */
+@media (hover: hover) {
+  .immersive .card:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgb(15 23 42 / 0.05), 0 28px 60px -22px rgb(15 23 42 / 0.4);
+  }
+  [data-theme="dark"] .immersive .card:hover {
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgb(0 0 0 / 0.35), 0 30px 70px -24px rgb(0 0 0 / 0.9);
+  }
+  /* khối công cụ (thanh tìm kiếm, bộ lọc) đứng yên, không nổi */
+  .immersive .card.no-lift:hover {
+    transform: none;
+    box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+  }
 }
 .immersive .input {
   background: var(--glass-fill);
@@ -485,17 +428,6 @@ body {
   --surface-3: #2a2d31;
   --border: #272a2e;
 }
-/* Chữ đặt thẳng trên ảnh nền (tiêu đề trang, tiêu đề mục) */
-.immersive .on-bg,
-.immersive main section > div > div > h2,
-.immersive main section > div > div > h2 + p {
-  text-shadow: 0 0 18px rgb(255 255 255 / 0.95), 0 0 2px rgb(255 255 255 / 0.9);
-}
-[data-theme="dark"] .immersive .on-bg,
-[data-theme="dark"] .immersive main section > div > div > h2,
-[data-theme="dark"] .immersive main section > div > div > h2 + p {
-  text-shadow: 0 0 18px rgb(0 0 0 / 0.9), 0 0 2px rgb(0 0 0 / 0.8);
-}
 /* Ảnh bài tập (GIF nền trắng): bản tối giảm sáng để không chói trên nền than */
 .ex-img {
   background: #fff;
@@ -509,7 +441,7 @@ body {
 
 /* Mỗi trang: các khối con hiện lần lượt (không dùng filter để không ảnh hưởng phần tử fixed bên trong) */
 .stagger > * {
-  animation: rise-soft 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-soft 0.7s var(--spring) both;
 }
 .stagger > *:nth-child(2) { animation-delay: 50ms; }
 .stagger > *:nth-child(3) { animation-delay: 100ms; }
@@ -523,21 +455,198 @@ body {
 }
 /* Xuất hiện mượt, lần lượt (kiểu macOS) */
 .rise {
-  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise 0.8s var(--spring) both;
 }
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(4px); }
   to { opacity: 1; transform: none; filter: none; }
 }
+/* ---------- Chuyển động kiểu Apple: lò xo mềm ---------- */
+:root {
+  /* lò xo nhẹ: vượt ~4% rồi về đích (CSS linear() — trình duyệt cũ dùng ease-out phía dưới) */
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring: linear(0, 0.017 1.1%, 0.067 2.3%, 0.25 4.8%, 0.501 7.9%, 0.72 11.2%, 0.876 14.6%, 0.976 18.3%, 1.03 22.3%, 1.046 25.5%, 1.045 29%, 1.023 36%, 1.006 44%, 0.998 54%, 1);
+    --spring-bounce: linear(0, 0.035 1.6%, 0.143 3.5%, 0.53 8.7%, 0.84 13.5%, 1.05 18.6%, 1.13 22.8%, 1.14 25.6%, 1.11 29.7%, 1.02 38.1%, 0.985 46%, 0.988 55%, 1.002 70%, 1);
+  }
+}
 .lift {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s;
+  transition: transform 0.55s var(--spring), box-shadow 0.35s;
 }
 .lift:hover {
   transform: translateY(-2px);
 }
+/* Bấm: thu nhỏ nhẹ rồi bật lại kiểu lò xo. Dùng thuộc tính `scale` (tách khỏi transform) nên không phá
+   các hiệu ứng translate sẵn có. Đặt trong @layer base → class Tailwind riêng của từng nút vẫn thắng. */
+@layer base {
+  :where(button, a[href], [role="button"], summary) {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform, translate, scale;
+    transition-duration: 0.18s, 0.18s, 0.18s, 0.18s, 0.3s, 0.5s, 0.5s, 0.5s;
+    transition-timing-function: ease, ease, ease, ease, ease, var(--spring), var(--spring), var(--spring-bounce);
+  }
+  :where(button:not(:disabled), a[href], [role="button"]:not([aria-disabled="true"]), summary):active {
+    scale: 0.96;
+    transition-duration: 0.08s;
+  }
+  /* Thẻ lớn bấm được: thu nhỏ ít hơn để không "giật" */
+  :where(.card[role="button"], .glass[role="button"], a.card, button.card):active {
+    scale: 0.985;
+  }
+}
+
+/* Chuyển cảnh giữa các trang / tab (View Transitions API — lib/transition.ts):
+   chỉ vùng nội dung chính chuyển cảnh, thanh điều hướng và ảnh nền đứng yên.
+   Trang cũ mờ đi + lùi nhẹ ra sau, trang mới nổi lên từ dưới, rõ dần (lò xo). */
+.vt-page {
+  view-transition-name: page;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(page) {
+  animation-duration: 0.5s;
+}
+::view-transition-old(page) {
+  animation: vt-out 0.22s ease-in both;
+}
+::view-transition-new(page) {
+  animation: vt-in 0.55s var(--spring) both 0.06s;
+}
+@keyframes vt-out {
+  to { opacity: 0; transform: scale(0.985); filter: blur(6px); }
+}
+@keyframes vt-in {
+  from { opacity: 0; transform: translateY(18px) scale(1.01); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+/* Trình duyệt chưa có View Transitions: trang mới vẫn hiện dần */
+@supports not (view-transition-name: page) {
+  .page-main { animation: page-in 0.6s var(--spring) both; }
+}
+.page-enter {
+  animation: page-in 0.6s var(--spring) both;
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.992); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.pin-in {
+  animation: fadeIn 0.5s var(--spring) both 0.35s;
+}
+
+/* ---------- Liquid Glass (kính lỏng kiểu macOS 26) cho thanh điều hướng ----------
+   Lớp nền: mờ + tăng bão hoà + sáng nhẹ; viền bắt sáng chạy quanh mép (mask gradient);
+   vệt phản chiếu chéo mặt trên; bóng đổ mềm nhiều lớp để khối "nổi" lên khỏi ảnh nền. */
+.liquid {
+  isolation: isolate; /* phần tử chứa phải có position (absolute/fixed/relative) cho ::before/::after */
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.22) 55%, rgb(255 255 255 / 0.34)),
+    rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(10px) saturate(190%) brightness(1.05);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.9),
+    inset 0 -1px 1px rgb(255 255 255 / 0.35),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.6),
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 10px 24px -10px rgb(15 23 42 / 0.25),
+    0 30px 60px -30px rgb(15 23 42 / 0.35);
+}
+/* viền bắt sáng: sáng ở góc trên-trái và dưới-phải như kính dày khúc xạ ánh sáng */
+.liquid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.15) 35%, rgb(255 255 255 / 0.05) 60%, rgb(255 255 255 / 0.7));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+/* vệt phản chiếu mờ ở nửa trên */
+.liquid::after {
+  content: "";
+  position: absolute;
+  inset: 1px 1px 45% 1px;
+  border-radius: inherit;
+  background: radial-gradient(120% 90% at 30% 0%, rgb(255 255 255 / 0.55), transparent 65%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: -1;
+}
+[data-theme="dark"] .liquid {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.03) 55%, rgb(255 255 255 / 0.07)),
+    rgb(14 18 12 / 0.45);
+  backdrop-filter: blur(10px) saturate(160%) brightness(0.9);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.18),
+    inset 0 -1px 1px rgb(255 255 255 / 0.05),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.1),
+    0 10px 24px -10px rgb(0 0 0 / 0.6),
+    0 30px 60px -30px rgb(0 0 0 / 0.8);
+}
+[data-theme="dark"] .liquid::before {
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.04) 35%, transparent 60%, rgb(255 255 255 / 0.2));
+}
+[data-theme="dark"] .liquid::after { opacity: 0.18; }
+
+/* Viên chỉ báo trang đang mở: trượt theo kiểu lò xo giữa các mục, như giọt kính lỏng */
+.liquid-pill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 1rem;
+  background: var(--volt);
+  box-shadow: 0 6px 18px -6px rgb(132 204 22 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -1px 0 rgb(0 0 0 / 0.08);
+  transition:
+    transform 0.6s var(--spring-bounce),
+    width 0.45s var(--spring),
+    height 0.45s var(--spring),
+    opacity 0.2s ease;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+}
+.liquid-pill.ink {
+  border-radius: 9999px;
+  background: var(--ink);
+  box-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+.liquid-pill.jelly {
+  animation: jelly 0.6s var(--spring);
+}
+@keyframes jelly {
+  0% { scale: 1 1; }
+  30% { scale: 0.88 1.12; }
+  60% { scale: 1.05 0.96; }
+  100% { scale: 1 1; }
+}
+
+/* Máy bật "giảm chuyển động" (Windows: tắt Animation effects; macOS: Reduce Motion):
+   giống Apple — bỏ trượt/phóng to/nhoè và nền trôi, nhưng VẪN mờ dần khi chuyển cảnh và vẫn phản hồi
+   khi bấm/rê chuột, để giao diện không bị "đơ". */
 @media (prefers-reduced-motion: reduce) {
-  .aurora .blob, .rise, .bg-photo, .stagger > * { animation: none !important; }
-  .lift:hover { transform: none; }
+  .aurora .blob { animation: none !important; }
+  .rise, .stagger > *, .page-enter, .page-main, .pin-in { animation: fade-only 0.35s ease both !important; }
+  ::view-transition-old(page) { animation: fade-out-only 0.18s ease both !important; }
+  ::view-transition-new(page) { animation: fade-only 0.3s ease both !important; }
+  .liquid-pill.jelly { animation: none !important; }
+  .liquid-pill { transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease, opacity 0.2s ease; }
+  .immersive .card:hover { transform: translateY(-1px); }
+}
+@keyframes fade-only {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-out-only {
+  to { opacity: 0; }
 }
 
 /* In báo cáo (Xuất PDF) */

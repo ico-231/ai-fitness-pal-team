@@ -17,7 +17,7 @@ import { CameraCoach, type CameraResult } from "../components/CameraCoach";
 import { ExerciseImage } from "../components/Exercise";
 import { ExercisePicker, itemFor } from "../components/ExercisePicker";
 import { useAI } from "../components/AIProvider";
-import { Badge, Button, Card, Ring, Spinner, toast, confirmDialog } from "../components/ui";
+import { Badge, Button, Card, Ring, Spinner, toast, confirmDialog, DecimalInput } from "../components/ui";
 
 type Phase = "overview" | "prep" | "work" | "rest" | "summary";
 
@@ -92,7 +92,7 @@ function LoggedSets({ sets, timed, onEdit, onDelete }: {
                   <input aria-label="Số giây" className="input num h-9 w-20 text-center" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
                 ) : (
                   <>
-                    <input aria-label="Mức tạ (kg)" className="input num h-9 w-[4.5rem] text-center" type="number" step={0.5} value={w} onChange={(e) => setW(+e.target.value)} />
+                    <DecimalInput aria-label="Mức tạ (kg)" className="input num h-9 w-[4.5rem] text-center" value={w} onValue={(n) => setW(n ?? 0)} />
                     <span className="text-xs text-muted">×</span>
                     <input aria-label="Số rep" className="input num h-9 w-14 text-center" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
                   </>
@@ -833,7 +833,7 @@ export default function Session() {
                       <p className="mb-1 text-xs text-muted">Mức tạ (kg)</p>
                       <div className="flex items-center gap-1">
                         <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setWeight((w) => Math.max(0, +(w - 2.5).toFixed(1)))}>−</button>
-                        <input className="input num h-11 text-center text-xl font-semibold" type="number" step={0.5} value={weight} onChange={(e) => setWeight(+e.target.value)} />
+                        <DecimalInput aria-label="Mức tạ (kg)" className="input num h-11 text-center text-xl font-semibold" value={weight} onValue={(n) => setWeight(n ?? 0)} />
                         <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setWeight((w) => +(w + 2.5).toFixed(1))}>+</button>
                       </div>
                     </div>

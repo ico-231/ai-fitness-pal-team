@@ -8,6 +8,7 @@ import { exName, prDetail, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR } from "../lib/types";
 import { Badge, Button, Card, Modal, Spinner } from "./ui";
 import { useAI } from "./AIProvider";
+import { ExerciseProgress } from "./ExerciseProgress";
 
 export function ExerciseImage({ ex, className }: { ex: Pick<Exercise, "gif" | "name">; className?: string }) {
   const [err, setErr] = useState(false);
@@ -103,6 +104,7 @@ export function ExerciseModal({ id, onClose, extra }: { id: string | null; onClo
                 )}
               </div>
             )}
+            {data.last.length > 0 && <ExerciseProgress id={data.id} />}
             <div>
               <p className="mb-1.5 text-sm font-semibold">Cách thực hiện</p>
               <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">

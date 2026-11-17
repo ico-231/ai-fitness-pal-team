@@ -338,6 +338,43 @@ def pr_events(db: Session, uid: str, start: dt.date, end: dt.date) -> list[dict]
     return events
 
 
+def exercise_progress(db: Session, uid: str, exercise_id: str, limit: int = 40) -> dict:
+    """Tiến độ 1 bài qua từng buổi (không tính set khởi động): mức tạ nặng nhất, 1RM ước tính, khối lượng.
+
+    Bài có tạ theo dõi tạ/1RM; bài không tạ theo dõi số rep; bài giữ (plank) theo dõi số giây.
+    """
+    sets = list(pr_sets(db, uid, exercise_id))
+    kinds = {k[0] for s in sets if (k := pr_value(s.weight_kg, s.reps, s.duration_sec))}
+    kind = "weight" if "weight" in kinds else "reps" if "reps" in kinds else "time" if "time" in kinds else None
+    by_session: dict[str, list[WorkoutSet]] = defaultdict(list)
+    for s in sets:
+        by_session[s.session_id].append(s)
+    points = []
+    for group in by_session.values():
+        first = min(group, key=lambda x: x.created_at)
+        vals = [pv[1] for x in group if (pv := pr_value(x.weight_kg, x.reps, x.duration_sec)) and pv[0] == kind]
+        if not vals:
+            continue
+        top = max(group, key=lambda x: (x.weight_kg, x.reps, x.duration_sec))
+        points.append({
+            "date": local_date(first.created_at).isoformat(),
+            "best": round(max(vals), 1),  # 1RM ước tính (tạ) / số rep / số giây tốt nhất trong buổi
+            "top_weight": top.weight_kg,
+            "top_reps": top.reps,
+            "volume": round(sum(x.weight_kg * x.reps for x in group)),
+            "sets": len(group),
+            "_t": first.created_at,
+        })
+    points.sort(key=lambda p: p["_t"])
+    points = points[-limit:]
+    for p in points:
+        p.pop("_t")
+    change = round(points[-1]["best"] - points[0]["best"], 1) if len(points) >= 2 else None
+    pct = round(change / points[0]["best"] * 100) if change is not None and points[0]["best"] else None
+    return {"exercise_id": exercise_id, "kind": kind, "unit": PR_UNIT.get(kind or "", ""), "points": points,
+            "sessions": len(points), "change": change, "change_pct": pct}
+
+
 def last_performance(db: Session, uid: str, exercise_id: str) -> list[dict]:
     """Các set của lần gần nhất tập bài này (để gợi ý tăng tải lũy tiến)."""
     last = db.scalars(
