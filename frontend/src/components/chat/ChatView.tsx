@@ -219,6 +219,8 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   }, [initial]);
 
   useEffect(() => {
+    // chưa có tin nhắn (màn chào) → giữ ở đầu để thấy tiêu đề; có tin nhắn → cuộn xuống cuối
+    if (!messages.length) return;
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [messages, routeInfo]);
 

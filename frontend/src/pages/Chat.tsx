@@ -9,7 +9,6 @@ import { timeAgo } from "../lib/format";
 import type { AgentKey, Conversation } from "../lib/types";
 import { ChatView } from "../components/chat/ChatView";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { MuscleMini, PRCard, ReadinessCard, SuggestCard, TodayRings, WeekDots, useOverview } from "../components/Widgets";
 import { confirmDialog, HelpButton, promptDialog } from "../components/ui";
 import type { ChatHandoff } from "../components/AIProvider";
 
@@ -150,29 +149,17 @@ export default function Chat() {
   const created = useRef<string | null>(null);
   const viewKey = id && id === created.current ? "new" : id || "new";
   if (!id) created.current = null;
-  const { data: ov } = useOverview();
   const ask = (text: string) => setPick({ text, autoSend: true });
 
   return (
-    <div className="flex h-[calc(100dvh/var(--z)-57px)] gap-5 p-2 sm:p-4 lg:h-screen-z lg:pl-0 lg:pr-5 xl:gap-6">
-      {/* Cột trái: thông số hôm nay */}
-      <aside className="rise hidden w-[280px] shrink-0 flex-col gap-5 overflow-y-auto pb-2 [scrollbar-width:none] xl:flex">
-        {ov && (
-          <>
-            <ReadinessCard readiness={ov.today.readiness} streak={ov.today.streak.current} />
-            <TodayRings t={ov.today} />
-            <WeekDots streak={ov.today.streak.current} best={ov.today.streak.best} />
-          </>
-        )}
-      </aside>
-
-      {/* Giữa: khung chat */}
-      <section className="card rise relative flex min-w-0 flex-1 flex-col overflow-hidden" style={{ animationDelay: "80ms" }}>
+    // Trang Trợ lý AI chỉ còn khung chat (theo góp ý: bỏ các khối chỉ số hai bên cho gọn, tập trung vào hội thoại)
+    <div className="flex h-[calc(100dvh/var(--z)-57px)] justify-center p-2 sm:p-4 lg:h-screen-z lg:pl-0 lg:pr-5">
+      <section className="card rise relative flex w-full min-w-0 max-w-[1100px] flex-col overflow-hidden" style={{ animationDelay: "80ms" }}>
         <header className="flex items-center gap-3 border-b border-border px-4 py-3">
           <AgentAvatar agent="headbro" size={34} />
           <div className="mr-auto min-w-0 flex-1">
             <p className="truncate text-[15px] font-semibold leading-tight">HeadBro</p>
-            <p className="hidden truncate text-[11px] text-muted xl:block">Trợ lý chính FitBro · điều phối chuyên gia tập luyện & dinh dưỡng</p>
+            <p className="hidden truncate text-[11px] text-muted sm:block">Trợ lý chính FitBro · điều phối chuyên gia tập luyện & dinh dưỡng</p>
           </div>
           <HelpButton to="headbro" className="!h-9 !w-9 !bg-transparent" />
           <HistoryButton current={id} />
@@ -196,12 +183,6 @@ export default function Chat() {
         />
       </section>
 
-      {/* Cột phải: hình & chỉ số */}
-      <aside className="rise hidden w-[300px] shrink-0 flex-col gap-5 overflow-y-auto pb-2 [scrollbar-width:none] lg:flex" style={{ animationDelay: "160ms" }}>
-        <MuscleMini days={7} />
-        {ov && <PRCard prs={ov.prs} limit={3} />}
-        {ov && <SuggestCard insights={ov.insights || []} onPick={ask} />}
-      </aside>
     </div>
   );
 }
