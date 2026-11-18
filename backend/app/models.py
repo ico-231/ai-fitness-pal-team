@@ -175,6 +175,34 @@ class Meal(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
 
+class Activity(Base):
+    """Hoạt động ngoài buổi gym (đạp xe, đá bóng, bơi...). Lưu sẵn MET, cân nặng và công thức đã dùng
+    → đổi cân nặng sau này không làm lịch sử bị tính lại."""
+
+    __tablename__ = "activities"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    date: Mapped[dt.date] = mapped_column(Date, index=True)
+    activity_code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(20), default="the_thao")
+    intensity: Mapped[str] = mapped_column(String(10), default="moderate")  # light|moderate|vigorous (người dùng chọn)
+    duration_min: Mapped[float] = mapped_column(Float, default=0)
+    distance_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    met: Mapped[float] = mapped_column(Float, default=0)
+    weight_kg_used: Mapped[float] = mapped_column(Float, default=0)
+    kcal_gross: Mapped[float] = mapped_column(Float, default=0)
+    kcal_net: Mapped[float] = mapped_column(Float, default=0)
+    who_minutes: Mapped[float] = mapped_column(Float, default=0)
+    formula: Mapped[str] = mapped_column(String(20), default="met_net_bmr")  # met_net_bmr|met_net_basic|hr_keytel|steps
+    source: Mapped[str] = mapped_column(String(20), default="manual")  # manual|chat|seed
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+
+
 class BodyMetric(Base):
     """Một lần đo cơ thể (cân tay hoặc phiếu InBody)."""
 

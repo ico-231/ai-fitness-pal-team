@@ -1,42 +1,272 @@
 [
-  {"q": "creatine uống bao nhiêu mỗi ngày", "expect": ["creatine"]},
-  {"q": "có nên nạp creatine 20g mấy ngày đầu", "expect": ["creatine"]},
-  {"q": "một tuần tập bao nhiêu hiệp cho mỗi nhóm cơ", "expect": ["so-hiep-moi-tuan"]},
-  {"q": "tập mỗi nhóm cơ 1 lần hay 2 lần một tuần tốt hơn", "expect": ["tan-suat-nhom-co"]},
-  {"q": "lưng mình nhức sau khi kéo tạ từ sàn", "expect": ["dau-lung-duoi", "ky-thuat-deadlift"]},
-  {"q": "đầu gối đau khi xuống sâu", "expect": ["dau-goi"]},
-  {"q": "giơ tay qua đầu thấy đau vai", "expect": ["dau-vai", "ky-thuat-overhead-press"]},
-  {"q": "bị lật cổ chân khi chơi bóng phải làm sao", "expect": ["bong-gan"]},
-  {"q": "cao huyết áp có tập tạ được không", "expect": ["tang-huyet-ap"]},
-  {"q": "người tiểu đường tập thể dục cần chú ý gì", "expect": ["dai-thao-duong"]},
-  {"q": "bà bầu đi gym được không", "expect": ["mang-thai"]},
-  {"q": "ông bà lớn tuổi nên tập gì để không bị ngã", "expect": ["nguoi-lon-tuoi"]},
-  {"q": "15 tuổi tập tạ có bị lùn không", "expect": ["thieu-nien"]},
-  {"q": "cần ăn bao nhiêu gam đạm một ngày", "expect": ["protein-moi-ngay"]},
-  {"q": "ăn chay thì lấy đạm ở đâu", "expect": ["dam-cho-nguoi-an-chay", "nguon-dam-viet"]},
-  {"q": "thực phẩm nhiều protein giá rẻ", "expect": ["nguon-dam-viet", "thuc-don-tiet-kiem"]},
-  {"q": "muốn giảm mỡ thì cắt bao nhiêu calo", "expect": ["tham-hut-calo"]},
-  {"q": "ăn 1000 calo một ngày có sao không", "expect": ["calo-toi-thieu"]},
-  {"q": "người gầy khó tăng cân phải làm sao", "expect": ["tang-can-tang-co"]},
-  {"q": "nên ăn gì trước khi đi tập", "expect": ["an-truoc-sau-tap"]},
-  {"q": "mùa hè tập ra nhiều mồ hôi uống nước thế nào", "expect": ["nuoc-uong"]},
-  {"q": "ăn phở bò có béo không", "expect": ["pho-bun"]},
-  {"q": "cơm tấm sườn bì chả bao nhiêu calo", "expect": ["com-tam-com-binh-dan"]},
-  {"q": "trà sữa trân châu có nhiều đường không", "expect": ["do-uong-ngot"]},
-  {"q": "uống cà phê trước tập có tốt không", "expect": ["caffeine"]},
-  {"q": "có cần uống whey không", "expect": ["whey"]},
-  {"q": "thuốc giảm cân trên mạng có an toàn không", "expect": ["thuc-pham-chuc-nang-giam-can"]},
-  {"q": "đi nhậu bia ảnh hưởng tăng cơ không", "expect": ["ruou-bia"]},
-  {"q": "cân đứng mãi không giảm", "expect": ["chung-can"]},
-  {"q": "ngủ ít có ảnh hưởng giảm mỡ không", "expect": ["ngu-va-phuc-hoi"]},
-  {"q": "đau nhức cơ hai ngày sau buổi tập chân", "expect": ["dau-co-doms"]},
-  {"q": "tập hoài mà sức mạnh giảm, mệt mỏi, mất ngủ", "expect": ["dau-hieu-qua-tai", "deload"]},
-  {"q": "chưa kéo được cái xà nào thì tập sao", "expect": ["ky-thuat-keo-xa"]},
-  {"q": "gánh tạ gối bị chụm vào trong", "expect": ["ky-thuat-squat"]},
-  {"q": "tập ở nhà không có tạ có lên cơ không", "expect": ["tap-tai-nha"]},
-  {"q": "nhịp tim bao nhiêu là cardio vừa phải", "expect": ["cardio-zone-2"]},
-  {"q": "mỗi ngày nên đi bao nhiêu bước", "expect": ["buoc-chan-moi-ngay"]},
-  {"q": "chỉ số mỡ nội tạng trên phiếu inbody", "expect": ["inbody"]},
-  {"q": "BMI bao nhiêu thì béo phì với người Việt", "expect": ["bmi-nguoi-chau-a"]},
-  {"q": "nín thở khi đẩy tạ nặng có nguy hiểm không", "expect": ["tho-va-gong-bung"]}
+ {
+  "q": "creatine uống bao nhiêu mỗi ngày",
+  "expect": [
+   "creatine"
+  ]
+ },
+ {
+  "q": "có nên nạp creatine 20g mấy ngày đầu",
+  "expect": [
+   "creatine"
+  ]
+ },
+ {
+  "q": "một tuần tập bao nhiêu hiệp cho mỗi nhóm cơ",
+  "expect": [
+   "so-hiep-moi-tuan"
+  ]
+ },
+ {
+  "q": "tập mỗi nhóm cơ 1 lần hay 2 lần một tuần tốt hơn",
+  "expect": [
+   "tan-suat-nhom-co"
+  ]
+ },
+ {
+  "q": "lưng mình nhức sau khi kéo tạ từ sàn",
+  "expect": [
+   "dau-lung-duoi",
+   "ky-thuat-deadlift"
+  ]
+ },
+ {
+  "q": "đầu gối đau khi xuống sâu",
+  "expect": [
+   "dau-goi"
+  ]
+ },
+ {
+  "q": "giơ tay qua đầu thấy đau vai",
+  "expect": [
+   "dau-vai",
+   "ky-thuat-overhead-press"
+  ]
+ },
+ {
+  "q": "bị lật cổ chân khi chơi bóng phải làm sao",
+  "expect": [
+   "bong-gan"
+  ]
+ },
+ {
+  "q": "cao huyết áp có tập tạ được không",
+  "expect": [
+   "tang-huyet-ap"
+  ]
+ },
+ {
+  "q": "người tiểu đường tập thể dục cần chú ý gì",
+  "expect": [
+   "dai-thao-duong"
+  ]
+ },
+ {
+  "q": "bà bầu đi gym được không",
+  "expect": [
+   "mang-thai"
+  ]
+ },
+ {
+  "q": "ông bà lớn tuổi nên tập gì để không bị ngã",
+  "expect": [
+   "nguoi-lon-tuoi"
+  ]
+ },
+ {
+  "q": "15 tuổi tập tạ có bị lùn không",
+  "expect": [
+   "thieu-nien"
+  ]
+ },
+ {
+  "q": "cần ăn bao nhiêu gam đạm một ngày",
+  "expect": [
+   "protein-moi-ngay"
+  ]
+ },
+ {
+  "q": "ăn chay thì lấy đạm ở đâu",
+  "expect": [
+   "dam-cho-nguoi-an-chay",
+   "nguon-dam-viet"
+  ]
+ },
+ {
+  "q": "thực phẩm nhiều protein giá rẻ",
+  "expect": [
+   "nguon-dam-viet",
+   "thuc-don-tiet-kiem"
+  ]
+ },
+ {
+  "q": "muốn giảm mỡ thì cắt bao nhiêu calo",
+  "expect": [
+   "tham-hut-calo"
+  ]
+ },
+ {
+  "q": "ăn 1000 calo một ngày có sao không",
+  "expect": [
+   "calo-toi-thieu"
+  ]
+ },
+ {
+  "q": "người gầy khó tăng cân phải làm sao",
+  "expect": [
+   "tang-can-tang-co"
+  ]
+ },
+ {
+  "q": "nên ăn gì trước khi đi tập",
+  "expect": [
+   "an-truoc-sau-tap"
+  ]
+ },
+ {
+  "q": "mùa hè tập ra nhiều mồ hôi uống nước thế nào",
+  "expect": [
+   "nuoc-uong"
+  ]
+ },
+ {
+  "q": "ăn phở bò có béo không",
+  "expect": [
+   "pho-bun"
+  ]
+ },
+ {
+  "q": "cơm tấm sườn bì chả bao nhiêu calo",
+  "expect": [
+   "com-tam-com-binh-dan"
+  ]
+ },
+ {
+  "q": "trà sữa trân châu có nhiều đường không",
+  "expect": [
+   "do-uong-ngot"
+  ]
+ },
+ {
+  "q": "uống cà phê trước tập có tốt không",
+  "expect": [
+   "caffeine"
+  ]
+ },
+ {
+  "q": "có cần uống whey không",
+  "expect": [
+   "whey"
+  ]
+ },
+ {
+  "q": "thuốc giảm cân trên mạng có an toàn không",
+  "expect": [
+   "thuc-pham-chuc-nang-giam-can"
+  ]
+ },
+ {
+  "q": "đi nhậu bia ảnh hưởng tăng cơ không",
+  "expect": [
+   "ruou-bia"
+  ]
+ },
+ {
+  "q": "cân đứng mãi không giảm",
+  "expect": [
+   "chung-can"
+  ]
+ },
+ {
+  "q": "ngủ ít có ảnh hưởng giảm mỡ không",
+  "expect": [
+   "ngu-va-phuc-hoi"
+  ]
+ },
+ {
+  "q": "đau nhức cơ hai ngày sau buổi tập chân",
+  "expect": [
+   "dau-co-doms"
+  ]
+ },
+ {
+  "q": "tập hoài mà sức mạnh giảm, mệt mỏi, mất ngủ",
+  "expect": [
+   "dau-hieu-qua-tai",
+   "deload"
+  ]
+ },
+ {
+  "q": "chưa kéo được cái xà nào thì tập sao",
+  "expect": [
+   "ky-thuat-keo-xa"
+  ]
+ },
+ {
+  "q": "gánh tạ gối bị chụm vào trong",
+  "expect": [
+   "ky-thuat-squat"
+  ]
+ },
+ {
+  "q": "tập ở nhà không có tạ có lên cơ không",
+  "expect": [
+   "tap-tai-nha"
+  ]
+ },
+ {
+  "q": "nhịp tim bao nhiêu là cardio vừa phải",
+  "expect": [
+   "cardio-zone-2"
+  ]
+ },
+ {
+  "q": "chỉ số mỡ nội tạng trên phiếu inbody",
+  "expect": [
+   "inbody"
+  ]
+ },
+ {
+  "q": "BMI bao nhiêu thì béo phì với người Việt",
+  "expect": [
+   "bmi-nguoi-chau-a"
+  ]
+ },
+ {
+  "q": "nín thở khi đẩy tạ nặng có nguy hiểm không",
+  "expect": [
+   "tho-va-gong-bung"
+  ]
+ },
+ {
+  "q": "MET là gì, tính calo đạp xe thế nào",
+  "expect": [
+   "met-la-gi"
+  ]
+ },
+ {
+  "q": "tập xong có nên ăn lại hết số calo đã đốt không",
+  "expect": [
+   "an-bu-calo-van-dong"
+  ]
+ },
+ {
+  "q": "làm sao biết mình chạy cường độ vừa hay mạnh",
+  "expect": [
+   "cuong-do-talk-test"
+  ]
+ },
+ {
+  "q": "mỗi ngày nên đi bộ bao nhiêu bước",
+  "expect": [
+   "buoc-chan-moi-ngay"
+  ]
+ },
+ {
+  "q": "sao app không cộng hết calo vận động vào mục tiêu",
+  "expect": [
+   "calo-tong-va-cong-them",
+   "an-bu-calo-van-dong"
+  ]
+ }
 ]

@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
-import { CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
+import { Bike, CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
 import { del, get, post } from "../lib/api";
 import { useAction, useApi } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
 import { dayLabel, exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR, WorkoutSession } from "../lib/types";
 import { useAuth } from "../lib/auth";
+import { ActivityTab } from "../components/ActivityTab";
 import { BodyMap } from "../components/BodyMap";
 import { ExerciseCard, ExerciseImage, ExerciseModal, PlanCard } from "../components/Exercise";
 import { useAI } from "../components/AIProvider";
@@ -15,7 +16,7 @@ import { AgentAvatar } from "../components/AgentAvatar";
 import { AddToDraftButton, BuilderModal, DraftPill, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Pager, Spinner, Tabs, toast, confirmDialog, usePaged } from "../components/ui";
 
-const TABS = ["programs", "custom", "schedule", "bodymap", "library", "history"] as const;
+const TABS = ["programs", "custom", "schedule", "activity", "bodymap", "library", "history"] as const;
 type Tab = (typeof TABS)[number];
 
 /** Thẻ "Nhờ HeadBro thiết kế buổi tập riêng" ở hàng đầu trang Tập luyện. */
@@ -213,19 +214,28 @@ function BodyMapTab() {
   );
 }
 
+/** 24 bài/trang = 6 hàng × 4 cột (desktop), chia hết cho 2 và 3 cột (điện thoại, tablet). */
+const PER_PAGE = 24;
+
 function Library() {
   const [sp, setSp] = useSearchParams();
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(sp.get("focus") || "");
   const [equipment, setEquipment] = useState("");
   const [camera, setCamera] = useState(false);
-  const [limit, setLimit] = useState(24);
+  const [page, setPage] = useState(1);
+  const topRef = useRef<HTMLDivElement>(null);
   const [exId, setExId] = useState<string | null>(null);
   const { data: meta } = useApi<{ equipment: Record<string, string>; total: number }>(["exmeta"], "/api/exercises/meta", { staleTime: 3600_000 });
-  const params = new URLSearchParams({ q, focus, equipment, camera: String(camera), limit: String(limit) });
+  const params = new URLSearchParams({ q, focus, equipment, camera: String(camera), limit: String(PER_PAGE), offset: String((page - 1) * PER_PAGE) });
   const filtered = !!(q || focus || equipment || camera);
-  const reset = () => { setQ(""); setFocus(""); setEquipment(""); setCamera(false); setLimit(24); setSp({ tab: "library" }, { replace: true }); };
-  const { data, isFetching } = useApi<{ total: number; items: Exercise[] }>(["exercises", params.toString()], `/api/exercises?${params}`);
+  const reset = () => { setQ(""); setFocus(""); setEquipment(""); setCamera(false); setPage(1); setSp({ tab: "library" }, { replace: true }); };
+  const { data, isFetching } = useApi<{ total: number; items: Exercise[] }>(["exercises", params.toString()], `/api/exercises?${params}`, { keepPrevious: true });
+  const pages = data ? Math.max(1, Math.ceil(data.total / PER_PAGE)) : 1;
+  const goPage = (p: number) => {
+    setPage(p);
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     const f = sp.get("focus");
@@ -235,7 +245,7 @@ function Library() {
   return (
     <div>
       {/* Khối tìm kiếm + bộ lọc: một tấm kính có nền đủ đặc để chữ đọc rõ trên ảnh nền */}
-      <div className="card no-lift mb-5 space-y-3 p-3 sm:p-4">
+      <div ref={topRef} className="card no-lift mb-5 scroll-mt-6 space-y-3 p-3 sm:p-4">
         <div className="flex flex-col gap-2 sm:flex-row">
           <label className="relative flex min-w-0 flex-1 items-center">
             <Search size={18} className="pointer-events-none absolute left-4 text-muted" />
@@ -244,10 +254,10 @@ function Library() {
               placeholder={`Tìm trong ${fmt(meta?.total || 1324)} bài tập — vd: hít đất, squat, curl`}
               aria-label="Tìm bài tập"
               value={q}
-              onChange={(e) => { setQ(e.target.value); setLimit(24); }}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
             />
             {q && (
-              <button type="button" onClick={() => setQ("")} aria-label="Xoá từ khoá" className="absolute right-2 grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text">
+              <button type="button" onClick={() => { setQ(""); setPage(1); }} aria-label="Xoá từ khoá" className="absolute right-2 grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text">
                 <X size={16} />
               </button>
             )}
@@ -258,7 +268,7 @@ function Library() {
               aria-label="Lọc theo dụng cụ"
               className="h-12 w-full appearance-none rounded-full border border-[var(--card-border)] bg-surface pl-10 pr-10 text-sm font-medium text-text outline-none transition focus:border-[var(--primary)] sm:w-56"
               value={equipment}
-              onChange={(e) => { setEquipment(e.target.value); setLimit(24); }}
+              onChange={(e) => { setEquipment(e.target.value); setPage(1); }}
             >
               <option value="">Mọi dụng cụ</option>
               {Object.entries(meta?.equipment || {}).map(([k, v]) => (
@@ -274,7 +284,7 @@ function Library() {
               key={k}
               type="button"
               aria-pressed={focus === k}
-              onClick={() => { setFocus(k); setLimit(24); setSp(k ? { tab: "library", focus: k } : { tab: "library" }, { replace: true }); }}
+              onClick={() => { setFocus(k); setPage(1); setSp(k ? { tab: "library", focus: k } : { tab: "library" }, { replace: true }); }}
               className={clsx(
                 "h-9 shrink-0 rounded-full border px-3.5 text-[13px] font-medium transition",
                 focus === k
@@ -289,7 +299,7 @@ function Library() {
           <button
             type="button"
             aria-pressed={camera}
-            onClick={() => { setCamera(!camera); setLimit(24); }}
+            onClick={() => { setCamera(!camera); setPage(1); }}
             className={clsx(
               "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition",
               camera ? "border-transparent bg-volt text-on-volt shadow-sm" : "border-[var(--card-border)] bg-surface text-text hover:border-[var(--primary)]/50",
@@ -309,16 +319,13 @@ function Library() {
         <Empty icon={<Search size={20} />} title="Không tìm thấy bài tập" text="Thử từ khoá tiếng Anh khác hoặc bỏ bớt bộ lọc." />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={clsx("grid grid-cols-2 gap-3 transition-opacity sm:grid-cols-3 lg:grid-cols-4", isFetching && "opacity-60")}>
             {data.items.map((ex) => (
               <ExerciseCard key={ex.id} ex={ex} onClick={() => setExId(ex.id)} />
             ))}
           </div>
-          {data.items.length < data.total && (
-            <div className="mt-4 text-center">
-              <Button variant="outline" loading={isFetching} onClick={() => setLimit((l) => l + 24)}>Tải thêm</Button>
-            </div>
-          )}
+          <Pager page={Math.min(page, pages)} pages={pages} onChange={goPage}
+            label={<>Bài <b className="num text-text">{fmt((page - 1) * PER_PAGE + 1)}–{fmt(Math.min(page * PER_PAGE, data.total))}</b> / {fmt(data.total)}</>} />
         </>
       )}
       <ExerciseModal id={exId} onClose={() => setExId(null)} extra={(ex) => <AddToDraftButton ex={ex} />} />
@@ -449,8 +456,9 @@ export default function Workouts() {
           { value: "programs", label: "Chương trình", icon: <LayoutGrid size={16} /> },
           { value: "custom", label: "Custom", icon: <ClipboardList size={16} /> },
           { value: "schedule", label: "Lịch tuần", icon: <CalendarDays size={16} /> },
-          { value: "bodymap", label: "Bản đồ cơ (AI gợi ý)", icon: <Sparkles size={16} /> },
-          { value: "library", label: "Thư viện bài tập", icon: <Dumbbell size={16} /> },
+          { value: "activity", label: "Hoạt động khác", icon: <Bike size={16} /> },
+          { value: "bodymap", label: "Bản đồ cơ (AI gợi ý)", short: "Bản đồ cơ", icon: <Sparkles size={16} /> },
+          { value: "library", label: "Thư viện bài tập", short: "Thư viện", icon: <Dumbbell size={16} /> },
           { value: "history", label: "Lịch sử & PR", icon: <History size={16} /> },
         ]}
         extra={<DraftPill />}
@@ -458,6 +466,7 @@ export default function Workouts() {
       {tab === "programs" && <Programs />}
       {tab === "custom" && <CustomTab />}
       {tab === "schedule" && <ScheduleTab />}
+      {tab === "activity" && <ActivityTab />}
       {tab === "bodymap" && <BodyMapTab />}
       {tab === "library" && <Library />}
       {tab === "history" && <HistoryTab />}

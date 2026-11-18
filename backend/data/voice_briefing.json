@@ -1,0 +1,48 @@
+{
+  "_note": "Câu cố định cho bản tóm tắt Dashboard khi dùng giọng thu sẵn (không chứa số liệu thay đổi). Dùng bởi app/routers/dashboard.py và backend/scripts/build_voice_script.mjs. Sửa câu → chạy lại script sinh kịch bản.",
+  "greet": {
+    "morning": "Chào buổi sáng!",
+    "noon": "Chào buổi trưa!",
+    "afternoon": "Chào buổi chiều!",
+    "evening": "Chào buổi tối!"
+  },
+  "readiness": {
+    "high": "Hôm nay cơ thể bạn hồi phục rất tốt.",
+    "good": "Hôm nay cơ thể bạn ở trạng thái khá tốt.",
+    "moderate": "Hôm nay cơ thể bạn mới hồi phục ở mức trung bình.",
+    "low": "Hôm nay cơ thể bạn cần được phục hồi.",
+    "none": "Bạn chưa check-in buổi sáng, hãy check-in để biết hôm nay nên tập nặng hay nhẹ."
+  },
+  "advice": {
+    "high": "Có thể tập nặng, thử tăng tạ hoặc phá kỷ lục.",
+    "good": "Tập theo kế hoạch bình thường, giữ đúng kỹ thuật và thời gian nghỉ.",
+    "moderate": "Nên giảm bớt khối lượng, bớt một hiệp mỗi bài hoặc giảm tạ, ưu tiên kỹ thuật.",
+    "low": "Nên nghỉ hoặc chỉ tập phục hồi nhẹ như giãn cơ, đi bộ, và ngủ sớm."
+  },
+  "calories": {
+    "none": "Bạn chưa ghi bữa ăn nào hôm nay.",
+    "low": "Hôm nay bạn mới ăn chưa tới một nửa lượng ca-lo mục tiêu.",
+    "half": "Hôm nay bạn đã ăn khoảng một nửa lượng ca-lo mục tiêu.",
+    "near": "Hôm nay bạn đã ăn gần đủ lượng ca-lo mục tiêu.",
+    "over": "Hôm nay bạn đã ăn vượt lượng ca-lo mục tiêu."
+  },
+  "protein": {
+    "ok": "Lượng đạm hôm nay đã đủ.",
+    "low": "Bạn nên ăn thêm đạm."
+  },
+  "workout_today": "Bạn đã hoàn thành buổi tập hôm nay.",
+  "week_sessions": "Trong 7 ngày qua bạn tập {n} buổi.",
+  "week_sessions_max": 14,
+  "week_sessions_over": "Trong 7 ngày qua bạn tập rất chăm chỉ.",
+  "top_muscle": "Nhóm cơ tập nhiều nhất là {m}.",
+  "pr": "Tuần này bạn đã phá kỷ lục cá nhân. Rất tốt!",
+  "week_none": "Tuần này bạn chưa có buổi tập nào.",
+  "week_goal": "Mục tiêu của bạn là {n} buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "water": {
+    "none": "Hôm nay bạn chưa ghi lượng nước uống.",
+    "low": "Bạn mới uống chưa tới một nửa lượng nước cần.",
+    "half": "Bạn đã uống hơn một nửa lượng nước cần.",
+    "ok": "Bạn đã uống đủ nước hôm nay."
+  },
+  "streak": "Bạn đang giữ chuỗi hoạt động liên tục, giữ vững phong độ!"
+}

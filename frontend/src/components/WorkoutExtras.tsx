@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { ArrowDown, ArrowUp, CalendarDays, CheckCircle2, ClipboardList, Play, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Play, Plus, RotateCcw, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { post, put } from "../lib/api";
 import { useApi, useInvalidateAll } from "../lib/hooks";
 import { FOCUS } from "../lib/constants";
-import { exName } from "../lib/format";
+import { addDays, exName, todayISO } from "../lib/format";
+import { activityIcon } from "../lib/activities";
 import type { Exercise, Plan, Readiness, ScheduleDay } from "../lib/types";
 import { useAI } from "./AIProvider";
 import { AgentAvatar } from "./AgentAvatar";
@@ -36,7 +37,11 @@ export interface TodayAdvice {
 export function useTodayAdvice(): TodayAdvice | null {
   const { data: sch } = useApi<Schedule>(["schedule"], "/api/schedule");
   const { data: daily } = useApi<{ readiness: Readiness | null }>(["daily"], "/api/daily/today");
+  const { data: act } = useApi<{ day: { activities: { name: string; duration_min: number }[] } }>(["activity-summary"], "/api/activities/summary");
   if (!sch || !daily) return null;
+  // hoạt động khác hôm nay (đạp xe, đá bóng...) → ghi vào lý do; ngày nghỉ / đã tập xong → lối vào ghi hoạt động
+  const moved = act?.day.activities.length ? ` Đã vận động: ${act.day.activities.map((a) => `${a.name.toLowerCase()} ${Math.round(a.duration_min)}′`).join(", ")}.` : "";
+  const logOther = { label: "Ghi hoạt động khác", to: "/workouts?tab=activity" };
   const r = daily.readiness;
   const t = sch.today;
   const plan = t.plan;
@@ -46,26 +51,27 @@ export function useTodayAdvice(): TodayAdvice | null {
   const recovery = { label: "Giãn cơ phục hồi", to: "/workouts/session?plan=tpl_recovery" };
   const checkin = { label: "Check-in", to: "/daily" };
 
-  if (plan && t.done) return { headline: `Đã xong ${plan.name} hôm nay`, reason: "Nghỉ ngơi, ăn đủ đạm và ngủ sớm để hồi phục.", tone: "done" };
+  if (plan && t.done) return { headline: `Đã xong ${plan.name} hôm nay`, reason: "Nghỉ ngơi, ăn đủ đạm và ngủ sớm để hồi phục." + moved, tone: "done", secondary: logOther };
 
   if (plan) {
     const start = { label: "Bắt đầu tập", to: `/workouts/session?plan=${plan.id}` };
     const info = `${plan.count} bài · khoảng ${plan.est_minutes} phút`;
-    if (!r) return { headline: `Theo lịch: ${plan.name}`, reason: `${info}. Check-in trước để biết nên tập nặng hay nhẹ.`, tone: "unknown", action: checkin, secondary: start };
+    if (!r) return { headline: `Theo lịch: ${plan.name}`, reason: `${info}. Check-in trước để biết nên tập nặng hay nhẹ.${moved}`, tone: "unknown", action: checkin, secondary: start };
     if (r.band === "low")
-      return { headline: "Hôm nay nên tập nhẹ", reason: `Lịch có ${plan.name}, nhưng ${ready.toLowerCase()}. Đổi sang giãn cơ phục hồi, buổi chính để mai.`, tone: "easy", action: recovery, secondary: start };
+      return { headline: "Hôm nay nên tập nhẹ", reason: `Lịch có ${plan.name}, nhưng ${ready.toLowerCase()}. Đổi sang giãn cơ phục hồi, buổi chính để mai.${moved}`, tone: "easy", action: recovery, secondary: start };
     if (low)
-      return { headline: `Theo lịch: ${plan.name}, giảm tải`, reason: `${info}. ${ready}: bớt khoảng 20–30% số set hoặc mức tạ.`, tone: "easy", action: start };
-    return { headline: `Theo lịch: ${plan.name}`, reason: `${info}. ${ready}${high ? ": có thể thử tăng tạ." : "."}`, tone: "go", action: start };
+      return { headline: `Theo lịch: ${plan.name}, giảm tải`, reason: `${info}. ${ready}: bớt khoảng 20–30% số set hoặc mức tạ.${moved}`, tone: "easy", action: start };
+    return { headline: `Theo lịch: ${plan.name}`, reason: `${info}. ${ready}${high ? ": có thể thử tăng tạ." : "."}${moved}`, tone: "go", action: start };
   }
 
   if (sch.has_schedule) {
     // Ngày nghỉ theo lịch: lịch luôn thắng, điểm sẵn sàng chỉ quyết định có nên vận động nhẹ không.
     return {
       headline: "Hôm nay là ngày nghỉ theo lịch",
-      reason: r ? `${ready}. Nghỉ là một phần của tập luyện; nếu muốn vận động, giãn cơ nhẹ là đủ.` : "Nghỉ là một phần của tập luyện; nếu muốn vận động, giãn cơ nhẹ là đủ.",
+      reason: (r ? `${ready}. Nghỉ là một phần của tập luyện; nếu muốn vận động, giãn cơ nhẹ là đủ.` : "Nghỉ là một phần của tập luyện; nếu muốn vận động, giãn cơ nhẹ là đủ.") + moved,
       tone: "rest",
       action: recovery,
+      secondary: logOther,
     };
   }
 
@@ -131,78 +137,185 @@ export function TodayAdviceCard({ className, hero }: { className?: string; hero?
   );
 }
 
+type PlanLite = NonNullable<ScheduleDay["plan"]>;
+interface WeekDay {
+  date: string; weekday: number; label: string; plan: PlanLite | null; rest: boolean; overridden: boolean;
+  template_plan: PlanLite | null; is_today: boolean; past: boolean; editable: boolean;
+  sessions: { id: string; name: string; minutes: number }[]; status: "done" | "missed" | "planned" | "rest" | "replaced" | "active";
+  activities: { id: string; name: string; minutes: number; icon?: string }[];
+}
+interface Week {
+  start: string; end: string; offset: number; days: WeekDay[]; has_template: boolean; max_weeks_ahead: number;
+  summary: { planned: number; done: number; missed: number; active: number };
+}
+
+const MIN_OFFSET = -8; // xem lại tối đa 8 tuần trước
+
+function mondayOf(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const wd = (new Date(y, m - 1, d).getDay() + 6) % 7;
+  return addDays(iso, -wd);
+}
+const dm = (iso: string) => { const [, m, d] = iso.split("-").map(Number); return `${d}/${m}`; };
+
 export function ScheduleTab() {
-  const { data } = useApi<Schedule>(["schedule"], "/api/schedule");
+  const [offset, setOffset] = useState(0);
+  const start = addDays(mondayOf(todayISO()), offset * 7);
+  const { data: w, isFetching } = useApi<Week>(["schedule-week", start], `/api/schedule/week?start=${start}`, { keepPrevious: true });
+  const { data: sch } = useApi<Schedule>(["schedule"], "/api/schedule");
   const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
   const { data: mine } = useApi<Plan[]>(["plans"], "/api/workouts/plans");
-  const [draft, setDraft] = useState<Record<string, string>>({});
+  // đổi lịch một ngày → hỏi: chỉ ngày này hay mọi tuần (sửa lịch mẫu)
+  const [pending, setPending] = useState<{ day: WeekDay; planId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const invalidate = useInvalidateAll();
   const ai = useAI();
   const nav = useNavigate();
 
-  useEffect(() => {
-    if (data) setDraft(Object.fromEntries(data.days.filter((d) => d.plan).map((d) => [String(d.weekday), d.plan!.id])));
-  }, [data]);
-
-  if (!data || !tpls) return <Spinner />;
+  if (!w || !tpls || !sch) return <Spinner />;
   const options = [...(mine || []).map((p) => ({ id: p.id, name: `${p.name} (của tôi)` })), ...tpls.map((p) => ({ id: p.id, name: p.name }))];
-  const nameOf = (id: string) => options.find((o) => o.id === id)?.name;
-  const count = Object.values(draft).filter(Boolean).length;
+  const maxOffset = w.max_weeks_ahead;
+  const weekLabel = offset === 0 ? "Tuần này" : offset === 1 ? "Tuần sau" : offset === -1 ? "Tuần trước" : offset > 0 ? `${offset} tuần nữa` : `${-offset} tuần trước`;
 
-  const save = async () => {
+  const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true);
     try {
-      await put("/api/schedule", { days: Object.fromEntries(Object.entries(draft).filter(([, v]) => v).map(([k, v]) => [k, { plan_id: v }])) });
+      await fn();
       invalidate();
-      toast("Đã lưu lịch tập tuần");
+      toast(msg);
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
       setBusy(false);
+      setPending(null);
     }
+  };
+  const nameOf = (id: string) => (id ? options.find((o) => o.id === id)?.name.replace(" (của tôi)", "") || "buổi tập" : "Nghỉ");
+  // chỉ ngày này: ngoại lệ theo ngày (server tự bỏ ngoại lệ nếu trùng lịch mẫu)
+  const applyDay = (d: WeekDay, planId: string) =>
+    run(() => put(`/api/schedule/date/${d.date}`, { plan_id: planId || null }), `${d.label} ${dm(d.date)}: ${nameOf(planId)}`);
+  // mọi tuần: sửa lịch mẫu của thứ đó + bỏ ngoại lệ của ngày này để ngày này cũng theo mẫu mới
+  const applyTemplate = (d: WeekDay, planId: string) =>
+    run(async () => {
+      const days = Object.fromEntries(sch.days.filter((x) => x.weekday !== d.weekday && (x.template_plan || null)).map((x) => [String(x.weekday), { plan_id: x.template_plan!.id }]));
+      if (planId) days[String(d.weekday)] = { plan_id: planId };
+      await put("/api/schedule", { days, note: sch.note });
+      if (d.overridden) await put(`/api/schedule/date/${d.date}`, { reset: true });
+    }, `Mọi ${d.label}: ${nameOf(planId)}`);
+  const choose = (d: WeekDay, planId: string) => {
+    if ((d.plan?.id || "") === planId) return;
+    setPending({ day: d, planId });
   };
 
   return (
     <div className="space-y-4">
-      <Card className="flex flex-wrap items-center gap-3 p-4">
-        <AgentAvatar agent="coachbro" size={30} />
-        <p className="flex-1 text-sm text-muted">
-          Chưa biết chia lịch thế nào? HeadBro sẽ lên lịch theo số buổi/tuần, dụng cụ và mục tiêu của bạn, xen ngày nghỉ hợp lý.
+      {/* Chọn tuần */}
+      <Card className="flex flex-wrap items-center gap-3 p-3 sm:p-4">
+        <div className="flex items-center gap-1">
+          <button type="button" aria-label="Tuần trước" disabled={offset <= MIN_OFFSET} onClick={() => setOffset(offset - 1)}
+            className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronLeft size={18} /></button>
+          <div className="min-w-[150px] text-center">
+            <p className="font-semibold leading-tight">{weekLabel}</p>
+            <p className="num text-xs text-muted">{dm(w.start)} – {dm(w.end)}</p>
+          </div>
+          <button type="button" aria-label="Tuần sau" disabled={offset >= maxOffset} onClick={() => setOffset(offset + 1)}
+            className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronRight size={18} /></button>
+        </div>
+        {offset !== 0 && <Button size="sm" variant="ghost" onClick={() => setOffset(0)}>Về tuần này</Button>}
+        <p className="flex-1 text-right text-sm text-muted">
+          {offset < 0
+            ? <>Đã tập <b className="num text-text">{w.summary.done}</b> buổi gym{w.summary.active > 0 && <> · <b className="num text-text">{w.summary.active}</b> ngày hoạt động khác</>}</>
+            : <><b className="num text-text">{w.summary.planned}</b> buổi tập · {7 - w.summary.planned} ngày nghỉ{offset === 0 && w.summary.done > 0 && <> · đã tập <b className="num text-text">{w.summary.done}</b></>}</>}
         </p>
-        <Button size="sm" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "coachbro", text: "Lên lịch tập cả tuần phù hợp với mình." })}>
-          Nhờ HeadBro lên lịch
-        </Button>
       </Card>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
-        {data.days.map((d) => {
-          const id = draft[String(d.weekday)] || "";
+
+      {offset >= 0 && !w.has_template && (
+        <Card className="flex flex-wrap items-center gap-3 p-4">
+          <AgentAvatar agent="coachbro" size={30} />
+          <p className="flex-1 text-sm text-muted">Chưa có lịch mẫu. Chọn buổi tập cho từng ngày bên dưới, hoặc nhờ HeadBro lên lịch theo số buổi/tuần, dụng cụ và mục tiêu của bạn.</p>
+          <Button size="sm" icon={<Sparkles size={14} />} onClick={() => ai.open({ agent: "coachbro", text: "Lên lịch tập cả tuần phù hợp với mình." })}>Nhờ HeadBro lên lịch</Button>
+        </Card>
+      )}
+
+      <div className={clsx("grid gap-3 transition-opacity sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7", isFetching && "opacity-60")}>
+        {w.days.map((d) => {
+          const id = d.plan?.id || "";
           return (
-            <Card key={d.weekday} className={clsx("flex flex-col p-3", d.is_today && "border-primary ring-1 ring-primary/40")}>
-              <div className="flex items-center justify-between">
-                <p className="font-semibold">{d.label}</p>
-                {d.is_today && <Badge color="var(--primary-strong)">Hôm nay</Badge>}
+            <Card key={d.date} className={clsx("flex flex-col p-3", d.is_today && "border-primary ring-1 ring-primary/40", d.past && !d.is_today && "opacity-90")}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold">{d.label} <span className="num text-xs font-normal text-muted">{dm(d.date)}</span></p>
+                {d.is_today ? <Badge color="var(--primary-strong)">Hôm nay</Badge>
+                  : d.overridden && !d.past ? <Badge color="var(--info)">Đổi riêng</Badge> : null}
               </div>
-              <select className="input mt-2 text-sm" value={id} onChange={(e) => setDraft({ ...draft, [String(d.weekday)]: e.target.value })}>
-                <option value="">Nghỉ</option>
-                {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
-              <p className="mt-2 min-h-8 text-xs text-muted">{id ? nameOf(id) : "Nghỉ ngơi / giãn cơ nhẹ"}</p>
-              {d.is_today && d.done && <p className="flex items-center gap-1 text-xs text-primary-strong"><CheckCircle2 size={13} /> Đã tập</p>}
-              {id && (
-                <Button size="sm" variant="ghost" className="mt-auto" icon={<Play size={13} />} onClick={() => nav(`/workouts/session?plan=${id}`)}>
-                  Tập
-                </Button>
+
+              {d.editable ? (
+                <select className="input mt-2 text-sm" value={id} disabled={busy} aria-label={`Lịch ${d.label} ${dm(d.date)}`} onChange={(e) => choose(d, e.target.value)}>
+                  <option value="">Nghỉ</option>
+                  {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+              ) : (
+                <p className={clsx("mt-2 text-sm font-medium", d.status === "missed" && "text-muted line-through", offset < 0 && !d.sessions.length && "text-muted")}>
+                  {offset < 0 ? (d.sessions.length ? d.sessions.map((s) => s.name).join(", ") : d.activities.length ? "Hoạt động khác" : "Không tập") : d.plan?.name || "Nghỉ"}
+                </p>
+              )}
+
+              <div className="mt-2 min-h-8 space-y-1 text-xs text-muted">
+                {d.status === "done" && d.sessions.map((s) => (
+                  <p key={s.id} className="flex items-center gap-1 text-primary-strong">
+                    <CheckCircle2 size={13} /> Đã tập{offset >= 0 && s.name !== d.plan?.name ? ` ${s.name}` : ""} · {s.minutes} phút
+                  </p>
+                ))}
+                {d.status === "missed" && <p className="flex items-center gap-1 text-danger"><XCircle size={13} /> Bỏ lỡ</p>}
+                {d.activities.map((a) => {
+                  const AI = activityIcon(a.icon);
+                  return (
+                    <p key={a.id} className="flex items-center gap-1 text-info">
+                      <AI size={13} /> {d.status === "replaced" ? "Thay bằng " : ""}{a.name.toLowerCase()} · {a.minutes} phút
+                    </p>
+                  );
+                })}
+                {d.status === "rest" && !d.sessions.length && !d.activities.length && offset >= 0 && <p>Nghỉ ngơi / giãn cơ nhẹ</p>}
+                {d.status === "planned" && d.plan && <p>{d.plan.count} bài · ~{d.plan.est_minutes} phút</p>}
+                {d.overridden && d.editable && (
+                  <button type="button" disabled={busy} onClick={() => run(() => put(`/api/schedule/date/${d.date}`, { reset: true }), `${d.label} ${dm(d.date)}: về theo lịch mẫu`)}
+                    className="flex items-center gap-1 font-medium text-text underline-offset-4 hover:underline">
+                    <RotateCcw size={12} /> Theo mẫu: {d.template_plan?.name || "Nghỉ"}
+                  </button>
+                )}
+              </div>
+              {d.plan && d.is_today && d.status !== "done" && (
+                <Button size="sm" variant="ghost" className="mt-auto" icon={<Play size={13} />} onClick={() => nav(`/workouts/session?plan=${d.plan!.id}`)}>Tập</Button>
               )}
             </Card>
           );
         })}
       </div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted">{count} buổi tập · {7 - count} ngày nghỉ{data.source === "ai" && " · lịch do HeadBro đề xuất"}</p>
-        <Button icon={<Save size={16} />} loading={busy} onClick={save}>Lưu lịch</Button>
-      </div>
-      {data.note && <p className="text-sm text-muted">💡 {data.note}</p>}
+
+      <p className="text-xs text-muted">
+        {offset < 0
+          ? "Tuần đã qua chỉ để xem lại các buổi bạn đã tập thật."
+          : `Đổi một ngày → chọn “chỉ ngày này” (xếp riêng, không ảnh hưởng tuần khác) hoặc “mọi tuần” (sửa lịch mẫu). Xếp trước được tối đa ${maxOffset} tuần sau.`}
+        {sch.source === "ai" && offset >= 0 && " Lịch mẫu do HeadBro đề xuất."}
+      </p>
+      {sch.note && offset >= 0 && <p className="text-sm text-muted">💡 {sch.note}</p>}
+
+      <Modal open={!!pending} onClose={() => setPending(null)} title={pending ? `${pending.day.label} ${dm(pending.day.date)} → ${nameOf(pending.planId)}` : ""}>
+        {pending && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Áp dụng thay đổi này cho:</p>
+            <button type="button" disabled={busy} onClick={() => applyDay(pending.day, pending.planId)} autoFocus
+              className="w-full rounded-2xl border border-border p-3 text-left transition hover:border-primary/60 hover:bg-surface-2">
+              <p className="font-semibold">Chỉ ngày {dm(pending.day.date)}</p>
+              <p className="text-xs text-muted">Các tuần khác giữ nguyên {pending.day.template_plan ? `“${pending.day.template_plan.name}”` : "ngày nghỉ"} vào {pending.day.label}.</p>
+            </button>
+            <button type="button" disabled={busy} onClick={() => applyTemplate(pending.day, pending.planId)}
+              className="w-full rounded-2xl border border-border p-3 text-left transition hover:border-primary/60 hover:bg-surface-2">
+              <p className="font-semibold">Mọi {pending.day.label}</p>
+              <p className="text-xs text-muted">Sửa lịch mẫu: từ nay {pending.day.label} nào cũng là “{nameOf(pending.planId)}” (ngày đã xếp riêng vẫn giữ).</p>
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

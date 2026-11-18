@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import {
@@ -9,6 +10,7 @@ import { useAuth } from "../lib/auth";
 import { useInvalidateAll } from "../lib/hooks";
 import { beep, voice } from "../lib/media";
 import { exName, fmt, mmss, prLabel, prValue } from "../lib/format";
+import { restLine, setLine, setsLine, spokenExercise } from "../lib/speech";
 import { EXERCISES } from "../lib/pose";
 import type { Exercise, Plan, PlanItem, PR, Readiness, WorkoutSession } from "../lib/types";
 import { MUSCLES } from "../lib/constants";
@@ -63,7 +65,7 @@ function prToast(r: SetResult) {
   if (!r.is_pr || r.pr_value == null) return;
   const k = { kind: r.pr_kind ?? "weight" };
   toast(`Kỷ lục mới! ${prLabel(k.kind)} ${prValue(k, r.pr_value)} (trước: ${prValue(k, r.previous_best ?? 0)})`);
-  voice.speak("Kỷ lục cá nhân mới!");
+  voice.speak("Kỷ lục mới! Làm tốt lắm!", { priority: "high" });
 }
 
 /** Danh sách set đã ghi của bài hiện tại: bấm bút để sửa số (gõ nhầm), thùng rác để xoá. */
@@ -168,6 +170,12 @@ export default function Session() {
   const [detail, setDetail] = useState<ExDetail | null>(null);
   const [useCam, setUseCam] = useState(false);
   const [cam, setCam] = useState<CameraResult>({ reps: 0, avgScore: null, holdSec: 0 });
+  // người dùng tự sửa số rep trong lúc camera bật → lấy số họ nhập thay vì số camera đếm
+  const [manualReps, setManualReps] = useState(false);
+  // tự ghi set: đủ số rep mục tiêu rồi dừng AUTO_LOG_MS thì tự ghi (người tập đứng xa 2 m không phải đi lại bấm)
+  const [autoLeft, setAutoLeft] = useState<number | null>(null);
+  const [autoCancelled, setAutoCancelled] = useState(false);
+  const lastRepAt = useRef(0);
   const [logged, setLogged] = useState<Record<string, LoggedSet[]>>({});
   const [warmup, setWarmup] = useState(false);
   // Điểm sẵn sàng hôm nay: thấp thì đề xuất bản nhẹ (bật sẵn, tắt được trước khi bắt đầu)
@@ -186,6 +194,8 @@ export default function Session() {
   const endAt = useRef(0);
   const pausedLeft = useRef(0);
   const lastBeep = useRef(0);
+  const phaseTotal = useRef(0); // tổng giây của pha hiện tại (để nhắc "còn 10 giây", "một nửa rồi")
+  const lastCue = useRef(""); // câu nhắc giữa pha đã đọc → mỗi câu chỉ một lần mỗi pha
   const workCount = (exId: string) => (logged[exId] || []).filter((x) => !x.is_warmup).length;
 
   // ---- tải chương trình (hoặc buổi đang dở) ----
@@ -240,6 +250,8 @@ export default function Session() {
     setPhase(p);
     endAt.current = Date.now() + seconds * 1000;
     lastBeep.current = 0;
+    phaseTotal.current = seconds;
+    lastCue.current = "";
     setCount(seconds);
     setCountTotal(seconds);
     setPaused(false);
@@ -317,6 +329,16 @@ export default function Session() {
   const logSet = useCallback(
     async (durationSec = 0) => {
       if (!session || !item) return;
+      const camCounting = useCam && !!camKey && !timed;
+      // camera bật mà chưa đếm được rep nào: hỏi lại, tránh lặng lẽ ghi đủ số rep mục tiêu vào lịch sử
+      if (camCounting && !cam.reps && !manualReps) {
+        const ok = await confirmDialog({
+          title: "Camera chưa đếm được rep nào",
+          text: `Ghi ${reps} rep theo số trong ô? Nếu bạn đã tập mà camera không đếm, kiểm tra lại chỗ đứng theo hướng dẫn đặt camera.`,
+          confirmLabel: `Ghi ${reps} rep`,
+        });
+        if (!ok) return;
+      }
       setBusy(true);
       try {
         const isWarm = warmup && !timed;
@@ -324,7 +346,7 @@ export default function Session() {
           exercise_id: item.exercise_id,
           set_index: setIdx,
           weight_kg: timed ? 0 : weight,
-          reps: timed ? 0 : useCam && cam.reps ? cam.reps : reps,
+          reps: timed ? 0 : useCam && cam.reps && !manualReps ? cam.reps : reps,
           duration_sec: timed ? durationSec || item.duration_sec : 0,
           form_score: useCam ? cam.avgScore : null,
           is_warmup: isWarm,
@@ -338,14 +360,14 @@ export default function Session() {
           setWarmup(false);
           toast("Đã ghi set khởi động");
           const rest = Math.min(60, item.rest_sec);
-          voice.speak(`Xong set khởi động. Nghỉ ${rest} giây`);
+          voice.speak(`Xong hiệp khởi động. ${restLine(rest)}`);
           go("rest", rest);
         } else if (setIdx < item.sets) {
           setSetIdx(setIdx + 1);
-          voice.speak(`Nghỉ ${item.rest_sec} giây`);
+          voice.speak(restLine(item.rest_sec));
           go("rest", item.rest_sec);
         } else if (qi < queue.length - 1) {
-          voice.speak(`Xong bài. Nghỉ ${item.rest_sec} giây trước bài tiếp theo.`);
+          voice.speak(`Xong bài này rồi. ${restLine(item.rest_sec)}`);
           go("rest", item.rest_sec);
           setSetIdx(item.sets + 1); // đánh dấu đã xong bài → sau nghỉ sẽ sang bài mới
         } else {
@@ -358,8 +380,38 @@ export default function Session() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session, item, setIdx, weight, reps, timed, useCam, cam, qi, queue.length, warmup],
+    [session, item, setIdx, weight, reps, timed, useCam, camKey, cam, manualReps, qi, queue.length, warmup],
   );
+
+  // ---- tự ghi set khi camera đếm đủ rep mục tiêu rồi dừng ----
+  const AUTO_LOG_MS = 4000;
+  useEffect(() => {
+    lastRepAt.current = Date.now();
+  }, [cam.reps]);
+  useEffect(() => {
+    // mỗi set mới: bật lại tự ghi, bỏ số rep tự sửa của set trước
+    if (phase === "work") {
+      setAutoCancelled(false);
+      setManualReps(false);
+    }
+  }, [phase, setIdx]);
+  const autoArmed = phase === "work" && !timed && useCam && !!camKey && !busy && !paused && !autoCancelled && !manualReps && reps > 0 && cam.reps >= reps;
+  useEffect(() => {
+    if (!autoArmed) {
+      setAutoLeft(null);
+      return;
+    }
+    const t = window.setInterval(() => {
+      // tập thêm rep → lastRepAt đổi → đếm lại từ đầu, set ghi đúng số rep thực tế
+      const left = AUTO_LOG_MS - (Date.now() - lastRepAt.current);
+      if (left <= 0) {
+        window.clearInterval(t);
+        setAutoLeft(null);
+        logSet();
+      } else setAutoLeft(Math.ceil(left / 1000));
+    }, 200);
+    return () => window.clearInterval(t);
+  }, [autoArmed, logSet]);
 
   const editLogged = async (st: LoggedSet, v: { weight_kg: number; reps: number; duration_sec: number }) => {
     if (!session || !item) return;
@@ -392,7 +444,8 @@ export default function Session() {
       const n = queue[qi + 1];
       setQi(qi + 1);
       setSetIdx(workCount(n.exercise_id) + 1);
-      voice.speak(`Chuẩn bị: ${exName(n.exercise)}. ${n.sets} set ${n.duration_sec && !n.reps ? `${n.duration_sec} giây` : `${n.reps} lần`}.`);
+      const said = spokenExercise(n.exercise);
+      voice.speak(`${said ? `Chuẩn bị: ${said}.` : "Chuẩn bị bài tiếp theo."} ${setsLine(n.sets, n.reps, n.duration_sec ?? 0)}`);
       go("prep", prepSeconds);
     } else finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,6 +461,16 @@ export default function Session() {
         lastBeep.current = c;
         beep(700, 120);
       }
+      // nhắc giữa pha (mỗi câu một lần): sắp hết giờ nghỉ / bài tính giờ được nửa / sắp xong
+      const total = phaseTotal.current;
+      const cue = (key: string, text: string) => {
+        if (lastCue.current === key) return;
+        lastCue.current = key;
+        voice.speak(text, { expireMs: 2000 });
+      };
+      if (phase === "rest" && total >= 20 && c === 10) cue("r10", "Còn 10 giây.");
+      if (phase === "work" && total >= 30 && c === Math.ceil(total / 2)) cue("half", "Được một nửa rồi, cố lên!");
+      if (phase === "work" && total >= 20 && c === 10) cue("w10", "Còn 10 giây, cố lên!");
       setCount(c);
     };
     const t = window.setInterval(tick, 250);
@@ -424,13 +487,15 @@ export default function Session() {
     if (count <= 0) {
       if (phase === "prep") {
         beep(1200, 250);
-        voice.speak("Bắt đầu!");
+        voice.speak("Bắt đầu!", { priority: "high" });
         go("work", timed ? item.duration_sec : 0);
       } else if (phase === "rest") {
         beep(1200, 250);
         if (setIdx > item.sets) nextExercise();
         else {
-          voice.speak(`Hết giờ nghỉ. Set ${setIdx}.`);
+          // sau set khởi động vẫn là hiệp 1 → "Bắt đầu!"; hiệp cuối nói rõ để người tập dồn sức
+          const which = setLine(setIdx, item.sets);
+          voice.speak(`Hết giờ nghỉ. ${which}`, { priority: "high" });
           go("work", timed ? item.duration_sec : 0);
         }
       } else if (phase === "work" && timed) {
@@ -499,7 +564,9 @@ export default function Session() {
       setQi(0);
       setSetIdx(1);
       const first = queue[0];
-      voice.speak(`Bắt đầu ${plan.name}${useLight ? ", bản nhẹ" : ""}. Chuẩn bị: ${exName(first.exercise)}.`);
+      const firstSaid = spokenExercise(first.exercise);
+      // tên giáo án đã hiện trên màn hình → giọng chỉ nói câu cố định (có sẵn file thu âm)
+      voice.speak(`Bắt đầu buổi tập${useLight ? " nhẹ" : ""}. ${firstSaid ? `Chuẩn bị: ${firstSaid}.` : "Chuẩn bị bài đầu tiên."}`);
       go("prep", prepSeconds);
     } catch (e) {
       toast((e as Error).message, "error");
@@ -520,7 +587,7 @@ export default function Session() {
         return;
       }
       setSummary(r);
-      voice.speak(`Hoàn thành buổi tập! Tổng khối lượng ${Math.round(r.total_volume)} ki-lô-gam.`);
+      voice.speak("Xong buổi tập rồi! Làm tốt lắm!"); // số liệu (khối lượng, thời gian) đã có trên màn tổng kết
       go("summary");
     } catch (e) {
       toast((e as Error).message, "error");
@@ -708,10 +775,32 @@ export default function Session() {
   // ================= Đang tập =================
   if (!item || !ex) return <Spinner />;
   const nextItem = setIdx > item.sets ? queue[qi + 1] : null;
+  // số rep đang hiển thị: camera đếm (nếu có), trừ khi người dùng đã tự sửa
+  const shownReps = useCam && camKey && cam.reps && !manualReps ? cam.reps : reps;
+  const editReps = (n: number) => {
+    // camera đã đếm mà người dùng sửa → coi là số tự nhập; chưa đếm rep nào thì chỉ là chỉnh mục tiêu
+    if (useCam && camKey && cam.reps) setManualReps(true);
+    setReps(Math.max(0, n));
+  };
+  const camToggle = camKey && (
+    <Button variant={useCam ? "secondary" : "outline"} size="sm" icon={<Camera size={14} />} onClick={() => setUseCam(!useCam)}>
+      {useCam ? "Tắt Camera AI" : timed ? "Bật Camera AI (chấm form)" : "Bật Camera AI (đếm rep, chấm form)"}
+    </Button>
+  );
   const showEx = phase === "rest" && nextItem ? nextItem.exercise : ex;
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      {/* Điện thoại: thanh trên 44px kiểu màn con — ✕ kết thúc, tên buổi + đồng hồ, bật/tắt giọng PT */}
+      <div className="-mx-2 mb-2 flex h-11 items-center gap-1 md:hidden">
+        <button type="button" aria-label="Kết thúc buổi tập" disabled={busy}
+          onClick={async () => (await confirmDialog({ title: "Kết thúc buổi tập ngay?", text: "Các set đã ghi vẫn được lưu.", confirmLabel: "Kết thúc buổi tập" })) && finish()}
+          className="grid h-11 w-11 place-items-center rounded-full"><X size={24} /></button>
+        <p className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">{plan.name} · <span className="num">{mmss(elapsed)}</span></p>
+        <button type="button" aria-label={voiceOn ? "Tắt giọng PT" : "Bật giọng PT"} aria-pressed={voiceOn}
+          onClick={() => { voice.enabled = !voiceOn; setVoiceOn(!voiceOn); if (voiceOn) voice.stop(); }}
+          className="grid h-11 w-11 place-items-center rounded-full text-muted">{voiceOn ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 max-md:hidden">
         <div className="glass flex items-center gap-3 rounded-full py-1.5 pl-1.5 pr-5">
           <span className="grid h-10 w-10 place-items-center rounded-full bg-volt text-on-volt"><Timer size={17} /></span>
           <div>
@@ -741,20 +830,37 @@ export default function Session() {
         </div>
       </div>
 
-      <div className="mb-5 flex gap-1.5">
-        {queue.map((q, i) => (
-          <div key={i} className={clsx("h-1.5 flex-1 rounded-full transition-colors duration-500", i < qi ? "bg-volt" : i === qi ? "bg-volt/50" : "bg-surface-3")} title={exName(q.exercise)} />
-        ))}
+      <div className="mb-5 max-md:mb-3">
+        <div className="flex gap-1.5">
+          {queue.map((q, i) => (
+            <div key={i} className={clsx("h-1.5 flex-1 rounded-full transition-colors duration-500", i < qi ? "bg-volt max-md:bg-text" : i === qi ? "bg-volt/50 max-md:bg-volt" : "bg-surface-3")} title={exName(q.exercise)} />
+          ))}
+        </div>
+        <p className="mt-2 text-right text-sm text-muted md:hidden">Bài {qi + 1} / {queue.length}</p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="overflow-hidden">
-          {useCam && camKey && phase === "work" ? (
-            <CameraCoach exerciseKey={camKey} targetReps={timed ? undefined : reps} onUpdate={setCam} />
+        {/* Điện thoại: tên bài lớn thay cho thẻ ảnh (ảnh chỉ hiện khi bật Camera AI) */}
+        <div className="md:hidden">
+          <p className="text-xs font-medium text-muted">{phase === "rest" && nextItem ? "Bài tiếp theo" : "Bài hiện tại"}</p>
+          <h1 className="text-[26px] font-semibold leading-8 tracking-tight first-letter:uppercase">{exName(showEx)}</h1>
+          <p className="mt-1 text-sm text-muted">{item.sets} set × {timed ? `${item.duration_sec} giây` : `${item.reps} rep`} · nghỉ {item.rest_sec}s{item.note && phase !== "rest" ? ` · ${item.note}` : ""}</p>
+        </div>
+        <Card className={clsx("overflow-hidden", !(useCam && camKey) && "max-md:hidden")}>
+          {useCam && camKey && (phase === "work" || phase === "prep" || (phase === "rest" && !nextItem)) ? (
+            // camera bật từ lúc CHUẨN BỊ (để người tập căn chỗ đứng) và giữ nguyên qua các set của cùng một bài:
+            // không phải xin quyền / tải lại / nghe lại hướng dẫn mỗi set. Chỉ đếm khi đang trong set.
+            <CameraCoach
+              exerciseKey={camKey}
+              targetReps={timed ? undefined : reps}
+              onUpdate={setCam}
+              active={phase === "work"}
+              idleLabel={phase === "prep" ? `Chuẩn bị · ${count}s` : phase === "rest" ? `Nghỉ · ${count}s` : undefined}
+            />
           ) : (
             <ExerciseImage ex={showEx} className="h-72 w-full" />
           )}
-          <div className="p-4">
+          <div className="p-4 max-md:hidden">
             <p className="text-xs font-medium text-muted">{phase === "rest" && nextItem ? "Bài tiếp theo" : "Bài hiện tại"}</p>
             <p className="text-xl font-semibold tracking-[-0.02em] first-letter:uppercase">{exName(showEx)}</p>
             <div className="mt-1 flex flex-wrap gap-1">
@@ -774,9 +880,9 @@ export default function Session() {
               <BigTimer seconds={count} total={countTotal} label="giây" color="#38bdf8" />
               <p className="text-sm text-muted">
                 {item.sets} set × {timed ? `${item.duration_sec} giây` : `${item.reps} rep`}
-                {camKey && " · có thể bật Camera AI ở bước tiếp theo"}
+                {camKey && (useCam ? " · đứng vào vị trí, camera bắt đầu đếm khi vào set" : " · bài này hỗ trợ Camera AI")}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={() => adjust(10)}>
                   +10 giây
                 </Button>
@@ -787,6 +893,7 @@ export default function Session() {
                   Vào luôn
                 </Button>
               </div>
+              {camToggle}
             </>
           )}
 
@@ -797,7 +904,7 @@ export default function Session() {
               <p className="text-sm text-muted">
                 {nextItem ? `Tiếp theo: ${exName(nextItem.exercise)}` : `Tiếp theo: set ${setIdx}/${item.sets}`}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button variant="outline" size="sm" icon={<Minus size={14} />} onClick={() => adjust(-15)}>15s</Button>
                 <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={() => adjust(15)}>15s</Button>
                 <Button size="sm" icon={<SkipForward size={14} />} onClick={skipCount}>Bỏ nghỉ</Button>
@@ -813,7 +920,7 @@ export default function Session() {
                 <>
                   <BigTimer seconds={count} total={countTotal} label="giây" color="var(--volt)" />
                   {useCam && cam.holdSec > 0 && <p className="text-sm text-muted">Giữ đúng form: {cam.holdSec}s</p>}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-center gap-2">
                     <Button variant="outline" size="sm" icon={paused ? <Play size={14} /> : <Pause size={14} />} onClick={togglePause}>
                       {paused ? "Tiếp tục" : "Tạm dừng"}
                     </Button>
@@ -825,24 +932,26 @@ export default function Session() {
                     <p className="max-w-xs rounded-2xl bg-[var(--glass-fill)] px-3.5 py-2.5 text-xs"><b className="text-primary-strong">Tăng tải lũy tiến:</b> {detail.overload.reason}</p>
                   )}
                   <LoggedSets sets={logged[item.exercise_id] || []} timed onEdit={editLogged} onDelete={deleteLogged} />
+                  {camToggle}
                 </>
               ) : (
                 <>
-                  <div className="grid w-full max-w-xs grid-cols-2 gap-3">
+                  {/* Ô −/+ 48px trong rãnh 56px: bấm được bằng ngón cái khi tay còn mỏi */}
+                  <div className="grid w-full max-w-sm grid-cols-2 gap-3 text-left">
                     <div>
-                      <p className="mb-1 text-xs text-muted">Mức tạ (kg)</p>
-                      <div className="flex items-center gap-1">
-                        <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setWeight((w) => Math.max(0, +(w - 2.5).toFixed(1)))}>−</button>
-                        <DecimalInput aria-label="Mức tạ (kg)" className="input num h-11 text-center text-xl font-semibold" value={weight} onValue={(n) => setWeight(n ?? 0)} />
-                        <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setWeight((w) => +(w + 2.5).toFixed(1))}>+</button>
+                      <p className="mb-1 text-[13px] font-medium text-muted">Mức tạ (kg)</p>
+                      <div className="flex h-14 items-center rounded-2xl bg-surface-2 px-1">
+                        <button type="button" aria-label="Giảm 2,5 kg" className="grid h-12 w-12 shrink-0 place-items-center rounded-full transition hover:bg-surface-3" onClick={() => setWeight((w) => Math.max(0, +(w - 2.5).toFixed(1)))}><Minus size={20} /></button>
+                        <DecimalInput aria-label="Mức tạ (kg)" className="num h-12 w-full min-w-0 bg-transparent text-center text-2xl font-semibold outline-none" value={weight} onValue={(n) => setWeight(n ?? 0)} />
+                        <button type="button" aria-label="Tăng 2,5 kg" className="grid h-12 w-12 shrink-0 place-items-center rounded-full transition hover:bg-surface-3" onClick={() => setWeight((w) => +(w + 2.5).toFixed(1))}><Plus size={20} /></button>
                       </div>
                     </div>
                     <div>
-                      <p className="mb-1 text-xs text-muted">Số rep {useCam && "(camera đếm)"}</p>
-                      <div className="flex items-center gap-1">
-                        <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setReps((r) => Math.max(0, r - 1))}>−</button>
-                        <input className="input num h-11 text-center text-xl font-semibold" type="number" value={useCam && cam.reps ? cam.reps : reps} onChange={(e) => setReps(+e.target.value)} />
-                        <button className="h-11 w-10 rounded-xl bg-[var(--glass-fill)] text-lg transition hover:bg-surface-3" onClick={() => setReps((r) => r + 1)}>+</button>
+                      <p className="mb-1 truncate text-[13px] font-medium text-muted">Số rep {useCam && camKey && (manualReps ? "(bạn nhập)" : cam.reps ? "(camera đếm)" : "(mục tiêu)")}</p>
+                      <div className="flex h-14 items-center rounded-2xl bg-surface-2 px-1">
+                        <button type="button" aria-label="Bớt 1 rep" className="grid h-12 w-12 shrink-0 place-items-center rounded-full transition hover:bg-surface-3" onClick={() => editReps(shownReps - 1)}><Minus size={20} /></button>
+                        <input aria-label="Số rep" inputMode="numeric" className="num h-12 w-full min-w-0 bg-transparent text-center text-2xl font-semibold outline-none" type="number" value={shownReps} onChange={(e) => editReps(+e.target.value)} />
+                        <button type="button" aria-label="Thêm 1 rep" className="grid h-12 w-12 shrink-0 place-items-center rounded-full transition hover:bg-surface-3" onClick={() => editReps(shownReps + 1)}><Plus size={20} /></button>
                       </div>
                     </div>
                   </div>
@@ -860,20 +969,45 @@ export default function Session() {
                     </label>
                   )}
                   <LoggedSets sets={logged[ex.id] || []} timed={false} onEdit={editLogged} onDelete={deleteLogged} />
-                  {camKey && (
-                    <Button variant={useCam ? "secondary" : "outline"} size="sm" icon={<Camera size={14} />} onClick={() => setUseCam(!useCam)}>
-                      {useCam ? "Tắt Camera AI" : "Bật Camera AI (đếm rep, chấm form)"}
-                    </Button>
+                  {camToggle}
+                  {autoLeft != null && (
+                    <div role="status" className="flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-[var(--glass-fill)] px-3.5 py-2.5 text-left text-sm">
+                      <span>Đủ <b className="num">{cam.reps}</b> rep · tự ghi set sau <b className="num">{autoLeft}s</b></span>
+                      <Button size="sm" variant="outline" onClick={() => setAutoCancelled(true)}>Tập thêm</Button>
+                    </div>
                   )}
+                  {/* Điện thoại: nút chính dính đáy, nằm trong tầm ngón cái; nói rõ set nào, mức tạ, số rep sẽ được ghi */}
                   <button type="button" disabled={busy} onClick={() => logSet()}
-                    className="inline-flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-volt text-base font-semibold text-on-volt shadow-[0_12px_32px_-12px_rgb(132_204_22/0.9)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-60">
+                    className="inline-flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-volt text-base font-semibold text-on-volt shadow-[0_12px_32px_-12px_rgb(132_204_22/0.9)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-60 max-md:hidden">
                     <Check size={19} /> {warmup ? "Ghi set khởi động" : "Hoàn thành set"}
                   </button>
+                  {/* Điện thoại: nút chính dính đáy (portal ra body: khung trang có transform nên fixed bên trong bị kẹt giữa màn) */}
+                  {createPortal(
+                    <div className="no-print fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-bg from-70% to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:hidden">
+                      <p className="mb-2 flex items-center justify-center gap-1.5 text-sm text-muted"><Timer size={15} /> Nghỉ sau set: <b className="num text-text">{mmss(item.rest_sec)}</b></p>
+                      <button type="button" disabled={busy} onClick={() => logSet()}
+                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ink text-base font-semibold text-on-ink shadow-[var(--shadow-lg)] transition active:scale-[0.98] disabled:opacity-60">
+                        <Check size={19} />
+                        {warmup ? "Ghi set khởi động" : <span>Xong set {Math.min(setIdx, item.sets)} · <span className="num">{fmt(weight, 1)} kg × {shownReps}</span></span>}
+                      </button>
+                    </div>,
+                    document.body,
+                  )}
                 </>
               )}
             </>
           )}
         </Card>
+      </div>
+
+      {/* Điện thoại: bài tiếp theo + bỏ qua bài (trên desktop nút này nằm ở hàng trên) */}
+      <div className="mt-3 flex items-center gap-3 rounded-2xl bg-surface-2 p-3 md:hidden">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-muted"><SkipForward size={18} /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted">Tiếp theo</p>
+          <p className="truncate text-sm font-semibold first-letter:uppercase">{queue[qi + 1] ? `${exName(queue[qi + 1].exercise)} · ${queue[qi + 1].sets} × ${queue[qi + 1].duration_sec && !queue[qi + 1].reps ? `${queue[qi + 1].duration_sec}s` : queue[qi + 1].reps}` : "Bài cuối của buổi"}</p>
+        </div>
+        <Button size="sm" variant="ghost" onClick={nextExercise}>Bỏ qua bài</Button>
       </div>
     </div>
   );

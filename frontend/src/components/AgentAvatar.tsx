@@ -13,6 +13,10 @@ const persona = (agent: AgentKey, real?: boolean): AgentKey => (real || agent ==
 export function AgentAvatar({ agent: raw, size = 34, real }: { agent: AgentKey; size?: number; real?: boolean }) {
   const agent = persona(raw, real);
   const a = AGENTS[agent] || AGENTS.headbro;
+  // Trợ lý AI (HeadBro) dùng ảnh nhận diện riêng: quả tạ + nhịp tim + tia sáng trên nền tròn tối
+  if (agent === "headbro") {
+    return <img src="/ai-avatar.png?v=6" alt="" width={size} height={size} className="shrink-0 rounded-full" style={{ width: size, height: size }} />;
+  }
   const Icon = ICONS[agent] || Crown;
   return (
     <div className="grid shrink-0 place-items-center rounded-xl" style={{ width: size, height: size, background: a.bg, color: a.color }}>

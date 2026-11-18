@@ -1,7 +1,7 @@
 """Hồ sơ cá nhân, mục tiêu dinh dưỡng, cài đặt."""
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,10 @@ DEFAULT_SETTINGS = {
     "auto_camera": True,  # bài có Camera AI thì tự bật camera khi vào hiệp tập
     "calorie_cycling": True,  # ngày tập +150 kcal, ngày nghỉ −150 kcal (theo lịch tuần)
     "theme": "system",
+    # Mục tiêu calo: "average" = ước lượng trung bình (hệ số vận động đã gồm tập) | "tracked" = theo vận động thực tế ghi lại
+    "energy_mode": "average",
+    "lifestyle": "sitting",  # sitting|standing|manual — hệ số sinh hoạt nền khi energy_mode = tracked
+    "eat_back": 0.5,  # ăn bù bao nhiêu phần calo vận động (MET thường ước cao → mặc định 50%)
     "reminders": {"checkin": "07:30", "workout": "18:00", "water_every_min": 0, "enabled": False},
 }
 # Các khoá lưu trong settings nhưng không phải tuỳ chọn hiển thị (không trả trong /profile)
@@ -41,6 +45,9 @@ def profile_out(p: Profile) -> dict:
         "equipment": p.equipment, "injuries": p.injuries, "targets": t, "targets_manual": p.targets_manual,
         "calculated": calc, "bmi": formulas.bmi(p.weight_kg, p.height_cm) if p.weight_kg and p.height_cm else None,
         "settings": {**DEFAULT_SETTINGS, **{k: v for k, v in (p.settings or {}).items() if k != FAVORITES_KEY}},
+        # Xem trước cho màn Cài đặt: mục tiêu nền ở chế độ "theo vận động thực tế" với từng hệ số sinh hoạt
+        "energy_preview": ({k: formulas.nutrition_targets(p.weight_kg, p.height_cm, p.age, p.gender, p.goal, multiplier=f)["calories"]
+                            for k, f in formulas.LIFESTYLE_FACTORS.items()} if calc and not p.targets_manual else None),
     }
 
 
@@ -105,7 +112,15 @@ def onboard(body: ProfileIn, user: User = Depends(get_current_user), db: Session
 def update_settings(body: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = stats.get_profile(db, user)
     merged = {**DEFAULT_SETTINGS, **(p.settings or {})}  # giữ cả món yêu thích
+    allowed = {"energy_mode": ("average", "tracked"), "lifestyle": tuple(formulas.LIFESTYLE_FACTORS)}
     for k, v in body.items():
+        if k in allowed and v not in allowed[k]:
+            raise HTTPException(400, f"Giá trị không hợp lệ cho {k}")
+        if k == "eat_back":
+            try:
+                v = min(1.0, max(0.0, float(v)))
+            except (TypeError, ValueError):
+                raise HTTPException(400, "eat_back phải là số 0–1")
         if k in DEFAULT_SETTINGS:
             merged[k] = {**merged[k], **v} if isinstance(merged[k], dict) and isinstance(v, dict) else v
     p.settings = merged

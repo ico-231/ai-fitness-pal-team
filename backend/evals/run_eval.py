@@ -174,6 +174,7 @@ async def run_case(case: dict, user_id: str) -> dict:
 
     ex = case.get("expect", {})
     checks: dict[str, bool] = {}
+    kcal_detail = None
     if "agents_any" in ex:
         checks["route"] = any(a in agents for a in ex["agents_any"])
     if "agents_all" in ex:
@@ -187,6 +188,32 @@ async def run_case(case: dict, user_id: str) -> dict:
         checks["tool_blocked"] = not ok_calls
     if "cards_any" in ex:
         checks["card"] = any(c in cards for c in ex["cards_any"])
+    # --- M8: ghi hoạt động qua chat
+    card_objs = [c for m in msgs for c in (m.get("cards") or [])]
+    if "cards_none" in ex:
+        checks["card_forbidden"] = not any(c in cards for c in ex["cards_none"])
+    for name, n in (ex.get("tool_count") or {}).items():  # số lần gọi THÀNH CÔNG (tạo thẻ), vd 2 hoạt động → 2 thẻ
+        ok = [r for t, r in results if t == name and r == "Đã tạo thẻ chờ xác nhận"]
+        checks[f"count_{name}"] = len(ok) == n
+    if "card_payload" in ex:  # từng thẻ xác nhận phải đúng hoạt động / thời lượng / ngày (date_offset: 0 = hôm nay, -1 = hôm qua)
+        from app.services import stats as _stats
+        pays = [c.get("payload") or {} for c in card_objs if c.get("kind") == "confirm"]
+        def _match(want: dict, got: dict) -> bool:
+            for k, v in want.items():
+                if k == "date_offset":
+                    if got.get("date") != (_stats.today() + dt.timedelta(days=v)).isoformat():
+                        return False
+                elif got.get(k) != v:
+                    return False
+            return True
+        checks["card_payload"] = all(any(_match(w, g) for g in pays) for w in ex["card_payload"])
+    if ex.get("kcal_grounded"):  # mọi số "… kcal" trong câu trả lời phải là số server đã tính trên thẻ (±1)
+        server = [float(c["payload"].get("preview_kcal", -1)) for c in card_objs if c.get("kind") == "confirm" and c.get("payload")]
+        said = [float(x.replace(".", "").replace(",", ".")) for x in re.findall(r"(\d[\d.,]*)\s*kcal", answer)]
+        said = [x for x in said if x >= 30]  # bỏ số nhỏ kiểu "1 kcal/kg"
+        total = sum(server)
+        checks["kcal_grounded"] = bool(server) and all(any(abs(x - s_) <= 1 for s_ in server) or abs(x - total) <= max(5, 0.02 * total) for x in said)
+        kcal_detail = {"said": said, "server": server}
     blocked = tsum.get("status") == "blocked"
     if "guard" in ex:
         checks["guard"] = blocked and tsum.get("guard") == ex["guard"]
@@ -212,7 +239,7 @@ async def run_case(case: dict, user_id: str) -> dict:
         "checks": checks, "checks_pass": all(checks.values()) if checks else True,
         "latency_s": round(wall, 2), "ttft_ms": tsum.get("ttft_ms"), "llm_calls": tsum.get("llm_calls"),
         "tokens_in": tsum.get("tokens_in"), "tokens_out": tsum.get("tokens_out"), "providers": tsum.get("providers", []),
-        "answer": answer, "error": err,
+        "answer": answer, "error": err, "kcal_detail": kcal_detail,
     }
 
 
@@ -324,6 +351,7 @@ def write_report(meta: dict, summary: dict | None, results: list[dict], rag: dic
                 j = r.get("judge") or {}
                 L += [f"### {r['id']} — {r['input']}", "",
                       f"- Kiểm tra: {json.dumps(r['checks'], ensure_ascii=False)}",
+                      *([f"- Calo AI nói / server tính: {json.dumps(r['kcal_detail'], ensure_ascii=False)}"] if r.get("kcal_detail") else []),
                       f"- Giám khảo: {j.get('score')} — {j.get('reason', '')}", "", "```", r["answer"][:1500], "```", ""]
     if rag:
         L += ["", "## RAG retrieval (evals/rag_cases.json)", "", "| Phương pháp | hit@1 | hit@3 | MRR |", "|---|---|---|---|"]

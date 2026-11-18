@@ -19,6 +19,7 @@ const InBody = lazy(() => import("./pages/InBody"));
 const Guide = lazy(() => import("./pages/Guide"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const AiLog = lazy(() => import("./pages/AiLog"));
+const PrintReport = lazy(() => import("./pages/PrintReport"));
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -34,6 +35,8 @@ export default function App() {
     <AIProvider>
       <Suspense fallback={<Spinner />}>
         <Routes>
+          {/* báo cáo in/PDF: tờ A4 riêng, không có thanh bên */}
+          <Route path="report" element={<PrintReport />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="chat" element={<Chat />} />

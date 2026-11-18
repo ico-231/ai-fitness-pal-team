@@ -39,7 +39,7 @@ from sqlalchemy import select  # noqa: E402
 from app.agents import tools as T  # noqa: E402
 from app.db import SessionLocal, init_db  # noqa: E402
 from app.models import (  # noqa: E402
-    AgentTrace, BodyMetric, Conversation, DailyLog, Goal, Meal, Memory, Message, PendingAction, Profile, User,
+    Activity, AgentTrace, BodyMetric, Conversation, DailyLog, Goal, Meal, Memory, Message, PendingAction, Profile, User,
     WeeklySchedule, WorkoutPlan, WorkoutSession, WorkoutSet,
 )
 from app.security import hash_password  # noqa: E402
@@ -650,6 +650,39 @@ def ensure_fresh() -> bool:
         release_lock()
 
 
+def seed_activities(db, user: User, prof: Profile, today: dt.date, start: dt.date) -> None:
+    """Hoạt động ngoài gym (M8): đá bóng tối thứ 4 (ngày nghỉ gym), đạp xe sáng Chủ nhật, đi bộ nhanh sau bữa tối.
+    Tính calo bằng đúng công thức của app (MET × cân nặng hôm đó; net trừ BMR riêng)."""
+    from app.services import activities as actsvc
+
+    plan = [  # (thứ, mã, phút, mức, quãng đường, xác suất)
+        (2, "bong_da", 60, "moderate", None, 0.85),
+        (6, "dap_xe", 55, "moderate", 16.5, 0.7),
+        (0, "di_bo", 30, "moderate", None, 0.45), (3, "di_bo", 30, "moderate", None, 0.45),
+        (6, "cau_long", 45, "moderate", None, 0.25),
+    ]
+    for i in range(DAYS - 60, DAYS):  # 60 ngày gần nhất, không ghi sẵn cho hôm nay
+        d = start + dt.timedelta(days=i)
+        if d >= today or i in SICK:
+            continue
+        for wd, code, minutes, inten, dist, prob in plan:
+            if d.weekday() != wd or rng.random() > prob:
+                continue
+            a = actsvc.get(code)
+            w = round(weight_on(i), 1)
+            bmr = formulas.bmr_mifflin(w, prof.height_cm, prof.age, prof.gender)
+            met = a["met"][inten]
+            mins = minutes + rng.choice([-10, -5, 0, 0, 5, 10])
+            if dist and a["speed_mets"]:
+                met = formulas.met_from_speed(a["speed_mets"], dist / (mins / 60))
+            e = formulas.activity_energy(met, w, mins, bmr)
+            db.add(Activity(user_id=user.id, date=d, activity_code=code, name=a["name"], category=a["category"],
+                            intensity=formulas.who_intensity(met) if dist else inten, duration_min=mins, distance_km=dist,
+                            met=met, weight_kg_used=w, kcal_gross=e["kcal_gross"], kcal_net=e["kcal_net"],
+                            who_minutes=formulas.who_minutes(mins, met, None if dist else inten), formula=e["formula"], source="seed",
+                            created_at=utc_at(d, 19 if code != "dap_xe" else 7)))
+
+
 def main() -> None:
     init_db()
     rng.seed(2026)  # chạy lại trong cùng tiến trình vẫn ra đúng bộ dữ liệu
@@ -703,6 +736,7 @@ def main() -> None:
                 created_at=utc_at(start + dt.timedelta(days=3), 21)))
 
     seed_days(db, user, today, start, reserved)
+    seed_activities(db, user, prof, today, start)
     db.flush()
     # Từ khi có buổi "bảo vệ vai" (ngày 19), các buổi ngực dùng buổi tập này
     if shoulder_plan:
@@ -719,7 +753,7 @@ def main() -> None:
     seed_chats_late(db, user, prof, today)
     db.commit()
     n = {m.__name__: len(list(db.scalars(select(m.id).where(m.user_id == user.id))))
-         for m in (WorkoutSession, WorkoutSet, Meal, DailyLog, BodyMetric, Goal, Memory, Conversation, AgentTrace)}
+         for m in (WorkoutSession, WorkoutSet, Meal, DailyLog, BodyMetric, Goal, Memory, Conversation, AgentTrace, Activity)}
     db.close()
     print(f"Đã tạo tài khoản demo: {EMAIL} / {PASSWORD}")
     print("Dữ liệu:", n)

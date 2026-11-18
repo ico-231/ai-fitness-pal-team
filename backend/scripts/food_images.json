@@ -1,0 +1,792 @@
+{
+ "bun_moc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn.jpg/960px-B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn.jpg",
+  "title": "File:Bún mọc sườn.jpg",
+  "ok": true
+ },
+ "bun_bo_nam_bo": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Bun_Bo_Nam_Bo.jpg/960px-Bun_Bo_Nam_Bo.jpg",
+  "title": "File:Bun Bo Nam Bo.jpg",
+  "ok": true
+ },
+ "bun_thang": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/B%C3%BAn_ch%E1%BA%A3_H%C3%A0_N%E1%BB%99i_%28th%C3%A1ng_7_n%C4%83m_2018%29_%282%29.jpg/960px-B%C3%BAn_ch%E1%BA%A3_H%C3%A0_N%E1%BB%99i_%28th%C3%A1ng_7_n%C4%83m_2018%29_%282%29.jpg",
+  "title": "File:Bún chả Hà Nội (tháng 7 năm 2018) (2).jpg",
+  "ok": false
+ },
+ "bun_cha_ca": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/B%C3%BAn_ch%E1%BA%A3_c%C3%A1%2C_th%C3%A1ng_8_n%C4%83m_2018.JPG/960px-B%C3%BAn_ch%E1%BA%A3_c%C3%A1%2C_th%C3%A1ng_8_n%C4%83m_2018.JPG",
+  "title": "File:Bún chả cá, tháng 8 năm 2018.JPG",
+  "ok": true
+ },
+ "mien_ga": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Tachileik_Myanmar_Kayan-People-Woman-03.jpg/960px-Tachileik_Myanmar_Kayan-People-Woman-03.jpg",
+  "title": "File:Tachileik Myanmar Kayan-People-Woman-03.jpg",
+  "ok": false
+ },
+ "mien_luon": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d7/Mien_luon_Hang_Dieu.JPG/960px-Mien_luon_Hang_Dieu.JPG",
+  "title": "File:Mien luon Hang Dieu.JPG",
+  "ok": true
+ },
+ "hu_tieu_go": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/H%E1%BB%A7_ti%E1%BA%BFu_b%C3%B2_kho.jpg/960px-H%E1%BB%A7_ti%E1%BA%BFu_b%C3%B2_kho.jpg",
+  "title": "File:Hủ tiếu bò kho.jpg",
+  "ok": true
+ },
+ "mi_van_than": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Wonton_Noodle_Soup_in_Fresno%2C_California_%28%E9%9B%B2%E5%90%9E%E6%B9%AF%E9%BA%B5%E5%9C%A8%E5%8A%A0%E5%88%A9%E7%A6%8F%E5%B0%BC%E4%BA%9E%E5%B7%9E%E7%9A%84%E5%BC%97%E9%9B%B7%E6%96%AF%E8%AB%BE%29.jpg/960px-Wonton_Noodle_Soup_in_Fresno%2C_California_%28%E9%9B%B2%E5%90%9E%E6%B9%AF%E9%BA%B5%E5%9C%A8%E5%8A%A0%E5%88%A9%E7%A6%8F%E5%B0%BC%E4%BA%9E%E5%B7%9E%E7%9A%84%E5%BC%97%E9%9B%B7%E6%96%AF%E8%AB%BE%29.jpg",
+  "title": "File:Wonton Noodle Soup in Fresno, California (雲吞湯麵在加利福尼亞州的弗雷斯諾).jpg",
+  "ok": true
+ },
+ "pho_cuon": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Pho_Banh_Cuon_-_Restaurant_vietnamien.jpg/960px-Pho_Banh_Cuon_-_Restaurant_vietnamien.jpg",
+  "title": "File:Pho Banh Cuon - Restaurant vietnamien.jpg",
+  "ok": true
+ },
+ "pho_tron": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Ph%E1%BB%9F_tr%E1%BB%99n_n%C6%B0%E1%BB%9Bc_t%C6%B0%C6%A1ng_t%C3%A0u_%28th%E1%BB%A9c_%C4%83n_nhanh%29_%284%29.jpg/960px-Ph%E1%BB%9F_tr%E1%BB%99n_n%C6%B0%E1%BB%9Bc_t%C6%B0%C6%A1ng_t%C3%A0u_%28th%E1%BB%A9c_%C4%83n_nhanh%29_%284%29.jpg",
+  "title": "File:Phở trộn nước tương tàu (thức ăn nhanh) (4).jpg",
+  "ok": true
+ },
+ "goi_ga_bap_cai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Chinesechickensalad.jpg/960px-Chinesechickensalad.jpg",
+  "title": "File:Chinesechickensalad.jpg",
+  "ok": true
+ },
+ "dua_chuot": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Cucumber_in_jaffna.JPG/960px-Cucumber_in_jaffna.JPG",
+  "title": "File:Cucumber in jaffna.JPG",
+  "ok": true
+ },
+ "rau_song": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Leaf_lettuce_plant_in_a_pot_10.jpg/960px-Leaf_lettuce_plant_in_a_pot_10.jpg",
+  "title": "File:Leaf lettuce plant in a pot 10.jpg",
+  "ok": false
+ },
+ "muop_xao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Phat_buap.jpg/960px-Phat_buap.jpg",
+  "title": "File:Phat buap.jpg",
+  "ok": true
+ },
+ "salad_uc_ga": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Chicken_salad_with_eggs.jpg/960px-Chicken_salad_with_eggs.jpg",
+  "title": "File:Chicken salad with eggs.jpg",
+  "ok": true
+ },
+ "salad_ca_ngu": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Tuna_fish_sandwiches_for_the_National_School_Lunch_Program_%281%29.jpg/960px-Tuna_fish_sandwiches_for_the_National_School_Lunch_Program_%281%29.jpg",
+  "title": "File:Tuna fish sandwiches for the National School Lunch Program (1).jpg",
+  "ok": false
+ },
+ "salad_rau_tron": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Three_Bean_Salad_food.jpg/960px-Three_Bean_Salad_food.jpg",
+  "title": "File:Three Bean Salad food.jpg",
+  "ok": true
+ },
+ "poke_ca_hoi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/Salmon_Poke_Bowl_%28S%29_with_Spicy_mayo_sauce_-_Kitokito.jpg/960px-Salmon_Poke_Bowl_%28S%29_with_Spicy_mayo_sauce_-_Kitokito.jpg",
+  "title": "File:Salmon Poke Bowl (S) with Spicy mayo sauce - Kitokito.jpg",
+  "ok": true
+ },
+ "buddha_bowl": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/BuddhaBowlLot.jpg/960px-BuddhaBowlLot.jpg",
+  "title": "File:BuddhaBowlLot.jpg",
+  "ok": true
+ },
+ "overnight_oats": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Muesli.jpg/960px-Muesli.jpg",
+  "title": "File:Muesli.jpg",
+  "ok": true
+ },
+ "chao_suon": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "chao_long": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Ch%C3%A1o_l%C3%B2ng.jpg/960px-Ch%C3%A1o_l%C3%B2ng.jpg",
+  "title": "File:Cháo lòng.jpg",
+  "ok": true
+ },
+ "chao_ca": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Tarpon.jpg",
+  "title": "File:Tarpon.jpg",
+  "ok": false
+ },
+ "chao_yen_mach_ga": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/The_new_book_of_the_dog%3B_a_comprehensive_natural_history_of_British_dogs_and_their_foreign_relatives%2C_with_chapters_on_law%2C_breeding%2C_kennel_management%2C_and_veterinary_treatment_%281907%29_%2820115662114%29.jpg/960px-thumbnail.jpg",
+  "title": "File:The new book of the dog; a comprehensive natural history of British dogs and their foreign relatives, with chapters on law, breeding, kennel management, and veterinary treatment (1907) (20115662114).jpg",
+  "ok": false
+ },
+ "sup_cua": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/f/f8/S%C3%BAp_cua_Vi%E1%BB%87t_Nam.jpg",
+  "title": "File:Súp cua Việt Nam.jpg",
+  "ok": true
+ },
+ "banh_canh_cha_ca": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Ancient_Tomb_Complex_in_Ph%C6%B0%E1%BB%9Bc_V%C4%A9nh_%C4%90%C3%B4ng_Commune%2C_C%E1%BA%A7n_Giu%E1%BB%99c%2C_Vi%E1%BB%87t_Nam_%2831%29.jpg/960px-Ancient_Tomb_Complex_in_Ph%C6%B0%E1%BB%9Bc_V%C4%A9nh_%C4%90%C3%B4ng_Commune%2C_C%E1%BA%A7n_Giu%E1%BB%99c%2C_Vi%E1%BB%87t_Nam_%2831%29.jpg",
+  "title": "File:Ancient Tomb Complex in Phước Vĩnh Đông Commune, Cần Giuộc, Việt Nam (31).jpg",
+  "ok": false
+ },
+ "lau_thai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Tom_Yum_with_Clear_Soup.jpg/960px-Tom_Yum_with_Clear_Soup.jpg",
+  "title": "File:Tom Yum with Clear Soup.jpg",
+  "ok": true
+ },
+ "com_ga_xoi_mo": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "com_suon_rim": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "com_rang_dua_bo": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Birmingham-Skyline-from-Edgbaston-crop.jpg/960px-Birmingham-Skyline-from-Edgbaston-crop.jpg",
+  "title": "File:Birmingham-Skyline-from-Edgbaston-crop.jpg",
+  "ok": false
+ },
+ "com_chay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Saigon_Vegetarian_food.jpg/960px-Saigon_Vegetarian_food.jpg",
+  "title": "File:Saigon Vegetarian food.jpg",
+  "ok": true
+ },
+ "com_van_phong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Phan_dinh_phung%2Cph%C6%B0%E1%BB%9Dng_1%2C_Ph%C3%BA_Nhu%E1%BA%ADn%2C_TPHCM%2C_Vi%E1%BB%87t_Nam_-_panoramio.jpg/960px-Phan_dinh_phung%2Cph%C6%B0%E1%BB%9Dng_1%2C_Ph%C3%BA_Nhu%E1%BA%ADn%2C_TPHCM%2C_Vi%E1%BB%87t_Nam_-_panoramio.jpg",
+  "title": "File:Phan dinh phung,phường 1, Phú Nhuận, TPHCM, Việt Nam - panoramio.jpg",
+  "ok": false
+ },
+ "suon_xao_chua_ngot": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/HK_CWB_%E9%8A%85%E9%91%BC%E7%81%A3_Causeway_Bay_%E6%BA%AB%E8%8E%8E%E5%A4%A7%E5%BB%88_Windsor_House_mall_shop_%E7%A8%BB%E9%A6%99%E9%85%92%E5%AE%B6_Tao_Heung_Restaurant_%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8_Sweet_and_Sour_Ribs_September_2022_Px3_01.jpg/960px-HK_CWB_%E9%8A%85%E9%91%BC%E7%81%A3_Causeway_Bay_%E6%BA%AB%E8%8E%8E%E5%A4%A7%E5%BB%88_Windsor_House_mall_shop_%E7%A8%BB%E9%A6%99%E9%85%92%E5%AE%B6_Tao_Heung_Restaurant_%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8_Sweet_and_Sour_Ribs_September_2022_Px3_01.jpg",
+  "title": "File:HK CWB 銅鑼灣 Causeway Bay 溫莎大廈 Windsor House mall shop 稻香酒家 Tao Heung Restaurant 糖醋排骨 Sweet and Sour Ribs September 2022 Px3 01.jpg",
+  "ok": true
+ },
+ "thit_rang_chay_canh": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "thit_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Vietnamese_thit_kho%2C_braised_pork_belly_and_boiled_eggs.jpg/960px-Vietnamese_thit_kho%2C_braised_pork_belly_and_boiled_eggs.jpg",
+  "title": "File:Vietnamese thit kho, braised pork belly and boiled eggs.jpg",
+  "ok": false
+ },
+ "dau_nhoi_thit": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "ga_kho_gung": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Bo_Kho.jpg/960px-Bo_Kho.jpg",
+  "title": "File:Bo Kho.jpg",
+  "ok": false
+ },
+ "ca_thu_sot_ca": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Mackerel_tomato_sauce.jpg/960px-Mackerel_tomato_sauce.jpg",
+  "title": "File:Mackerel tomato sauce.jpg",
+  "ok": true
+ },
+ "tom_rang": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Indigo_bubbles.jpg/960px-Indigo_bubbles.jpg",
+  "title": "File:Indigo bubbles.jpg",
+  "ok": false
+ },
+ "muc_xao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Stir_Fried_Squid_%28Taiwan%29.jpg/960px-Stir_Fried_Squid_%28Taiwan%29.jpg",
+  "title": "File:Stir Fried Squid (Taiwan).jpg",
+  "ok": true
+ },
+ "bo_xao_hanh_tay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Ginger_and_Onion_Beef_%E8%96%91%E8%94%A5%E7%89%9B%E8%82%89_%28Golden_Dynasty_Chinese_Restaurant%29.jpg/960px-Ginger_and_Onion_Beef_%E8%96%91%E8%94%A5%E7%89%9B%E8%82%89_%28Golden_Dynasty_Chinese_Restaurant%29.jpg",
+  "title": "File:Ginger and Onion Beef 薑蔥牛肉 (Golden Dynasty Chinese Restaurant).jpg",
+  "ok": true
+ },
+ "cha_la_lot": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Nh%C3%A0_m%E1%BB%87_d%E1%BB%8Bp_L%E1%BB%85_2_th%C3%A1ng_9_n2023_%28m%C3%B3n_ch%E1%BA%A3_cu%E1%BB%91n_l%C3%A1_l%E1%BB%91t%29_%281%29.jpg/960px-Nh%C3%A0_m%E1%BB%87_d%E1%BB%8Bp_L%E1%BB%85_2_th%C3%A1ng_9_n2023_%28m%C3%B3n_ch%E1%BA%A3_cu%E1%BB%91n_l%C3%A1_l%E1%BB%91t%29_%281%29.jpg",
+  "title": "File:Nhà mệ dịp Lễ 2 tháng 9 n2023 (món chả cuốn lá lốt) (1).jpg",
+  "ok": true
+ },
+ "trung_duc_thit": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/C%C6%A1m_th%E1%BA%ADp_c%E1%BA%A9m.jpg/960px-C%C6%A1m_th%E1%BA%ADp_c%E1%BA%A9m.jpg",
+  "title": "File:Cơm thập cẩm.jpg",
+  "ok": false
+ },
+ "ca_ro_phi_chien": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Fried_Tilapia_Fish.jpg/960px-Fried_Tilapia_Fish.jpg",
+  "title": "File:Fried Tilapia Fish.jpg",
+  "ok": true
+ },
+ "ca_ro_phi_hap": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Steamed_fish_with_soy_sauce.jpg/960px-Steamed_fish_with_soy_sauce.jpg",
+  "title": "File:Steamed fish with soy sauce.jpg",
+  "ok": true
+ },
+ "ga_rang_muoi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Fried_Rice_with_Salted_Fish_and_Chicken.jpg/960px-Fried_Rice_with_Salted_Fish_and_Chicken.jpg",
+  "title": "File:Fried Rice with Salted Fish and Chicken.jpg",
+  "ok": false
+ },
+ "vit_quay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Roast_duck_fs.JPG/960px-Roast_duck_fs.JPG",
+  "title": "File:Roast duck fs.JPG",
+  "ok": true
+ },
+ "heo_quay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Char_siu%2C_siu_yuk_and_pork_ribs%2C_Empress%2C_Asian_Civilisations_Museum%2C_Singapore_-_20160203-02.jpg/960px-Char_siu%2C_siu_yuk_and_pork_ribs%2C_Empress%2C_Asian_Civilisations_Museum%2C_Singapore_-_20160203-02.jpg",
+  "title": "File:Char siu, siu yuk and pork ribs, Empress, Asian Civilisations Museum, Singapore - 20160203-02.jpg",
+  "ok": true
+ },
+ "canh_bi_do": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Pumpkin_Curry_Soup_%2820161021-AMS-LSC-9001%29.jpg/960px-Pumpkin_Curry_Soup_%2820161021-AMS-LSC-9001%29.jpg",
+  "title": "File:Pumpkin Curry Soup (20161021-AMS-LSC-9001).jpg",
+  "ok": true
+ },
+ "canh_cua_rau_day": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/71/C%C3%B4n_tr%C3%B9ng_l%E1%BA%A1.jpg",
+  "title": "File:Côn trùng lạ.jpg",
+  "ok": false
+ },
+ "canh_trung_ca_chua": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Tomato_and_egg_soup.jpg/960px-Tomato_and_egg_soup.jpg",
+  "title": "File:Tomato and egg soup.jpg",
+  "ok": true
+ },
+ "canh_chua_tom": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Canh_chua_%C4%90%C3%B4ng_H%C3%A0.jpg/960px-Canh_chua_%C4%90%C3%B4ng_H%C3%A0.jpg",
+  "title": "File:Canh chua Đông Hà.jpg",
+  "ok": true
+ },
+ "canh_kho_qua": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Canh_kh%E1%BB%95_qua_nh%E1%BB%93i_th%E1%BB%8Bt.png/960px-Canh_kh%E1%BB%95_qua_nh%E1%BB%93i_th%E1%BB%8Bt.png",
+  "title": "File:Canh khổ qua nhồi thịt.png",
+  "ok": true
+ },
+ "canh_bau_tom": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Bottle_Gourd_%285194455192%29.jpg/960px-Bottle_Gourd_%285194455192%29.jpg",
+  "title": "File:Bottle Gourd (5194455192).jpg",
+  "ok": false
+ },
+ "canh_cai_thit": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Pickled_Mustard_Green_Chicken_Soup_%28%E9%85%B8%E8%8F%9C%E9%9B%9E%E7%B5%B2%E6%B9%AF%29.jpg/960px-Pickled_Mustard_Green_Chicken_Soup_%28%E9%85%B8%E8%8F%9C%E9%9B%9E%E7%B5%B2%E6%B9%AF%29.jpg",
+  "title": "File:Pickled Mustard Green Chicken Soup (酸菜雞絲湯).jpg",
+  "ok": true
+ },
+ "canh_ga_nam": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Campbell%27s_2026-08-29_Condensed_Cream_of_Chicken_%26_Mushroom_Soup_02.jpg/960px-Campbell%27s_2026-08-29_Condensed_Cream_of_Chicken_%26_Mushroom_Soup_02.jpg",
+  "title": "File:Campbell's 2026-08-29 Condensed Cream of Chicken & Mushroom Soup 02.jpg",
+  "ok": false
+ },
+ "rau_cai_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Kuay-tiew_rad_na.jpg/960px-Kuay-tiew_rad_na.jpg",
+  "title": "File:Kuay-tiew rad na.jpg",
+  "ok": false
+ },
+ "su_su_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Chayote_hervido.jpg/960px-Chayote_hervido.jpg",
+  "title": "File:Chayote hervido.jpg",
+  "ok": true
+ },
+ "cai_thia_xao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Bok_Choy_Delight_%282782704581%29.jpg/960px-Bok_Choy_Delight_%282782704581%29.jpg",
+  "title": "File:Bok Choy Delight (2782704581).jpg",
+  "ok": true
+ },
+ "dau_que_xao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/Sichuan-style-dried_fried_Green_Beans_with_Minced_Pork_-_Aberdeen_Seafood%2C_Brighton_2026-07-19.jpg/960px-Sichuan-style-dried_fried_Green_Beans_with_Minced_Pork_-_Aberdeen_Seafood%2C_Brighton_2026-07-19.jpg",
+  "title": "File:Sichuan-style-dried fried Green Beans with Minced Pork - Aberdeen Seafood, Brighton 2026-07-19.jpg",
+  "ok": true
+ },
+ "ca_tim_mo_hanh": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "nom_du_du": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Pork_Shank%2C_Crispy_Chicken_Fried_Rice%2C_Papaya_Salad_-_iSpicy_%284922303200%29.jpg/960px-Pork_Shank%2C_Crispy_Chicken_Fried_Rice%2C_Papaya_Salad_-_iSpicy_%284922303200%29.jpg",
+  "title": "File:Pork Shank, Crispy Chicken Fried Rice, Papaya Salad - iSpicy (4922303200).jpg",
+  "ok": false
+ },
+ "smoothie_bowl": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Chocolate_Green_Smoothie_Bowl.jpg/960px-Chocolate_Green_Smoothie_Bowl.jpg",
+  "title": "File:Chocolate Green Smoothie Bowl.jpg",
+  "ok": true
+ },
+ "banh_mi_ngu_coc_trung": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/-2019-01-13_Fried_egg_with_tomato_fondue_on_wholemeal_toast%2C_Cromer.jpg/960px--2019-01-13_Fried_egg_with_tomato_fondue_on_wholemeal_toast%2C_Cromer.jpg",
+  "title": "File:-2019-01-13 Fried egg with tomato fondue on wholemeal toast, Cromer.jpg",
+  "ok": true
+ },
+ "sinh_to_rau_xanh": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/Praha_Bistro_Z%C3%A1meck%C3%A9_schody_Smoothies.jpg/960px-Praha_Bistro_Z%C3%A1meck%C3%A9_schody_Smoothies.jpg",
+  "title": "File:Praha Bistro Zámecké schody Smoothies.jpg",
+  "ok": true
+ },
+ "nuoc_ep_can_tay": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/9/97/Celery_juice.jpg",
+  "title": "File:Celery juice.jpg",
+  "ok": true
+ },
+ "ga_xe_phay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/G%C3%A0_x%C3%A9_phay_%283%29.jpg/960px-G%C3%A0_x%C3%A9_phay_%283%29.jpg",
+  "title": "File:Gà xé phay (3).jpg",
+  "ok": true
+ },
+ "banh_mi_trung": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Crepes_dsc07085.jpg/960px-Crepes_dsc07085.jpg",
+  "title": "File:Crepes dsc07085.jpg",
+  "ok": false
+ },
+ "banh_mi_chao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/M%E1%BB%99t_ph%E1%BA%A7n_b%C3%A1nh_m%C3%AC_ch%E1%BA%A3o_v%E1%BB%9Bi_tr%E1%BB%A9ng_v%C3%A0_ch%E1%BA%A3_%2838657217774%29.jpg/960px-M%E1%BB%99t_ph%E1%BA%A7n_b%C3%A1nh_m%C3%AC_ch%E1%BA%A3o_v%E1%BB%9Bi_tr%E1%BB%A9ng_v%C3%A0_ch%E1%BA%A3_%2838657217774%29.jpg",
+  "title": "File:Một phần bánh mì chảo với trứng và chả (38657217774).jpg",
+  "ok": true
+ },
+ "banh_bot_loc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/B%C3%A1nh_b%C3%A8o%2C_b%E1%BB%99t_l%E1%BB%8Dc%2C_nem_chua.jpg/960px-B%C3%A1nh_b%C3%A8o%2C_b%E1%BB%99t_l%E1%BB%8Dc%2C_nem_chua.jpg",
+  "title": "File:Bánh bèo, bột lọc, nem chua.jpg",
+  "ok": true
+ },
+ "banh_beo": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/B%C3%A1nh_b%C3%A8o_sucr%C3%A9.jpg/960px-B%C3%A1nh_b%C3%A8o_sucr%C3%A9.jpg",
+  "title": "File:Bánh bèo sucré.jpg",
+  "ok": true
+ },
+ "banh_tet": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Banh_tet.jpg/960px-Banh_tet.jpg",
+  "title": "File:Banh tet.jpg",
+  "ok": true
+ },
+ "banh_duc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/B%C3%A1nh_%C4%91%C3%BAc_l%E1%BA%A1c.jpg/960px-B%C3%A1nh_%C4%91%C3%BAc_l%E1%BA%A1c.jpg",
+  "title": "File:Bánh đúc lạc.jpg",
+  "ok": true
+ },
+ "banh_can": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/B%C3%A1nh_c%C4%83n_in_phan_rang%2C_vietnam.jpg/960px-B%C3%A1nh_c%C4%83n_in_phan_rang%2C_vietnam.jpg",
+  "title": "File:Bánh căn in phan rang, vietnam.jpg",
+  "ok": true
+ },
+ "banh_hoi_heo_quay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Banh_hoi.jpg/960px-Banh_hoi.jpg",
+  "title": "File:Banh hoi.jpg",
+  "ok": true
+ },
+ "banh_trang_nuong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/B%C3%A1nh_tr%C3%A1ng_n%C6%B0%E1%BB%9Bng_TP._H%E1%BB%93_Ch%C3%AD_Minh_-_street_food_in_Ho_Chi_Minh_City%2C_Vietnam.jpg/960px-B%C3%A1nh_tr%C3%A1ng_n%C6%B0%E1%BB%9Bng_TP._H%E1%BB%93_Ch%C3%AD_Minh_-_street_food_in_Ho_Chi_Minh_City%2C_Vietnam.jpg",
+  "title": "File:Bánh tráng nướng TP. Hồ Chí Minh - street food in Ho Chi Minh City, Vietnam.jpg",
+  "ok": true
+ },
+ "banh_bao_chay": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/0/08/ClassicwhiteMantou.jpg",
+  "title": "File:ClassicwhiteMantou.jpg",
+  "ok": true
+ },
+ "banh_mi_que": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/B%C3%A1nh_m%C3%AC_que_v%E1%BB%9Bi_th%E1%BB%8Bt_x%C3%B4ng_kh%C3%B3i.jpg/960px-B%C3%A1nh_m%C3%AC_que_v%E1%BB%9Bi_th%E1%BB%8Bt_x%C3%B4ng_kh%C3%B3i.jpg",
+  "title": "File:Bánh mì que với thịt xông khói.jpg",
+  "ok": true
+ },
+ "ngo_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/A_child_holding_boiled_corn.jpg/960px-A_child_holding_boiled_corn.jpg",
+  "title": "File:A child holding boiled corn.jpg",
+  "ok": false
+ },
+ "lac_rang": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Roasted_Peanuts_with_shell.jpg/960px-Roasted_Peanuts_with_shell.jpg",
+  "title": "File:Roasted Peanuts with shell.jpg",
+  "ok": true
+ },
+ "hat_dieu": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Anacardium_occidentale_from_Margarita_island.jpg/960px-Anacardium_occidentale_from_Margarita_island.jpg",
+  "title": "File:Anacardium occidentale from Margarita island.jpg",
+  "ok": false
+ },
+ "hat_huong_duong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Sunflower_with_seeds_02.jpg/960px-Sunflower_with_seeds_02.jpg",
+  "title": "File:Sunflower with seeds 02.jpg",
+  "ok": true
+ },
+ "khoai_tay_chien": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/19/Cajun_fries_from_Popeyes_Louisiana_Kitchen%2C_Stratford%2C_Ontario%2C_2025-08-04.jpg/960px-Cajun_fries_from_Popeyes_Louisiana_Kitchen%2C_Stratford%2C_Ontario%2C_2025-08-04.jpg",
+  "title": "File:Cajun fries from Popeyes Louisiana Kitchen, Stratford, Ontario, 2025-08-04.jpg",
+  "ok": true
+ },
+ "xuc_xich": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Sausage_making-H-5-edited2.jpg/960px-Sausage_making-H-5-edited2.jpg",
+  "title": "File:Sausage making-H-5-edited2.jpg",
+  "ok": false
+ },
+ "trung_vit_lon": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/The_Balut.jpg/960px-The_Balut.jpg",
+  "title": "File:The Balut.jpg",
+  "ok": true
+ },
+ "chan_ga_sa_tac": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Adidas_-_Chicken_Feet.jpg/960px-Adidas_-_Chicken_Feet.jpg",
+  "title": "File:Adidas - Chicken Feet.jpg",
+  "ok": false
+ },
+ "ca_vien_chien": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Fish_balls_and_Chinese_fried_fish_sausages_with_sauce.jpg/960px-Fish_balls_and_Chinese_fried_fish_sausages_with_sauce.jpg",
+  "title": "File:Fish balls and Chinese fried fish sausages with sauce.jpg",
+  "ok": true
+ },
+ "oc_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Whelk_pot.jpg/960px-Whelk_pot.jpg",
+  "title": "File:Whelk pot.jpg",
+  "ok": true
+ },
+ "bong_ngo": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Popcorn_Christian_Church.jpg/960px-Popcorn_Christian_Church.jpg",
+  "title": "File:Popcorn Christian Church.jpg",
+  "ok": true
+ },
+ "mi_goi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Instant_noodle_balls.jpg/960px-Instant_noodle_balls.jpg",
+  "title": "File:Instant noodle balls.jpg",
+  "ok": true
+ },
+ "bo_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Ground_beef_and_mustard_on_boiled_potatoes_and_peas_-_Massachusetts.jpg/960px-Ground_beef_and_mustard_on_boiled_potatoes_and_peas_-_Massachusetts.jpg",
+  "title": "File:Ground beef and mustard on boiled potatoes and peas - Massachusetts.jpg",
+  "ok": false
+ },
+ "than_heo_ap_chao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Pork_tenderloin_sandwich.JPG/960px-Pork_tenderloin_sandwich.JPG",
+  "title": "File:Pork tenderloin sandwich.JPG",
+  "ok": false
+ },
+ "tom_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Canto_white_boiled_shrimp.jpg/960px-Canto_white_boiled_shrimp.jpg",
+  "title": "File:Canto white boiled shrimp.jpg",
+  "ok": true
+ },
+ "ca_basa_ap_chao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Iridescent_Shark_Catfish.jpg/960px-Iridescent_Shark_Catfish.jpg",
+  "title": "File:Iridescent Shark Catfish.jpg",
+  "ok": false
+ },
+ "ca_ngu_hop": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/Canned_and_packaged_tuna_on_supermarket_shelves.jpg/960px-Canned_and_packaged_tuna_on_supermarket_shelves.jpg",
+  "title": "File:Canned and packaged tuna on supermarket shelves.jpg",
+  "ok": false
+ },
+ "muc_hap": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Korean_cuisine-Ojingeo_sundae-01.jpg",
+  "title": "File:Korean cuisine-Ojingeo sundae-01.jpg",
+  "ok": false
+ },
+ "dui_ga_nuong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Grilled_Chicken_Thigh_at_2026_BIFC_20260905151916.jpg/960px-Grilled_Chicken_Thigh_at_2026_BIFC_20260905151916.jpg",
+  "title": "File:Grilled Chicken Thigh at 2026 BIFC 20260905151916.jpg",
+  "ok": true
+ },
+ "trung_vit_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Eier_Sachsenenten_blau-gelb_Brala_08.05.2016_11-46-32_08.05.2016_11-46-32.2016_11-46-32.jpg/960px-Eier_Sachsenenten_blau-gelb_Brala_08.05.2016_11-46-32_08.05.2016_11-46-32.2016_11-46-32.jpg",
+  "title": "File:Eier Sachsenenten blau-gelb Brala 08.05.2016 11-46-32 08.05.2016 11-46-32.2016 11-46-32.jpg",
+  "ok": false
+ },
+ "long_trang_trung": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Bowl_of_egg_whites_no_bg.png/960px-Bowl_of_egg_whites_no_bg.png",
+  "title": "File:Bowl of egg whites no bg.png",
+  "ok": true
+ },
+ "dau_hu_non": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Billyfoodmabodofu3.jpg/960px-Billyfoodmabodofu3.jpg",
+  "title": "File:Billyfoodmabodofu3.jpg",
+  "ok": false
+ },
+ "dau_nanh_edamame": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Edamame_in_a_tray.jpg/960px-Edamame_in_a_tray.jpg",
+  "title": "File:Edamame in a tray.jpg",
+  "ok": true
+ },
+ "ngheu_hap": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Steamed_baby_clams.jpg/960px-Steamed_baby_clams.jpg",
+  "title": "File:Steamed baby clams.jpg",
+  "ok": true
+ },
+ "ca_thu_ap_chao": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Mackerel_fish_fry.jpg/960px-Mackerel_fish_fry.jpg",
+  "title": "File:Mackerel fish fry.jpg",
+  "ok": true
+ },
+ "uc_ga_nuong_mat_ong": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Dawn%27s_Kabob_Skewers%21.jpg",
+  "title": "File:Dawn's Kabob Skewers!.jpg",
+  "ok": false
+ },
+ "bun_tuoi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Whole-grain_rice_vermicelli_noodles_%28Thai%29.jpg/960px-Whole-grain_rice_vermicelli_noodles_%28Thai%29.jpg",
+  "title": "File:Whole-grain rice vermicelli noodles (Thai).jpg",
+  "ok": true
+ },
+ "banh_pho": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Thick_rice_noodles_cooked_in_small_pot_in_Kunming_%2820210323074612%29.jpg/960px-Thick_rice_noodles_cooked_in_small_pot_in_Kunming_%2820210323074612%29.jpg",
+  "title": "File:Thick rice noodles cooked in small pot in Kunming (20210323074612).jpg",
+  "ok": true
+ },
+ "banh_mi_trang": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/%D0%A2%D1%80%D0%B0%D0%B4%D0%B8%D1%86%D0%B8%D0%BE%D0%BD%D0%B0%D0%BB%D0%BD%D0%BE_%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%80%D0%B0%D0%BD_%D0%B0%D1%98%D0%B2%D0%B0%D1%80.jpg/960px-%D0%A2%D1%80%D0%B0%D0%B4%D0%B8%D1%86%D0%B8%D0%BE%D0%BD%D0%B0%D0%BB%D0%BD%D0%BE_%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%80%D0%B0%D0%BD_%D0%B0%D1%98%D0%B2%D0%B0%D1%80.jpg",
+  "title": "File:Традиционално сервиран ајвар.jpg",
+  "ok": false
+ },
+ "banh_mi_nguyen_cam": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Vegan_no-knead_whole_wheat_bread_loaf%2C_September_2010.jpg/960px-Vegan_no-knead_whole_wheat_bread_loaf%2C_September_2010.jpg",
+  "title": "File:Vegan no-knead whole wheat bread loaf, September 2010.jpg",
+  "ok": true
+ },
+ "khoai_tay_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Potato_flowers_2016_G1.jpg/960px-Potato_flowers_2016_G1.jpg",
+  "title": "File:Potato flowers 2016 G1.jpg",
+  "ok": false
+ },
+ "san_luoc": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Boiled_cassava%2C.jpg/960px-Boiled_cassava%2C.jpg",
+  "title": "File:Boiled cassava,.jpg",
+  "ok": true
+ },
+ "khoai_mon": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Taro_leaf_underside%2C_backlit_by_sun_-_edit.jpg/960px-Taro_leaf_underside%2C_backlit_by_sun_-_edit.jpg",
+  "title": "File:Taro leaf underside, backlit by sun - edit.jpg",
+  "ok": false
+ },
+ "mien_dong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Canna_noodles_%28Canna_edulis%29.JPG/960px-Canna_noodles_%28Canna_edulis%29.JPG",
+  "title": "File:Canna noodles (Canna edulis).JPG",
+  "ok": true
+ },
+ "pasta": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Spaghetti_Bolognese_-_Figaros%2C_Brighton_2023-10-06.jpg/960px-Spaghetti_Bolognese_-_Figaros%2C_Brighton_2023-10-06.jpg",
+  "title": "File:Spaghetti Bolognese - Figaros, Brighton 2023-10-06.jpg",
+  "ok": true
+ },
+ "com_nam": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Japanese_rice_balls_%28onigiri%29.jpg/960px-Japanese_rice_balls_%28onigiri%29.jpg",
+  "title": "File:Japanese rice balls (onigiri).jpg",
+  "ok": true
+ },
+ "quinoa": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Chenopodium_quinoa_-red_faro-_MHNT.BOT.2007.43.66.jpg/960px-Chenopodium_quinoa_-red_faro-_MHNT.BOT.2007.43.66.jpg",
+  "title": "File:Chenopodium quinoa -red faro- MHNT.BOT.2007.43.66.jpg",
+  "ok": false
+ },
+ "pho_mai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Cheese_planes.jpg/960px-Cheese_planes.jpg",
+  "title": "File:Cheese planes.jpg",
+  "ok": false
+ },
+ "sua_chua_uong": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Drinkable_Yogurt.png",
+  "title": "File:Drinkable Yogurt.png",
+  "ok": true
+ },
+ "sua_tuoi_co_duong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Cap%27N_Crunch_%E2%80%93_Sweetened_Corn_%26_Oat_Cereal%2C_with_milk.jpg/960px-Cap%27N_Crunch_%E2%80%93_Sweetened_Corn_%26_Oat_Cereal%2C_with_milk.jpg",
+  "title": "File:Cap'N Crunch – Sweetened Corn & Oat Cereal, with milk.jpg",
+  "ok": false
+ },
+ "sua_hanh_nhan": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/Home-made_almond_milk%2C_November_2012.jpg/500px-Home-made_almond_milk%2C_November_2012.jpg",
+  "title": "File:Home-made almond milk, November 2012.jpg",
+  "ok": true
+ },
+ "sua_chua_nep_cam": {
+  "url": null,
+  "title": null,
+  "ok": false
+ },
+ "dua_hau": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Citrullus_lanatus_03.JPG/960px-Citrullus_lanatus_03.JPG",
+  "title": "File:Citrullus lanatus 03.JPG",
+  "ok": true
+ },
+ "du_du": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Papaya_-_longitudinal_section_close-up_view.jpg/960px-Papaya_-_longitudinal_section_close-up_view.jpg",
+  "title": "File:Papaya - longitudinal section close-up view.jpg",
+  "ok": true
+ },
+ "thanh_long": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Butterfly_053.JPG/960px-Butterfly_053.JPG",
+  "title": "File:Butterfly 053.JPG",
+  "ok": false
+ },
+ "oi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Goiaba_vermelha.jpg/960px-Goiaba_vermelha.jpg",
+  "title": "File:Goiaba vermelha.jpg",
+  "ok": true
+ },
+ "buoi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Pomelo_fruit.jpg/960px-Pomelo_fruit.jpg",
+  "title": "File:Pomelo fruit.jpg",
+  "ok": true
+ },
+ "nho": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Wine_grapes03.jpg/960px-Wine_grapes03.jpg",
+  "title": "File:Wine grapes03.jpg",
+  "ok": true
+ },
+ "dua": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/AnanasComosusOnPlant.jpg/960px-AnanasComosusOnPlant.jpg",
+  "title": "File:AnanasComosusOnPlant.jpg",
+  "ok": true
+ },
+ "le": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Four_pears.jpg/960px-Four_pears.jpg",
+  "title": "File:Four pears.jpg",
+  "ok": true
+ },
+ "kiwi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Kiwi_%28Actinidia_chinensis%29_1_Luc_Viatour.jpg/960px-Kiwi_%28Actinidia_chinensis%29_1_Luc_Viatour.jpg",
+  "title": "File:Kiwi (Actinidia chinensis) 1 Luc Viatour.jpg",
+  "ok": true
+ },
+ "dau_tay": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Garden_strawberry_%28Fragaria_%C3%97_ananassa%29_halved.jpg/960px-Garden_strawberry_%28Fragaria_%C3%97_ananassa%29_halved.jpg",
+  "title": "File:Garden strawberry (Fragaria × ananassa) halved.jpg",
+  "ok": true
+ },
+ "viet_quat": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Dish_of_blueberries.jpg/960px-Dish_of_blueberries.jpg",
+  "title": "File:Dish of blueberries.jpg",
+  "ok": true
+ },
+ "mit": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Jackfruit_Flesh.jpg/960px-Jackfruit_Flesh.jpg",
+  "title": "File:Jackfruit Flesh.jpg",
+  "ok": true
+ },
+ "sau_rieng": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Durio_zibethinus_115520164.jpg/960px-Durio_zibethinus_115520164.jpg",
+  "title": "File:Durio zibethinus 115520164.jpg",
+  "ok": false
+ },
+ "nhan": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Dimocarpus_longan_fruits.jpg/960px-Dimocarpus_longan_fruits.jpg",
+  "title": "File:Dimocarpus longan fruits.jpg",
+  "ok": true
+ },
+ "vai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Lychee_fruits_and_seed.jpg/960px-Lychee_fruits_and_seed.jpg",
+  "title": "File:Lychee fruits and seed.jpg",
+  "ok": true
+ },
+ "chom_chom": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Rambutan_white_background_alt.jpg/960px-Rambutan_white_background_alt.jpg",
+  "title": "File:Rambutan white background alt.jpg",
+  "ok": true
+ },
+ "mang_cut": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Mangosteens_-_whole_and_opened.jpg/960px-Mangosteens_-_whole_and_opened.jpg",
+  "title": "File:Mangosteens - whole and opened.jpg",
+  "ok": true
+ },
+ "hong_xiem": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Sapodilla_tree.jpg/960px-Sapodilla_tree.jpg",
+  "title": "File:Sapodilla tree.jpg",
+  "ok": false
+ },
+ "ca_phe_den": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_coffee.JPG/960px-A_small_cup_of_coffee.JPG",
+  "title": "File:A small cup of coffee.JPG",
+  "ok": true
+ },
+ "bac_xiu": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_coffee.JPG/960px-A_small_cup_of_coffee.JPG",
+  "title": "File:A small cup of coffee.JPG",
+  "ok": false
+ },
+ "nuoc_cam": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Orange_juice_1_edit1.jpg/960px-Orange_juice_1_edit1.jpg",
+  "title": "File:Orange juice 1 edit1.jpg",
+  "ok": true
+ },
+ "nuoc_dua": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Coconut_water_vendor.jpg/960px-Coconut_water_vendor.jpg",
+  "title": "File:Coconut water vendor.jpg",
+  "ok": true
+ },
+ "nuoc_mia": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/6/63/Sugarcanejuice.jpg",
+  "title": "File:Sugarcanejuice.jpg",
+  "ok": true
+ },
+ "tra_chanh": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Iced_lemon_tea_-_Rawlab_Juice_%26_Tea.jpg/960px-Iced_lemon_tea_-_Rawlab_Juice_%26_Tea.jpg",
+  "title": "File:Iced lemon tea - Rawlab Juice & Tea.jpg",
+  "ok": true
+ },
+ "tra_da": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/NCI_iced_tea.jpg/960px-NCI_iced_tea.jpg",
+  "title": "File:NCI iced tea.jpg",
+  "ok": true
+ },
+ "sinh_to_xoai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Fresh-mango-smoothie_01.jpg/960px-Fresh-mango-smoothie_01.jpg",
+  "title": "File:Fresh-mango-smoothie 01.jpg",
+  "ok": true
+ },
+ "nuoc_ngot": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Finch_%26_Leedes_-_Indian_Tonic_-_Sparking_Flavoured_Drink_-_Can.jpg/960px-Finch_%26_Leedes_-_Indian_Tonic_-_Sparking_Flavoured_Drink_-_Can.jpg",
+  "title": "File:Finch & Leedes - Indian Tonic - Sparking Flavoured Drink - Can.jpg",
+  "ok": true
+ },
+ "bia": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Can_of_beer%2C_Goofy_Friends%2C_Hoppy_Weizen_by_Brouwerij_Kees.jpg/960px-Can_of_beer%2C_Goofy_Friends%2C_Hoppy_Weizen_by_Brouwerij_Kees.jpg",
+  "title": "File:Can of beer, Goofy Friends, Hoppy Weizen by Brouwerij Kees.jpg",
+  "ok": true
+ },
+ "matcha_latte": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Matcha_tea_latte_with_rosetta_latte_art.jpg/960px-Matcha_tea_latte_with_rosetta_latte_art.jpg",
+  "title": "File:Matcha tea latte with rosetta latte art.jpg",
+  "ok": true
+ },
+ "sua_dau_nanh_duong": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Soy_milk_brand_event_in_Shibuya_Stream.jpg/960px-Soy_milk_brand_event_in_Shibuya_Stream.jpg",
+  "title": "File:Soy milk brand event in Shibuya Stream.jpg",
+  "ok": false
+ },
+ "che_buoi": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Vietblackeyedpeas.jpg/960px-Vietblackeyedpeas.jpg",
+  "title": "File:Vietblackeyedpeas.jpg",
+  "ok": false
+ },
+ "che_thai": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Vietblackeyedpeas.jpg/960px-Vietblackeyedpeas.jpg",
+  "title": "File:Vietblackeyedpeas.jpg",
+  "ok": false
+ },
+ "banh_flan": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Homemade_Flan.jpg/960px-Homemade_Flan.jpg",
+  "title": "File:Homemade Flan.jpg",
+  "ok": true
+ },
+ "kem": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Apple_cake_with_vanilla_ice_cream_2.jpg/960px-Apple_cake_with_vanilla_ice_cream_2.jpg",
+  "title": "File:Apple cake with vanilla ice cream 2.jpg",
+  "ok": true
+ },
+ "tao_pho": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Tofu_brains_doufunao.jpg/960px-Tofu_brains_doufunao.jpg",
+  "title": "File:Tofu brains doufunao.jpg",
+  "ok": true
+ },
+ "banh_bong_lan": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Chocolate_cake_and_Victoria_sponge.jpg/960px-Chocolate_cake_and_Victoria_sponge.jpg",
+  "title": "File:Chocolate cake and Victoria sponge.jpg",
+  "ok": true
+ },
+ "socola_den": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/2023_Gorzka_czekolada.jpg/960px-2023_Gorzka_czekolada.jpg",
+  "title": "File:2023 Gorzka czekolada.jpg",
+  "ok": true
+ },
+ "banh_quy": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Illuminated_wooden_shelf_with_many_glass_jars_containing_cookies_for_sale_in_Tokyo.jpg/960px-Illuminated_wooden_shelf_with_many_glass_jars_containing_cookies_for_sale_in_Tokyo.jpg",
+  "title": "File:Illuminated wooden shelf with many glass jars containing cookies for sale in Tokyo.jpg",
+  "ok": false
+ }
+}

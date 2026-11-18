@@ -1,0 +1,1069 @@
+{
+ "version": "Compendium 2024 (đối chiếu 17/11/2026)",
+ "categories": {
+  "di_bo": "Đi bộ & leo",
+  "chay": "Chạy bộ",
+  "dap_xe": "Đạp xe",
+  "nuoc": "Bơi & chèo",
+  "the_thao": "Thể thao",
+  "ve_dep": "Yoga & nhảy",
+  "vo": "Võ & đối kháng",
+  "doi_song": "Việc nhà & đời sống"
+ },
+ "items": [
+  {
+   "id": "di_bo",
+   "name": "Đi bộ",
+   "category": "di_bo",
+   "category_vi": "Đi bộ & leo",
+   "icon": "Footprints",
+   "popular": true,
+   "met": {
+    "light": 2.8,
+    "moderate": 3.8,
+    "vigorous": 4.8
+   },
+   "compendium": "17152 / 17190 / 17200",
+   "aliases": [
+    "đi dạo",
+    "đi bộ nhanh",
+    "walking",
+    "walk"
+   ],
+   "speed_mets": [
+    {
+     "max_kmh": 3.2,
+     "met": 2.3
+    },
+    {
+     "max_kmh": 3.9,
+     "met": 2.8
+    },
+    {
+     "max_kmh": 4.4,
+     "met": 3.0
+    },
+    {
+     "max_kmh": 5.5,
+     "met": 3.8
+    },
+    {
+     "max_kmh": 6.3,
+     "met": 4.8
+    },
+    {
+     "max_kmh": 7.1,
+     "met": 5.5
+    },
+    {
+     "max_kmh": 7.9,
+     "met": 7.0
+    },
+    {
+     "max_kmh": 9.0,
+     "met": 8.5
+    },
+    {
+     "max_kmh": 11.1,
+     "met": 10.3
+    },
+    {
+     "max_kmh": 99,
+     "met": 13.8
+    }
+   ],
+   "distance": true,
+   "steps": false
+  },
+  {
+   "id": "buoc_chan",
+   "name": "Bước chân cả ngày (đếm bước)",
+   "category": "di_bo",
+   "category_vi": "Đi bộ & leo",
+   "icon": "Footprints",
+   "popular": false,
+   "met": {
+    "light": 3.5,
+    "moderate": 3.5,
+    "vigorous": 3.5
+   },
+   "compendium": "17160",
+   "aliases": [
+    "số bước",
+    "steps",
+    "đếm bước",
+    "bước"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": true
+  },
+  {
+   "id": "leo_cau_thang",
+   "name": "Leo cầu thang",
+   "category": "di_bo",
+   "category_vi": "Đi bộ & leo",
+   "icon": "TrendingUp",
+   "popular": false,
+   "met": {
+    "light": 4.5,
+    "moderate": 6.0,
+    "vigorous": 9.3
+   },
+   "compendium": "17133 / ~ / 17134",
+   "aliases": [
+    "leo thang",
+    "stairs",
+    "cầu thang bộ"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "leo_nui",
+   "name": "Leo núi / trekking",
+   "category": "di_bo",
+   "category_vi": "Đi bộ & leo",
+   "icon": "Mountain",
+   "popular": false,
+   "met": {
+    "light": 3.8,
+    "moderate": 6.0,
+    "vigorous": 7.8
+   },
+   "compendium": "17081 / 17080 / 17012",
+   "aliases": [
+    "trekking",
+    "hiking",
+    "đi phượt bộ",
+    "leo núi bộ"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "chay_bo",
+   "name": "Chạy bộ",
+   "category": "chay",
+   "category_vi": "Chạy bộ",
+   "icon": "Footprints",
+   "popular": true,
+   "met": {
+    "light": 6.0,
+    "moderate": 7.5,
+    "vigorous": 10.5
+   },
+   "compendium": "12010 / 12020 / 12060",
+   "aliases": [
+    "chạy",
+    "running",
+    "jogging",
+    "chạy chậm"
+   ],
+   "speed_mets": [
+    {
+     "max_kmh": 5.95,
+     "met": 3.3
+    },
+    {
+     "max_kmh": 7.7,
+     "met": 7.8
+    },
+    {
+     "max_kmh": 8.4,
+     "met": 8.5
+    },
+    {
+     "max_kmh": 9.6,
+     "met": 9.0
+    },
+    {
+     "max_kmh": 10.1,
+     "met": 9.3
+    },
+    {
+     "max_kmh": 10.8,
+     "met": 10.5
+    },
+    {
+     "max_kmh": 11.3,
+     "met": 11.0
+    },
+    {
+     "max_kmh": 12.1,
+     "met": 11.8
+    },
+    {
+     "max_kmh": 12.9,
+     "met": 12.0
+    },
+    {
+     "max_kmh": 13.8,
+     "met": 12.5
+    },
+    {
+     "max_kmh": 14.5,
+     "met": 13.0
+    },
+    {
+     "max_kmh": 16.1,
+     "met": 14.8
+    },
+    {
+     "max_kmh": 17.7,
+     "met": 16.8
+    },
+    {
+     "max_kmh": 19.3,
+     "met": 18.5
+    },
+    {
+     "max_kmh": 20.9,
+     "met": 19.8
+    },
+    {
+     "max_kmh": 99,
+     "met": 23.0
+    }
+   ],
+   "distance": true,
+   "steps": false
+  },
+  {
+   "id": "chay_may",
+   "name": "Chạy máy (treadmill)",
+   "category": "chay",
+   "category_vi": "Chạy bộ",
+   "icon": "Activity",
+   "popular": false,
+   "met": {
+    "light": 6.0,
+    "moderate": 7.5,
+    "vigorous": 10.5
+   },
+   "compendium": "12010 / 12020 / 12060",
+   "aliases": [
+    "máy chạy bộ",
+    "treadmill"
+   ],
+   "speed_mets": [
+    {
+     "max_kmh": 5.95,
+     "met": 3.3
+    },
+    {
+     "max_kmh": 7.7,
+     "met": 7.8
+    },
+    {
+     "max_kmh": 8.4,
+     "met": 8.5
+    },
+    {
+     "max_kmh": 9.6,
+     "met": 9.0
+    },
+    {
+     "max_kmh": 10.1,
+     "met": 9.3
+    },
+    {
+     "max_kmh": 10.8,
+     "met": 10.5
+    },
+    {
+     "max_kmh": 11.3,
+     "met": 11.0
+    },
+    {
+     "max_kmh": 12.1,
+     "met": 11.8
+    },
+    {
+     "max_kmh": 12.9,
+     "met": 12.0
+    },
+    {
+     "max_kmh": 13.8,
+     "met": 12.5
+    },
+    {
+     "max_kmh": 14.5,
+     "met": 13.0
+    },
+    {
+     "max_kmh": 16.1,
+     "met": 14.8
+    },
+    {
+     "max_kmh": 17.7,
+     "met": 16.8
+    },
+    {
+     "max_kmh": 19.3,
+     "met": 18.5
+    },
+    {
+     "max_kmh": 20.9,
+     "met": 19.8
+    },
+    {
+     "max_kmh": 99,
+     "met": 23.0
+    }
+   ],
+   "distance": true,
+   "steps": false
+  },
+  {
+   "id": "dap_xe",
+   "name": "Đạp xe",
+   "category": "dap_xe",
+   "category_vi": "Đạp xe",
+   "icon": "Bike",
+   "popular": true,
+   "met": {
+    "light": 4.3,
+    "moderate": 6.8,
+    "vigorous": 10.0
+   },
+   "compendium": "01015 / 01011 / 01040",
+   "aliases": [
+    "xe đạp",
+    "đi xe đạp",
+    "bike",
+    "cycling",
+    "đạp xe đi học"
+   ],
+   "speed_mets": [
+    {
+     "max_kmh": 16.0,
+     "met": 4.0
+    },
+    {
+     "max_kmh": 19.2,
+     "met": 6.8
+    },
+    {
+     "max_kmh": 22.4,
+     "met": 8.0
+    },
+    {
+     "max_kmh": 25.6,
+     "met": 10.0
+    },
+    {
+     "max_kmh": 30.6,
+     "met": 12.0
+    },
+    {
+     "max_kmh": 99,
+     "met": 16.8
+    }
+   ],
+   "distance": true,
+   "steps": false
+  },
+  {
+   "id": "xe_dap_tap",
+   "name": "Xe đạp tập tại chỗ",
+   "category": "dap_xe",
+   "category_vi": "Đạp xe",
+   "icon": "Bike",
+   "popular": false,
+   "met": {
+    "light": 4.0,
+    "moderate": 6.8,
+    "vigorous": 9.0
+   },
+   "compendium": "01214 / 01200 / 01270",
+   "aliases": [
+    "xe đạp tĩnh",
+    "spinning",
+    "stationary bike"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "boi",
+   "name": "Bơi",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Waves",
+   "popular": true,
+   "met": {
+    "light": 4.8,
+    "moderate": 6.0,
+    "vigorous": 9.8
+   },
+   "compendium": "18255 / 18310 / 18230",
+   "aliases": [
+    "bơi lội",
+    "swimming",
+    "bơi sải",
+    "bơi ngửa"
+   ],
+   "speed_mets": [
+    {
+     "max_kmh": 1.8,
+     "met": 5.8
+    },
+    {
+     "max_kmh": 2.8,
+     "met": 8.0
+    },
+    {
+     "max_kmh": 99,
+     "met": 9.8
+    }
+   ],
+   "distance": true,
+   "steps": false
+  },
+  {
+   "id": "boi_ech",
+   "name": "Bơi ếch",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Waves",
+   "popular": false,
+   "met": {
+    "light": 5.3,
+    "moderate": 7.5,
+    "vigorous": 10.3
+   },
+   "compendium": "18265 / ~ / 18260",
+   "aliases": [
+    "breaststroke"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "boi_vui_choi",
+   "name": "Bơi vui chơi / tắm biển",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Waves",
+   "popular": false,
+   "met": {
+    "light": 3.5,
+    "moderate": 6.0,
+    "vigorous": 6.0
+   },
+   "compendium": "18350 / 18300 / 18300",
+   "aliases": [
+    "tắm biển",
+    "nghịch nước"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "cheo_thuyen",
+   "name": "Chèo thuyền / kayak",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Sailboat",
+   "popular": false,
+   "met": {
+    "light": 2.8,
+    "moderate": 5.0,
+    "vigorous": 9.0
+   },
+   "compendium": "18040 / 18100 / 18106",
+   "aliases": [
+    "kayak",
+    "chèo kayak",
+    "canoe",
+    "chèo thuyền"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "sup",
+   "name": "Chèo SUP",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Sailboat",
+   "popular": false,
+   "met": {
+    "light": 4.0,
+    "moderate": 6.5,
+    "vigorous": 8.0
+   },
+   "compendium": "~ / 18224 / ~",
+   "aliases": [
+    "sup",
+    "stand up paddle"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "may_cheo",
+   "name": "Máy chèo (rowing)",
+   "category": "nuoc",
+   "category_vi": "Bơi & chèo",
+   "icon": "Sailboat",
+   "popular": false,
+   "met": {
+    "light": 5.0,
+    "moderate": 7.5,
+    "vigorous": 11.0
+   },
+   "compendium": "02071 / 02072 / 02073",
+   "aliases": [
+    "rowing machine",
+    "máy chèo thuyền"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "cau_long",
+   "name": "Cầu lông",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Feather",
+   "popular": true,
+   "met": {
+    "light": 4.5,
+    "moderate": 5.5,
+    "vigorous": 7.0
+   },
+   "compendium": "~ / 15030 / 15020",
+   "aliases": [
+    "badminton"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "bong_da",
+   "name": "Bóng đá",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": true,
+   "met": {
+    "light": 5.0,
+    "moderate": 7.0,
+    "vigorous": 9.5
+   },
+   "compendium": "~ / 15610 / 15605",
+   "aliases": [
+    "đá bóng",
+    "đá banh",
+    "football",
+    "soccer",
+    "futsal",
+    "bóng đá sân 5",
+    "sân 7"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "pickleball",
+   "name": "Pickleball",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": false,
+   "met": {
+    "light": 4.0,
+    "moderate": 5.0,
+    "vigorous": 6.0
+   },
+   "compendium": "~ (Compendium 2024 chưa có mã riêng; tham chiếu Paddleball 15500 = 6,0)",
+   "aliases": [
+    "pickle ball"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "tennis",
+   "name": "Tennis",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": false,
+   "met": {
+    "light": 6.0,
+    "moderate": 6.8,
+    "vigorous": 8.0
+   },
+   "compendium": "15680 / 15675 / 15690",
+   "aliases": [
+    "quần vợt"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "bong_ban",
+   "name": "Bóng bàn",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": false,
+   "met": {
+    "light": 3.0,
+    "moderate": 4.0,
+    "vigorous": 5.5
+   },
+   "compendium": "~ / 15660 / ~",
+   "aliases": [
+    "ping pong",
+    "table tennis"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "bong_ro",
+   "name": "Bóng rổ",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": false,
+   "met": {
+    "light": 5.0,
+    "moderate": 7.5,
+    "vigorous": 8.0
+   },
+   "compendium": "15070 / 15055 / 15040",
+   "aliases": [
+    "basketball"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "bong_chuyen",
+   "name": "Bóng chuyền",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Trophy",
+   "popular": false,
+   "met": {
+    "light": 3.0,
+    "moderate": 4.0,
+    "vigorous": 6.0
+   },
+   "compendium": "15720 / 15710 / 15711",
+   "aliases": [
+    "volleyball",
+    "bóng chuyền bãi biển"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "da_cau",
+   "name": "Đá cầu",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Feather",
+   "popular": false,
+   "met": {
+    "light": 3.0,
+    "moderate": 4.0,
+    "vigorous": 5.5
+   },
+   "compendium": "~ / 15310 (hacky sack) / ~",
+   "aliases": [
+    "cầu đá"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "golf",
+   "name": "Golf (đi bộ)",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Flag",
+   "popular": false,
+   "met": {
+    "light": 3.5,
+    "moderate": 4.3,
+    "vigorous": 4.5
+   },
+   "compendium": "15270 / 15265 / 15255",
+   "aliases": [
+    "đánh golf"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "truot_patin",
+   "name": "Trượt patin",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Activity",
+   "popular": false,
+   "met": {
+    "light": 7.0,
+    "moderate": 7.5,
+    "vigorous": 9.8
+   },
+   "compendium": "15590 / 15591 / 15592",
+   "aliases": [
+    "roller",
+    "patin",
+    "skate"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "nhay_day",
+   "name": "Nhảy dây",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Activity",
+   "popular": false,
+   "met": {
+    "light": 8.3,
+    "moderate": 11.8,
+    "vigorous": 12.3
+   },
+   "compendium": "15552 / 15551 / 15550",
+   "aliases": [
+    "jump rope"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "leo_tuong",
+   "name": "Leo núi trong nhà (bouldering)",
+   "category": "the_thao",
+   "category_vi": "Thể thao",
+   "icon": "Mountain",
+   "popular": false,
+   "met": {
+    "light": 5.8,
+    "moderate": 8.0,
+    "vigorous": 8.8
+   },
+   "compendium": "15537 / 15533 / 15534",
+   "aliases": [
+    "bouldering",
+    "climbing",
+    "leo tường"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "yoga",
+   "name": "Yoga / giãn cơ",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Flower2",
+   "popular": true,
+   "met": {
+    "light": 2.3,
+    "moderate": 3.0,
+    "vigorous": 4.0
+   },
+   "compendium": "02150 / 02155 / 02160",
+   "aliases": [
+    "giãn cơ",
+    "stretching",
+    "yoga"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "pilates",
+   "name": "Pilates",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Flower2",
+   "popular": false,
+   "met": {
+    "light": 1.8,
+    "moderate": 2.8,
+    "vigorous": 3.5
+   },
+   "compendium": "02103 / 02105 / ~",
+   "aliases": [],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "aerobic",
+   "name": "Aerobic / Zumba",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Music",
+   "popular": false,
+   "met": {
+    "light": 4.8,
+    "moderate": 6.5,
+    "vigorous": 8.0
+   },
+   "compendium": "02005 / 02310 / 02006",
+   "aliases": [
+    "zumba",
+    "nhảy aerobic",
+    "dance fitness"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "nhay",
+   "name": "Nhảy (dance)",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Music",
+   "popular": false,
+   "met": {
+    "light": 3.0,
+    "moderate": 5.5,
+    "vigorous": 9.8
+   },
+   "compendium": "03040 / 03030 / 03031",
+   "aliases": [
+    "khiêu vũ",
+    "dance",
+    "nhảy hiện đại",
+    "kpop dance"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "the_duc_sang",
+   "name": "Thể dục buổi sáng / dưỡng sinh",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Sunrise",
+   "popular": false,
+   "met": {
+    "light": 2.8,
+    "moderate": 3.8,
+    "vigorous": 7.5
+   },
+   "compendium": "02024 / 02022 / 02020",
+   "aliases": [
+    "dưỡng sinh",
+    "tập thể dục",
+    "thái cực quyền",
+    "tai chi"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "hiit_tai_nha",
+   "name": "HIIT / circuit tại nhà (không tạ)",
+   "category": "ve_dep",
+   "category_vi": "Yoga & nhảy",
+   "icon": "Timer",
+   "popular": false,
+   "met": {
+    "light": 3.5,
+    "moderate": 6.0,
+    "vigorous": 11.0
+   },
+   "compendium": "02034 / 02032 / 02214",
+   "aliases": [
+    "hiit",
+    "circuit",
+    "burpee",
+    "tabata"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "boxing",
+   "name": "Boxing / đấm bao",
+   "category": "vo",
+   "category_vi": "Võ & đối kháng",
+   "icon": "Swords",
+   "popular": false,
+   "met": {
+    "light": 5.8,
+    "moderate": 7.3,
+    "vigorous": 12.3
+   },
+   "compendium": "15110 / 15457 / 15100",
+   "aliases": [
+    "đấm bốc",
+    "kickboxing",
+    "đấm bao cát"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "vo_thuat",
+   "name": "Võ thuật (Vovinam, Taekwondo, Karate...)",
+   "category": "vo",
+   "category_vi": "Võ & đối kháng",
+   "icon": "Swords",
+   "popular": false,
+   "met": {
+    "light": 5.3,
+    "moderate": 7.8,
+    "vigorous": 10.3
+   },
+   "compendium": "15425 / ~ / 15430",
+   "aliases": [
+    "vovinam",
+    "taekwondo",
+    "karate",
+    "judo",
+    "võ"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "viec_nha",
+   "name": "Việc nhà (dọn dẹp, lau nhà)",
+   "category": "doi_song",
+   "category_vi": "Việc nhà & đời sống",
+   "icon": "Home",
+   "popular": true,
+   "met": {
+    "light": 2.5,
+    "moderate": 3.5,
+    "vigorous": 3.8
+   },
+   "compendium": "05023 / 05021 / 05012",
+   "aliases": [
+    "dọn nhà",
+    "lau nhà",
+    "quét nhà"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "lam_vuon",
+   "name": "Làm vườn",
+   "category": "doi_song",
+   "category_vi": "Việc nhà & đời sống",
+   "icon": "Sprout",
+   "popular": false,
+   "met": {
+    "light": 2.0,
+    "moderate": 3.5,
+    "vigorous": 5.0
+   },
+   "compendium": "08066 / 08045 / 08050",
+   "aliases": [
+    "trồng cây",
+    "gardening"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "be_con",
+   "name": "Bế / chơi với con nhỏ",
+   "category": "doi_song",
+   "category_vi": "Việc nhà & đời sống",
+   "icon": "Baby",
+   "popular": false,
+   "met": {
+    "light": 2.3,
+    "moderate": 3.5,
+    "vigorous": 5.8
+   },
+   "compendium": "05170 / 05175 / 05180",
+   "aliases": [
+    "trông con",
+    "chơi với con"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "khuan_vac",
+   "name": "Bê vác, chuyển đồ",
+   "category": "doi_song",
+   "category_vi": "Việc nhà & đời sống",
+   "icon": "Package",
+   "popular": false,
+   "met": {
+    "light": 3.5,
+    "moderate": 5.8,
+    "vigorous": 9.0
+   },
+   "compendium": "05054 / 05120 / 05150",
+   "aliases": [
+    "chuyển nhà",
+    "bưng bê",
+    "khuân vác"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  },
+  {
+   "id": "dat_cho_di_dao",
+   "name": "Dắt chó đi dạo",
+   "category": "doi_song",
+   "category_vi": "Việc nhà & đời sống",
+   "icon": "Dog",
+   "popular": false,
+   "met": {
+    "light": 2.5,
+    "moderate": 3.0,
+    "vigorous": 3.8
+   },
+   "compendium": "~ / 17165 / 17190",
+   "aliases": [
+    "dắt chó"
+   ],
+   "speed_mets": null,
+   "distance": false,
+   "steps": false
+  }
+ ]
+}

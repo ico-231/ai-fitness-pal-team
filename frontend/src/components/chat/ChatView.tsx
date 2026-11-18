@@ -116,7 +116,7 @@ function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: 
                 </button>
               )}
               <CopyBtn text={m.content} />
-              <button className="text-muted opacity-60 hover:opacity-100" title="Đọc to" onClick={() => voice.speak(m.content.replace(/[*#_>`-]/g, ""), { force: true })}>
+              <button className="text-muted opacity-60 hover:opacity-100" title="Đọc to" onClick={() => voice.speak(m.content, { force: true })}>
                 <Volume2 size={14} />
               </button>
               {m.traceId && (
@@ -127,9 +127,11 @@ function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: 
             </span>
           )}
         </div>
-        {m.route?.reason && !compact && (
+        {/* 1 chuyên gia: nhãn cạnh tên đã đủ. ≥ 2 chuyên gia: ghi rõ HeadBro đã nhờ ai. Lý do định tuyến (thuật ngữ nội bộ)
+            chỉ xem trong Nhật ký AI. */}
+        {(m.route?.agents?.length ?? 0) > 1 && !compact && (
           <p className="mb-1 flex items-center gap-1 text-[11px] text-muted">
-            <Route size={11} /> HeadBro{m.route.agents?.length ? ` → ${m.route.agents.map((a) => EXPERT[a as AgentKey] || "tự trả lời").join(" + ")}` : ""}: {m.route.reason}
+            <Route size={11} /> HeadBro đã nhờ {m.route!.agents.map((a) => EXPERT[a as AgentKey] || "tự trả lời").join(" + ")}
           </p>
         )}
         <Trace m={m} />
@@ -172,7 +174,6 @@ export function RouteChip({ info }: { info: { agents: string[]; reason: string; 
       <span className="truncate">
         {info.method === "guard" ? "Safety Guard" : "HeadBro"} →{" "}
         {info.agents.map((a) => EXPERT[a as AgentKey] || (a === "headbro" ? "tự trả lời" : AGENTS[a as AgentKey]?.name || a)).join(" + ")}
-        {info.reason ? ` · ${info.reason}` : ""}
       </span>
     </div>
   );
@@ -279,7 +280,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
           isPage ? "rounded-[28px] p-2 shadow-[var(--shadow-lg)]" : "rounded-[22px] p-1.5 shadow-[var(--shadow)]",
         )}
       >
-        <button className={clsx("grid shrink-0 place-items-center rounded-full text-muted hover:bg-surface-3 hover:text-text", isPage ? "h-10 w-10" : "h-9 w-9")} title="Gửi ảnh (món ăn, phiếu InBody...)" aria-label="Gửi ảnh" onClick={() => fileRef.current?.click()}>
+        <button className={clsx("grid shrink-0 place-items-center rounded-full text-muted hover:bg-surface-3 hover:text-text", isPage ? "h-10 w-10" : "h-9 w-9 pointer-coarse:h-10 pointer-coarse:w-10")} title="Gửi ảnh (món ăn, phiếu InBody...)" aria-label="Gửi ảnh" onClick={() => fileRef.current?.click()}>
           <ImagePlus size={18} />
         </button>
         <input
@@ -307,25 +308,27 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
           aria-label="Tin nhắn cho trợ lý FitBro"
           placeholder={listening ? "Đang nghe..." : showHero ? (touch ? "Hỏi HeadBro bất cứ điều gì..." : "Hỏi HeadBro về tập luyện, ăn uống, tiến độ...") : touch ? "Nhắn cho HeadBro..." : "Nhắn cho HeadBro... (Enter để gửi)"}
           className={clsx(
-            "flex-1 resize-none bg-transparent px-1 outline-none focus-visible:outline-none",
-            isPage ? "max-h-52 py-2.5 text-[15.5px]" : "max-h-40 min-h-9 py-2 text-[14.5px]",
-            showHero && "min-h-[72px]",
+            "no-focus-ring flex-1 resize-none bg-transparent px-1 outline-none",
+            // 1 dòng cao ĐÚNG bằng nút (40 / 36 px) → chữ và icon cùng nằm trên một đường giữa (optical align);
+            // nhiều dòng thì ô giãn lên, các nút vẫn bám đáy (items-end)
+            isPage ? "max-h-52 min-h-10 py-[9px] text-[15.5px] leading-[22px]" : "max-h-40 min-h-9 py-[7px] text-[14.5px] leading-[22px]",
           )}
           style={{ fieldSizing: "content" } as React.CSSProperties}
         />
-        <button className={clsx("grid shrink-0 place-items-center rounded-full hover:bg-surface-3", isPage ? "h-10 w-10" : "h-9 w-9", listening ? "text-danger" : "text-muted")} title="Nói" aria-label="Nhập bằng giọng nói" onClick={toggleMic}>
+        <button className={clsx("grid shrink-0 place-items-center rounded-full hover:bg-surface-3", isPage ? "h-10 w-10" : "h-9 w-9 pointer-coarse:h-10 pointer-coarse:w-10", listening ? "text-danger" : "text-muted")} title="Nói" aria-label="Nhập bằng giọng nói" onClick={toggleMic}>
           {listening ? <MicOff size={18} /> : <Mic size={18} />}
         </button>
         {sending ? (
-          <button onClick={stop} className={clsx("grid shrink-0 place-items-center rounded-full bg-surface-3 text-text", isPage ? "h-10 w-10" : "h-9 w-9")} title="Dừng trả lời">
+          <button onClick={stop} className={clsx("grid shrink-0 place-items-center rounded-full bg-surface-3 text-text", isPage ? "h-10 w-10" : "h-9 w-9 pointer-coarse:h-10 pointer-coarse:w-10")} title="Dừng trả lời" aria-label="Dừng trả lời">
             <Square size={15} fill="currentColor" />
           </button>
         ) : (
           <button
             disabled={!text.trim() && !image}
             onClick={submit}
-            className={clsx("grid shrink-0 place-items-center rounded-full bg-ink text-on-ink transition disabled:opacity-35", isPage ? "h-10 w-10" : "h-9 w-9 rounded-xl")}
+            className={clsx("grid shrink-0 place-items-center rounded-full bg-ink text-on-ink transition disabled:opacity-35", isPage ? "h-10 w-10" : "h-9 w-9 rounded-xl pointer-coarse:h-10 pointer-coarse:w-10")}
             title="Gửi"
+            aria-label="Gửi tin nhắn"
           >
             <Send size={17} />
           </button>
@@ -378,7 +381,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
 
       {isPage ? (
         // Trang: ô nhập nổi ở đáy, không có dải viền ngăn cách; nền mờ dần để nội dung cuộn "chìm" dưới ô nhập
-        <div className="relative px-4 pb-4 pt-2 sm:px-6 sm:pb-5">
+        <div className="relative px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 sm:pb-5">
           <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-[var(--bg)] to-transparent" />
           {composer}
           <p className="mt-2 hidden text-center text-[11px] text-muted sm:block">HeadBro có thể nhầm lẫn. Hỏi bác sĩ khi có vấn đề sức khoẻ.</p>

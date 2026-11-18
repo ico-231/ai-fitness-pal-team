@@ -1,8 +1,11 @@
 import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Activity, ArrowRight, CheckCircle2, Circle, Dumbbell, Pause, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight,
-} from "lucide-react";
+import clsx from "clsx";
+import { Activity, ArrowRight, Bike, Check, CheckCircle2, ChevronRight, Circle, Dumbbell, Flame, Moon, Pause, Play, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight } from "lucide-react";
+import { MobileMenuButton } from "../components/MobileMenu";
+import { useTodayAdvice } from "../components/WorkoutExtras";
+import type { ScheduleDay } from "../lib/types";
+import { todayISO } from "../lib/format";
 import { get } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useApi } from "../lib/hooks";
@@ -12,8 +15,9 @@ import type { Insight, MuscleVolume } from "../lib/types";
 import { BodyMap, HeatLegend } from "../components/BodyMap";
 import type { DetailKind, Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
-import { Button, Card, CardHeader, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
+import { Button, Card, CardHeader, Progress, Ring, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
 import { AgentAvatar } from "../components/AgentAvatar";
+import { InstallHint } from "../components/InstallHint";
 import { GoalsCard, PRCard, ReadinessCard, TodayRings, type Overview } from "../components/Widgets";
 
 const ReportDetail = lazy(() => import("../components/ReportDetail"));
@@ -67,12 +71,13 @@ function QuickActions() {
     { label: "Check-in sáng", icon: <Sunrise size={17} className="text-energy-strong" />, run: () => nav("/daily") },
     { label: "Ghi bữa ăn", icon: <Utensils size={17} className="text-nutri" />, run: () => nav("/nutrition") },
     { label: "Tập luyện", icon: <Dumbbell size={17} className="text-coach" />, run: () => nav("/workouts") },
+    { label: "Hoạt động khác", icon: <Bike size={17} className="text-info" />, run: () => nav("/workouts?tab=activity") },
   ];
   return (
     <div className="glass no-print flex items-center gap-0.5 rounded-full p-1">
       {items.map((x) => (
         <button key={x.label} type="button" onClick={x.run} aria-label={x.label}
-          className="group relative grid h-9 w-9 place-items-center rounded-full transition hover:bg-[var(--glass-fill)]">
+          className="group relative grid h-9 w-9 place-items-center rounded-full transition hover:bg-[var(--glass-fill)] pointer-coarse:h-11 pointer-coarse:w-11">
           {x.icon}
           <span className="pointer-events-none absolute top-[calc(100%+8px)] z-20 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-on-ink opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:block">
             {x.label}
@@ -188,6 +193,171 @@ function AskBar({ insights }: { insights: Insight[] }) {
   );
 }
 
+/* ======================= Điện thoại: "Một việc mỗi màn" (phương án A) =======================
+   Thứ tự: tiêu đề → thẻ Hôm nay (sẵn sàng + một hành động) → calo/đạm/nước → HeadBro nhắc → tuần này → 30 ngày qua.
+   Desktop giữ nguyên sân khấu bên dưới. */
+const WEEK_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+function MobileTodayCard({ readiness: r }: { readiness: Overview["today"]["readiness"] }) {
+  const nav = useNavigate();
+  const advice = useTodayAdvice();
+  const { data: sch } = useApi<{ today: ScheduleDay }>(["schedule"], "/api/schedule");
+  const plan = sch?.today.plan;
+  return (
+    <section aria-label="Hôm nay" className="rounded-3xl bg-ink p-5 text-on-ink shadow-[var(--shadow-lg)] dark:border dark:border-[var(--card-border)] dark:bg-surface dark:text-text">
+      <p className="eyebrow !text-on-ink/60 dark:!text-muted">Hôm nay{plan ? ` · ${plan.name} · ${plan.count} bài` : ""}</p>
+      <div className="mt-3 flex items-center gap-4">
+        <button type="button" onClick={() => nav("/daily")} aria-label={r ? `Điểm sẵn sàng ${r.score} trên 100. Mở check-in` : "Check-in để có điểm sẵn sàng"} className="shrink-0">
+          <Ring value={r?.score ?? 0} color="var(--volt)" track="rgb(255 255 255 / 0.14)" size={92} stroke={9}>
+            <span className="num text-[28px] font-semibold leading-none">{r ? r.score : "—"}</span>
+          </Ring>
+        </button>
+        <div className="min-w-0">
+          <p className="text-lg font-semibold leading-6">{advice?.headline ?? "Đang xem lịch hôm nay..."}</p>
+          {advice && <p className="mt-1 text-sm text-on-ink/70 dark:text-muted">{advice.reason}</p>}
+        </div>
+      </div>
+      {advice?.action && (
+        <div className="mt-5">
+          <button type="button" onClick={() => nav(advice.action!.to)}
+            className="inline-flex h-14 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-volt px-6 text-base font-semibold text-on-volt transition active:scale-[0.98]">
+            {advice.tone === "go" && <Play size={17} />} {advice.action.label}
+          </button>
+          {advice.secondary && (
+            <button type="button" onClick={() => nav(advice.secondary!.to)}
+              className="mt-1 inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-full text-sm font-medium text-on-ink/75 transition dark:text-muted active:scale-[0.98]">
+              {advice.secondary.label}
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MobileWeek({ streak }: { streak: number }) {
+  const { data: sch } = useApi<{ days: ScheduleDay[] }>(["schedule"], "/api/schedule");
+  if (!sch) return null;
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-semibold">Tuần này</p>
+        {streak > 0 && <p className="inline-flex items-center gap-1 text-sm font-medium text-energy-strong"><Flame size={15} /><span className="num">{streak}</span> ngày liên tiếp</p>}
+      </div>
+      <ol className="mt-3 grid grid-cols-7 gap-1 text-center">
+        {sch.days.map((d) => {
+          const missed = !d.done && !d.rest && !d.is_today && d.date != null && d.date < todayISO();
+          const state = d.done ? "Đã tập" : d.rest ? "Nghỉ" : d.is_today ? "Hôm nay" : missed ? "Bỏ lỡ" : "Có lịch";
+          return (
+            <li key={d.weekday} className="grid justify-items-center gap-1" aria-label={`${WEEK_SHORT[d.weekday]}: ${state}${d.plan ? `, ${d.plan.name}` : ""}`}>
+              <span className={clsx("text-xs", d.is_today ? "font-semibold text-text" : "text-muted")}>{WEEK_SHORT[d.weekday]}</span>
+              <span className={clsx("grid h-7 w-7 place-items-center rounded-full",
+                d.done ? "bg-volt text-on-volt" : d.is_today ? "border-2 border-text" : d.rest ? "bg-surface-2 text-muted" : missed ? "bg-surface-2" : "border border-dashed border-muted/60")}>
+                {d.done ? <Check size={15} strokeWidth={2.6} /> : d.rest ? <Moon size={13} /> : null}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </Card>
+  );
+}
+
+function MobileHome({ ov }: { ov: Overview }) {
+  const nav = useNavigate();
+  const ai = useAI();
+  const { user } = useAuth();
+  const [allTips, setAllTips] = useState(false);
+  const { data: month } = useApi<Report>(["report", "month"], "/api/dashboard/report?period=month");
+  const t = ov.today;
+  const kcalLeft = t.targets.calories - t.nutrition.calories;
+  const tiles = [
+    { label: kcalLeft >= 0 ? "Calo còn" : "Calo vượt", value: fmt(Math.abs(kcalLeft)), unit: "kcal", pct: t.targets.calories ? (t.nutrition.calories / t.targets.calories) * 100 : 0, color: "var(--nutri)", to: "/nutrition" },
+    { label: "Đạm", value: fmt(t.nutrition.protein), unit: `/${fmt(t.targets.protein)} g`, pct: t.targets.protein ? (t.nutrition.protein / t.targets.protein) * 100 : 0, color: "var(--primary)", to: "/nutrition" },
+    { label: "Nước", value: fmt(t.water_ml / 1000, 2), unit: `/${fmt(t.targets.water_ml / 1000, 1)} L`, pct: t.targets.water_ml ? (t.water_ml / t.targets.water_ml) * 100 : 0, color: "var(--info)", to: "/daily" },
+  ];
+  const tips = ov.insights || [];
+  const shownTips = allTips ? tips : tips.slice(0, 1);
+  const s = month?.summary;
+  return (
+    <div className="space-y-4 lg:hidden">
+      <header className="flex items-end justify-between gap-3 pb-1">
+        <div className="min-w-0">
+          <p className="text-sm text-muted first-letter:uppercase">{new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" })}</p>
+          <h1 className="truncate text-[32px] font-semibold leading-[38px] tracking-tight">Chào {user?.name?.split(" ").pop() || "bạn"}</h1>
+        </div>
+        <MobileMenuButton />
+      </header>
+      <InstallHint />
+      <MobileTodayCard readiness={t.readiness} />
+      <section aria-label="Hôm nay đã nạp" className="grid grid-cols-3 gap-3">
+        {tiles.map((x) => (
+          <button key={x.label} type="button" onClick={() => nav(x.to)} className="card p-3 text-left">
+            <span className="block text-[13px] text-muted">{x.label}</span>
+            <span className="mt-1 block whitespace-nowrap"><span className="num text-[22px] font-semibold">{x.value}</span> <span className="text-xs text-muted">{x.unit}</span></span>
+            <Progress value={x.pct} max={100} color={x.color} className="mt-2" />
+          </button>
+        ))}
+      </section>
+      {tips.length > 0 && (
+        <Card className="flex gap-3 p-4">
+          <AgentAvatar agent="headbro" size={36} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-head">HeadBro nhắc bạn</p>
+            <ul className="mt-0.5 space-y-2">
+              {shownTips.map((it, i) => (
+                <li key={i} className="text-sm">
+                  <span className="font-medium">{it.title}. </span><span className="text-muted">{it.text}</span>
+                  {(it.action || it.ask) && (
+                    <button type="button" className="mt-1 flex h-10 items-center font-medium underline underline-offset-4"
+                      onClick={() => (it.action ? nav(it.action.to) : ai.open({ agent: it.ask!.agent, text: it.ask!.text, full: true }))}>
+                      {it.action ? it.action.label : "Hỏi HeadBro"}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {tips.length > 1 && (
+              <button type="button" onClick={() => setAllTips(!allTips)} className="mt-2 inline-flex h-10 items-center gap-1 text-sm font-medium underline underline-offset-4">
+                {allTips ? "Thu gọn" : `Xem ${tips.length - 1} nhắc khác`} <ChevronRight size={15} className={clsx("transition", allTips && "-rotate-90")} />
+              </button>
+            )}
+          </div>
+        </Card>
+      )}
+      <MobileWeek streak={t.streak.current} />
+      <Card className="p-4">
+        <p className="font-semibold">30 ngày qua</p>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+          {[
+            ["Buổi tập", s ? fmt(s.sessions) : "—"],
+            ["Khối lượng", s ? `${fmt(s.total_volume)} kg` : "—"],
+            ["PR mới", s ? fmt(s.pr_count) : "—"],
+            ["Cân nặng", ov.latest_body.weight_kg ? `${fmt(ov.latest_body.weight_kg.value, 1)} kg` : "Chưa đo"],
+          ].map(([l, v]) => (
+            <div key={l}><dt className="text-xs text-muted">{l}</dt><dd className="num text-xl font-semibold">{v}</dd></div>
+          ))}
+        </dl>
+        <button type="button" onClick={() => nav("/report")} className="mt-3 inline-flex h-10 items-center gap-1 text-sm font-medium underline underline-offset-4">
+          Xem báo cáo đầy đủ <ChevronRight size={15} />
+        </button>
+      </Card>
+    </div>
+  );
+}
+
+function MobileHomeSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Đang tải" className="space-y-4 lg:hidden">
+      <div className="space-y-2"><div className="skel h-4 w-28" /><div className="skel h-9 w-48" /></div>
+      <div className="skel h-48 rounded-3xl" />
+      <div className="grid grid-cols-3 gap-3"><div className="skel h-24 rounded-2xl" /><div className="skel h-24 rounded-2xl" /><div className="skel h-24 rounded-2xl" /></div>
+      <div className="skel h-24 rounded-3xl" />
+      <div className="skel h-24 rounded-3xl" />
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -201,7 +371,7 @@ export default function Dashboard() {
   const { data: rep } = useApi<Report>(["report", period], `/api/dashboard/report?period=${period}`);
   const { data: heat } = useApi<MuscleVolume>(["heatmap", days], `/api/dashboard/heatmap?days=${days}`);
 
-  if (isLoading || !ov) return <Spinner />;
+  if (isLoading || !ov) return <><MobileHomeSkeleton /><div className="hidden lg:block"><Spinner /></div></>;
   const t = ov.today;
   const r = t.readiness;
   const s = rep?.summary;
@@ -213,10 +383,11 @@ export default function Dashboard() {
       return;
     }
     try {
-      const { text } = await get<{ text: string }>("/api/dashboard/briefing");
-      setBriefText(text);
+      const { text, voice_text } = await get<{ text: string; voice_text?: string }>("/api/dashboard/briefing");
+      setBriefText(text); // màn hình luôn hiện bản đầy đủ có số liệu
       if (!voice.supported()) return toast("Trình duyệt không hỗ trợ đọc giọng nói", "error");
-      voice.speak(text, { force: true });
+      // giọng thu sẵn → đọc bản câu cố định (phát trọn bằng file); giọng trình duyệt → đọc bản đầy đủ
+      voice.speak(voice.pack && voice_text ? voice_text : text, { force: true });
       setSpeaking(true);
       const iv = window.setInterval(() => {
         if (!voice.speaking()) {
@@ -239,7 +410,10 @@ export default function Dashboard() {
   const name = user?.name || "bạn";
   const pins = heat ? Object.entries(heat.muscles).filter(([, v]) => v.sets > 0).sort((x, y) => y[1].sets - x[1].sets).slice(0, 5).map(([k]) => k) : [];
   return (
-    <div className="space-y-8">
+    <>
+    {ov.has_any_data && <MobileHome ov={ov} />}
+    <div className={clsx("space-y-8", ov.has_any_data && "max-lg:hidden")}>
+      <InstallHint />
       {/* ===== Sân khấu: bản đồ cơ thể ở giữa, các tấm kính nổi xung quanh ===== */}
       <section className="relative">
         <div className="relative">
@@ -257,7 +431,7 @@ export default function Dashboard() {
               <IconButton title={speaking ? "Dừng đọc" : "Nghe tóm tắt hôm nay"} onClick={brief} className="glass h-11 w-11">
                 {speaking ? <Pause size={18} /> : <Volume2 size={18} />}
               </IconButton>
-              <IconButton title="Xuất báo cáo PDF" onClick={() => window.print()} className="glass h-11 w-11">
+              <IconButton title="Xuất báo cáo PDF" onClick={() => nav("/report")} className="glass h-11 w-11 max-sm:hidden">
                 <Printer size={18} />
               </IconButton>
               <HelpButton to="tong-quan" className="!h-11 !w-11" />
@@ -288,7 +462,7 @@ export default function Dashboard() {
               {heat ? (
                 <>
                   <BodyMap data={heat.muscles} big pins={pins} />
-                  <div className="glass mt-1 rounded-2xl px-4 py-2">
+                  <div className="glass mt-3 rounded-2xl px-4 py-2 sm:mt-1">
                     <HeatLegend levels={heat.levels} />
                   </div>
                   {heat.total_sets === 0 && <p className="mt-2 text-sm text-muted">Chưa có buổi tập nào trong khoảng này.</p>}
@@ -381,5 +555,6 @@ export default function Dashboard() {
         </Suspense>
       )}
     </div>
+    </>
   );
 }

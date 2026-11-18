@@ -3,11 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Icon tab trình duyệt. "?v=" đổi mỗi khi đổi logo: trình duyệt lưu icon rất lâu theo đúng đường dẫn. -->
-    <link rel="icon" href="/favicon.ico?v=4" sizes="48x48" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" />
+    <link rel="icon" href="/favicon.ico?v=7" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=7" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- "Thêm vào Màn hình chính" (iOS/Android): mở như app thật — toàn màn hình, không thanh địa chỉ Safari.
+         black-translucent: nội dung tràn lên dưới thanh trạng thái; các thanh trên đã chừa env(safe-area-inset-top). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FitBro" />
+    <meta name="application-name" content="FitBro" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="theme-color" content="#eceef0" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b0c0d" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="FitBro AI — trợ lý thể hình đa tác tử: HLV tập luyện, chuyên gia dinh dưỡng, camera chỉnh form." />

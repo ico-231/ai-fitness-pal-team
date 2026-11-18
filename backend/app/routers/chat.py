@@ -215,6 +215,8 @@ def _update_card_status(db: Session, pa: PendingAction, status: str, result: dic
         for c in meta.get("cards") or []:
             if c.get("kind") == "confirm" and c.get("action_id") == pa.id:
                 c["status"], c["result"] = status, result
+                if isinstance(result, dict) and result.get("summary"):
+                    c["summary"] = result["summary"]  # vd hoạt động đã sửa thời lượng trước khi lưu
                 changed = True
         if changed:
             m.meta = meta

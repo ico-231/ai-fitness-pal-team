@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import { Camera, ChevronLeft, ChevronRight, Copy, Dumbbell, History, Leaf, Library, Loader2, Moon, PencilLine, Plus, Repeat, Search, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bike, Camera, ChevronLeft, ChevronRight, Coffee, Cookie, Dumbbell, GlassWater, History, Leaf, Library, Loader2, Minus, Moon, PencilLine, Plus, Repeat, Search, Soup, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
 import { del, post, put } from "../lib/api";
 import { useAction, useApi, useInvalidateAll } from "../lib/hooks";
 import { MEAL_TYPES } from "../lib/constants";
@@ -8,13 +9,13 @@ import { addDays, dayLabel, fmt, todayISO } from "../lib/format";
 import { fileToDataUrl } from "../lib/media";
 import type { Food, Meal, Targets } from "../lib/types";
 import { BarSeries } from "../components/Charts";
-import { FoodTile, quickLogFood } from "../components/chat/ChatCards";
+import { FavStar, FavoriteTile, FoodSheet, FoodTile, guessMealType, quickLogFood } from "../components/chat/ChatCards";
+import { splitAnalysis, useFavorites, type Favorite } from "../lib/favorites";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput } from "../components/ui";
+import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Progress, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput } from "../components/ui";
 
 interface Day { date: string; meals: Meal[]; totals: { calories: number; protein: number; carbs: number; fat: number; meals_count: number }; targets: Targets }
-interface Favorite { id: string; name: string; meal_type: Meal["meal_type"]; calories: number; protein: number; carbs: number; fat: number; image: string | null }
 interface Analysis { name: string; items: Meal["items"]; calories: number; protein: number; carbs: number; fat: number; confidence: string; analysis: string; image_thumb: string | null }
 
 const guessType = () => { const h = new Date().getHours(); return h < 10 ? "breakfast" : h < 14 ? "lunch" : h < 17 ? "snack" : "dinner"; };
@@ -68,6 +69,29 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
       const r = await post<Analysis>("/api/nutrition/analyze", { image: mode === "photo" ? img : null, text: text || null });
       setRes(r);
       setForm({ ...form, name: r.name, calories: r.calories, protein: r.protein, carbs: r.carbs, fat: r.fat });
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Nhiều món riêng (AI đặt tên "Món A + Món B"): cho lưu mỗi món thành một mục riêng trong nhật ký
+  const multiDish = !!res && res.items.length > 1 && res.name.includes(" + ");
+  const saveSeparately = async () => {
+    if (!res) return;
+    setBusy(true);
+    try {
+      for (const it of res.items) {
+        await post("/api/nutrition/meals", {
+          date, meal_type: form.meal_type || guessType(), name: it.name, items: [it],
+          calories: it.calories || 0, protein: it.protein || 0, carbs: it.carbs || 0, fat: it.fat || 0,
+          image: res.image_thumb || null, analysis: res.analysis || "", source: mode === "photo" ? "photo" : "text",
+        });
+      }
+      invalidate();
+      toast(`Đã lưu ${res.items.length} món riêng`);
+      close();
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
@@ -182,14 +206,18 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
             <button aria-pressed={cleanOnly} onClick={() => setCleanOnly(!cleanOnly)} className={clsx("mt-5 rounded-full border px-3 py-1.5 text-xs", cleanOnly ? "border-primary bg-primary-soft" : "border-border")}><Leaf size={12} className="mr-1 inline" />Clean eating</button>
           </div>
           {!foods ? <Spinner /> : (
+            <>
+            {foods.items.length === 0 && <p className="py-6 text-center text-sm text-muted">Không có món nào khớp. Thử tên khác hoặc dùng tab Mô tả.</p>}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {foods.items.map((f) => (
+              {foods.items.slice(0, 24).map((f) => (
                 <FoodTile key={f.id} f={f} onAdd={async () => {
                   try { await quickLogFood({ ...f }, form.meal_type || guessType(), servings); invalidate(); toast(`Đã ghi ${f.name}`); close(); }
                   catch (e) { toast((e as Error).message, "error"); }
                 }} />
               ))}
             </div>
+            {foods.items.length > 24 && <p className="mt-3 text-center text-xs text-muted">Đang hiện 24 / {foods.items.length} món — gõ tên để tìm nhanh hơn.</p>}
+            </>
           )}
         </div>
       ) : mode === "manual" ? (
@@ -222,13 +250,13 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
               <div className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
                 <AgentAvatar agent="nutribro" size={30} />
                 <div className="flex-1 text-sm">
-                  <p className="font-semibold">Phân tích của HeadBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
+                  <p className="font-semibold">Phân tích của NutriBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
                   <p className="mt-1 text-muted">{res.analysis}</p>
                 </div>
               </div>
               {res.items.length > 0 && (
                 <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted"><tr><th className="py-1">Thành phần</th><th className="text-right">g</th><th className="text-right">kcal</th><th className="text-right">Đạm</th><th className="text-right">Carb</th><th className="text-right">Béo</th></tr></thead>
+                  <thead className="text-left text-xs text-muted"><tr><th className="py-1">{multiDish ? "Món" : "Thành phần"}</th><th className="text-right">g</th><th className="text-right">kcal</th><th className="text-right">Đạm</th><th className="text-right">Carb</th><th className="text-right">Béo</th></tr></thead>
                   <tbody>{res.items.map((it, i) => (
                     <tr key={i} className="border-t border-border"><td className="py-1">{it.name}</td><td className="text-right">{fmt(it.grams)}</td><td className="text-right">{fmt(it.calories)}</td><td className="text-right">{fmt(it.protein, 1)}</td><td className="text-right">{fmt(it.carbs, 1)}</td><td className="text-right">{fmt(it.fat, 1)}</td></tr>
                   ))}</tbody>
@@ -236,9 +264,12 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
               )}
               <p className="text-xs text-muted">Bạn có thể chỉnh lại số liệu trước khi lưu. Phân tích này sẽ được lưu cùng bữa ăn để xem lại sau.</p>
               <MealForm value={form} onChange={setForm} />
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" onClick={() => setRes(null)}>Phân tích lại</Button>
-                <Button className="flex-1" loading={busy} onClick={save}>Lưu bữa ăn</Button>
+                {multiDish && (
+                  <Button variant="secondary" disabled={busy} onClick={saveSeparately}>Lưu riêng {res.items.length} món</Button>
+                )}
+                <Button className="flex-1" loading={busy} onClick={save}>{multiDish ? "Lưu chung 1 bữa" : "Lưu bữa ăn"}</Button>
               </div>
             </div>
           )}
@@ -248,83 +279,207 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
   );
 }
 
+const SOURCE_VI: Record<string, string> = { library: "Thư viện món", photo: "Ảnh + AI", text: "Mô tả + AI", manual: "Tự nhập", chat: "Trợ lý AI" };
+
 function MealDetail({ meal, onClose }: { meal: Meal | null; onClose: () => void }) {
   const [edit, setEdit] = useState<Partial<Meal> | null>(null);
   const invalidate = useInvalidateAll();
   const ai = useAI();
+  const fav = useFavorites(!!meal);
   const save = useAction((m: Meal) => put(`/api/nutrition/meals/${m.id}`, { ...m, ...edit, image: m.image }), { success: "Đã cập nhật", onSuccess: () => { setEdit(null); onClose(); } });
   const remove = useAction((id: string) => del(`/api/nutrition/meals/${id}`), { success: "Đã xoá bữa ăn", onSuccess: onClose });
   if (!meal) return null;
+  // món thư viện lưu "nhận xét + Mẹo: ..." → tách giống chi tiết món; bữa AI phân tích → nhận xét của NutriBro
+  const { comment, tip } = splitAnalysis(meal.analysis);
+  const fromLibrary = meal.source === "library";
+  const isFav = !!fav.findMeal(meal);
   return (
-    <Modal open onClose={() => { setEdit(null); onClose(); }} title={meal.name} wide>
-      <div className="grid gap-5 md:grid-cols-2">
-        <div>
-          {meal.image ? <img src={meal.image} className="w-full rounded-xl object-cover" alt="" /> : <div className="grid h-48 place-items-center rounded-xl bg-surface-2 text-muted"><Utensils size={32} /></div>}
-          <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-            {[["kcal", meal.calories], ["Đạm", meal.protein], ["Carb", meal.carbs], ["Béo", meal.fat]].map(([k, v]) => (
-              <div key={k as string} className="rounded-xl bg-surface-2 p-2"><p className="text-[11px] text-muted">{k}</p><p className="font-bold">{fmt(v as number, 1)}</p></div>
-            ))}
+    <Modal open onClose={() => { setEdit(null); onClose(); }} title={meal.name}
+      footer={edit ? (
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="outline" onClick={() => setEdit(null)}>Huỷ</Button>
+          <Button loading={save.isPending} onClick={() => save.mutate(meal)}>Lưu thay đổi</Button>
+        </div>
+      ) : (
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} className="text-danger" onClick={async () => (await confirmDialog({ title: `Xoá "${meal.name}"?`, text: "Calo và macro của ngày này sẽ tính lại.", confirmLabel: "Xoá bữa ăn", danger: true })) && remove.mutate(meal.id)}>Xoá</Button>
+          <span className="flex-1" />
+          <FavStar on={isFav} onClick={() => fav.toggleMeal(meal)} />
+          <Button
+            size="sm"
+            icon={<Repeat size={14} />}
+            onClick={async () => {
+              try {
+                await post(`/api/nutrition/meals/${meal.id}/repeat`, { date: todayISO() });
+                invalidate();
+                toast(`Đã ghi lại "${meal.name}" vào hôm nay`);
+                onClose();
+              } catch (e) {
+                toast((e as Error).message, "error");
+              }
+            }}
+          >
+            Ăn lại hôm nay
+          </Button>
+        </div>
+      )}>
+      <FoodSheet
+        name={meal.name}
+        image={meal.image}
+        tags={<>
+          <Badge color="var(--nutri)">{MEAL_TYPES[meal.meal_type]}</Badge>
+          <span className="text-muted">{dayLabel(meal.date, true)} · {SOURCE_VI[meal.source] || meal.source}</span>
+        </>}
+        macros={meal}
+        items={meal.items?.map((it) => ({ name: it.name, calories: it.calories }))}
+        comment={comment || (meal.analysis ? "" : "Bữa ăn này chưa có phân tích AI.")}
+        commentTitle={fromLibrary ? "Nhận xét" : <span className="flex items-center gap-1.5"><AgentAvatar agent="nutribro" size={20} /> Phân tích của NutriBro</span>}
+        tip={tip}
+      >
+        {edit ? (
+          <MealForm value={edit} onChange={setEdit} />
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" icon={<PencilLine size={14} />} onClick={() => setEdit({ name: meal.name, meal_type: meal.meal_type, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat })}>Sửa số liệu</Button>
+            <Button size="sm" variant="outline" icon={<Sparkles size={14} />} onClick={() => { onClose(); ai.open({ agent: "nutribro", text: `Đánh giá bữa "${meal.name}" của mình và gợi ý bữa tiếp theo nên ăn gì.`, context: `Bữa ăn: ${meal.name}, ${meal.calories} kcal, ${meal.protein}g đạm, ${meal.carbs}g carb, ${meal.fat}g béo, ngày ${meal.date}.` }); }}>Hỏi HeadBro</Button>
           </div>
-        </div>
-        <div className="space-y-3">
-          <p className="text-xs text-muted">{MEAL_TYPES[meal.meal_type]} · {dayLabel(meal.date, true)} · nguồn: {meal.source}</p>
-          {meal.analysis ? (
-            <div className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
-              <AgentAvatar agent="nutribro" size={28} />
-              <p className="flex-1 whitespace-pre-line text-sm text-muted">{meal.analysis}</p>
-            </div>
-          ) : <p className="text-sm text-muted">Bữa ăn này chưa có phân tích AI.</p>}
-          {meal.items?.length > 0 && (
-            <ul className="text-sm">{meal.items.map((it, i) => <li key={i} className="flex justify-between border-b border-border py-1"><span>{it.name}</span><span className="text-muted">{fmt(it.calories)} kcal</span></li>)}</ul>
-          )}
-          {edit ? (
-            <>
-              <MealForm value={edit} onChange={setEdit} />
-              <div className="flex gap-2"><Button variant="outline" onClick={() => setEdit(null)}>Huỷ</Button><Button className="flex-1" loading={save.isPending} onClick={() => save.mutate(meal)}>Lưu thay đổi</Button></div>
-            </>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" icon={<PencilLine size={14} />} onClick={() => setEdit({ name: meal.name, meal_type: meal.meal_type, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat })}>Sửa</Button>
-              <Button size="sm" variant="outline" icon={<Sparkles size={14} />} onClick={() => { onClose(); ai.open({ agent: "nutribro", text: `Đánh giá bữa "${meal.name}" của mình và gợi ý bữa tiếp theo nên ăn gì.`, context: `Bữa ăn: ${meal.name}, ${meal.calories} kcal, ${meal.protein}g đạm, ${meal.carbs}g carb, ${meal.fat}g béo, ngày ${meal.date}.` }); }}>Hỏi HeadBro</Button>
-              <Button
-                size="sm"
-                variant="outline"
-                icon={<Repeat size={14} />}
-                onClick={async () => {
-                  try {
-                    await post(`/api/nutrition/meals/${meal.id}/repeat`, {});
-                    invalidate();
-                    toast("Đã ghi lại món này vào hôm nay");
-                    onClose();
-                  } catch (e) {
-                    toast((e as Error).message, "error");
-                  }
-                }}
-              >
-                Ăn lại hôm nay
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                icon={<Star size={14} />}
-                onClick={async () => {
-                  try {
-                    await post(`/api/nutrition/meals/${meal.id}/favorite`, {});
-                    invalidate();
-                    toast(`Đã lưu "${meal.name}" vào Yêu thích`);
-                  } catch (e) {
-                    toast((e as Error).message, "error");
-                  }
-                }}
-              >
-                Lưu yêu thích
-              </Button>
-              <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => (await confirmDialog({ title: `Xoá "${meal.name}"?`, text: "Calo và macro của ngày này sẽ tính lại.", confirmLabel: "Xoá bữa ăn", danger: true })) && remove.mutate(meal.id)}>Xoá</Button>
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </FoodSheet>
     </Modal>
+  );
+}
+
+/** Chi tiết một món yêu thích (từ bộ lọc ⭐ của thư viện): cùng khung với món thư viện. */
+function FavoriteDetail({ x, date, onClose }: { x: Favorite | null; date: string; onClose: () => void }) {
+  const [mealType, setMealType] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const invalidate = useInvalidateAll();
+  const fav = useFavorites(!!x);
+  if (!x) return null;
+  const { comment, tip } = splitAnalysis(x.analysis);
+  const mt = mealType || x.meal_type || guessMealType();
+  const log = async () => {
+    setBusy(true);
+    try {
+      await post(`/api/nutrition/favorites/${x.id}/log`, { date, meal_type: mt });
+      invalidate();
+      toast(`Đã ghi ${x.name} vào ${MEAL_TYPES[mt as Meal["meal_type"]].toLowerCase()}`);
+      onClose();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open onClose={onClose} title={x.name}
+      footer={<div className="flex w-full flex-wrap justify-end gap-2">
+        <FavStar size="md" on onClick={async () => { await fav.remove(x); onClose(); }} />
+        <Button icon={<Plus size={15} />} loading={busy} onClick={log} autoFocus>Ghi vào nhật ký · {fmt(x.calories)} kcal</Button>
+      </div>}>
+      <FoodSheet name={x.name} image={x.image}
+        tags={<><Badge color="#f59e0b"><Star size={10} fill="currentColor" /> Yêu thích</Badge><span className="text-muted">{x.serving ? `1 khẩu phần: ${x.serving}` : x.source ? SOURCE_VI[x.source] || x.source : ""}</span></>}
+        macros={x} items={x.items?.map((it) => ({ name: it.name, calories: it.calories }))} comment={comment} tip={tip}>
+        <div className="max-w-[220px]">
+          <p className="mb-1 text-xs text-muted">Bữa</p>
+          <select className="input h-9 text-sm" value={mt} onChange={(e) => setMealType(e.target.value)} aria-label="Chọn bữa">
+            {Object.entries(MEAL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+      </FoodSheet>
+    </Modal>
+  );
+}
+
+/* ======================= Điện thoại (phương án A): còn bao nhiêu → đã ăn gì → nước → hỏi NutriBro ======================= */
+const MAIN_MEALS = ["breakfast", "lunch", "dinner"] as const;
+const MEAL_ICON = { breakfast: Coffee, lunch: Utensils, dinner: Soup, snack: Cookie } as Record<string, typeof Utensils>;
+
+function MobileCalories({ day }: { day: Day }) {
+  const left = day.targets.calories - day.totals.calories;
+  const macros = [
+    { label: "Đạm", v: day.totals.protein, t: day.targets.protein, color: "var(--primary)" },
+    { label: "Carb", v: day.totals.carbs, t: day.targets.carbs, color: "var(--data-carbs)" },
+    { label: "Béo", v: day.totals.fat, t: day.targets.fat, color: "var(--data-fat)" },
+  ];
+  return (
+    <Card className="flex items-center gap-5 p-5 lg:hidden">
+      <Ring value={day.totals.calories} max={day.targets.calories || 1} size={120} stroke={12} color="var(--nutri)" track="var(--surface-3)">
+        <div>
+          <p className="num text-[26px] font-semibold leading-none">{fmt(Math.abs(left))}</p>
+          <p className="mt-1 text-xs text-muted">{left >= 0 ? "kcal còn lại" : "kcal vượt"}</p>
+        </div>
+      </Ring>
+      <div className="min-w-0 flex-1 space-y-2.5">
+        {macros.map((m) => (
+          <div key={m.label}>
+            <div className="flex justify-between gap-2 text-[13px]"><span className="font-medium">{m.label}</span><span className="num text-muted">{fmt(m.v)}/{fmt(m.t)} g</span></div>
+            <Progress value={m.v} max={m.t || 1} color={m.color} className="mt-1" />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function MobileMeals({ day, isToday, onOpen, onAdd }: { day: Day; isToday: boolean; onOpen: (m: Meal) => void; onAdd: () => void }) {
+  const hour = new Date().getHours();
+  // ô "chưa ghi" cho bữa chính đã tới giờ (hôm nay) — nhắc mà không cần thanh cảnh báo riêng
+  const due: Record<string, number> = { breakfast: 9, lunch: 13, dinner: 18 };
+  const missing = isToday ? MAIN_MEALS.filter((t) => hour >= due[t] && !day.meals.some((m) => m.meal_type === t)) : [];
+  const order = Object.keys(MEAL_TYPES);
+  const meals = [...day.meals].sort((a, b) => order.indexOf(a.meal_type) - order.indexOf(b.meal_type));
+  if (!meals.length && !missing.length) return null;
+  return (
+    <section className="lg:hidden">
+      <h2 className="mb-2 font-semibold">{isToday ? "Hôm nay đã ăn" : "Đã ăn"}</h2>
+      <Card className="divide-y divide-border">
+        {meals.map((m) => {
+          const Icon = MEAL_ICON[m.meal_type] || Utensils;
+          return (
+            <button key={m.id} type="button" onClick={() => onOpen(m)} className="flex w-full items-center gap-3 p-4 text-left">
+              {m.image ? <img src={m.image} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" /> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-muted"><Icon size={20} /></span>}
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-muted">{MEAL_TYPES[m.meal_type] || "Bữa phụ"}</span>
+                <span className="line-clamp-2 block font-medium leading-snug">{m.name}</span>
+                <span className="block text-xs text-muted">{fmt(m.protein, 1)} g đạm</span>
+              </span>
+              <span className="num shrink-0 font-semibold">{fmt(m.calories)}<span className="font-sans text-xs font-normal text-muted"> kcal</span></span>
+            </button>
+          );
+        })}
+        {missing.map((t) => {
+          const Icon = MEAL_ICON[t];
+          return (
+            <div key={t} className="flex items-center gap-3 p-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-dashed border-muted/60 text-muted"><Icon size={20} /></span>
+              <p className="min-w-0 flex-1 text-sm text-muted"><b className="block font-medium text-text">{MEAL_TYPES[t]}</b>Chưa ghi</p>
+              <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={onAdd}>Ghi</Button>
+            </div>
+          );
+        })}
+      </Card>
+    </section>
+  );
+}
+
+/** Nước uống ngay ở trang ăn uống trên điện thoại: −250 / +250 ml (ô tự nhập vẫn ở trang Hôm nay). */
+function MobileWater() {
+  const { data } = useApi<{ water_ml: number; water_target_ml: number }>(["daily"], "/api/daily/today");
+  const water = useAction((delta_ml: number) => post("/api/daily/water", { delta_ml }));
+  if (!data) return null;
+  return (
+    <Card className="flex items-center gap-3 p-4 lg:hidden">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-info"><GlassWater size={20} /></span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">Nước</p>
+        <p className="text-sm text-muted"><span className="num">{fmt(data.water_ml / 1000, 2)}</span> / {fmt(data.water_target_ml / 1000, 1)} L</p>
+      </div>
+      <button type="button" aria-label="Bớt 250 ml" disabled={water.isPending || data.water_ml <= 0} onClick={() => water.mutate(-Math.min(250, data.water_ml))}
+        className="grid h-11 w-11 place-items-center rounded-full border border-border disabled:opacity-40"><Minus size={20} /></button>
+      <button type="button" disabled={water.isPending} onClick={() => water.mutate(250)}
+        className="num h-11 rounded-full bg-surface-2 px-4 text-sm font-semibold disabled:opacity-50">+250 ml</button>
+    </Card>
   );
 }
 
@@ -334,23 +489,20 @@ export default function Nutrition() {
   const [detail, setDetail] = useState<Meal | null>(null);
   const [lib, setLib] = useState("");
   const [cleanOnly, setCleanOnly] = useState(false);
+  const [favOnly, setFavOnly] = useState(false);
+  const [favOpen, setFavOpen] = useState<Favorite | null>(null);
+  const fav = useFavorites();
+  const favList = fav.favs.filter((x) => !lib.trim() || x.name.toLowerCase().includes(lib.trim().toLowerCase()));
+  const favPg = usePaged(favList, 10, `fav|${lib}`);
   const ai = useAI();
   const invalidate = useInvalidateAll();
   const { data, isLoading } = useApi<Day>(["nutrition", date], `/api/nutrition/day?date=${date}`);
   const { data: hist } = useApi<{ days: { date: string; calories: number; protein: number }[]; targets: Targets }>(["nutrition-history"], "/api/nutrition/history?days=14");
-  const { data: foods } = useApi<{ items: Food[] }>(["foods", lib, cleanOnly], `/api/foods?q=${encodeURIComponent(lib)}&clean=${cleanOnly}`);
-  const foodPg = usePaged(foods?.items, 10, `${lib}|${cleanOnly}`);
+  const [cat, setCat] = useState("");
+  const { data: foods } = useApi<{ items: Food[]; categories: Record<string, string> }>(["foods", lib, cleanOnly, cat],
+    `/api/foods?q=${encodeURIComponent(lib)}&clean=${cleanOnly}&category=${cat}`, { keepPrevious: true });
+  const foodPg = usePaged(foods?.items, 15, `${lib}|${cleanOnly}|${cat}`);
 
-  const prev = addDays(date, -1);
-  const prevKcal = hist?.days.find((x) => x.date === prev)?.calories || 0;
-  const copyPrev = useAction(() => post<{ copied: number }>("/api/nutrition/copy-day", { from_date: prev, to_date: date }), {
-    onSuccess: (r) => { invalidate(); toast(`Đã chép ${r.copied} bữa từ ${dayLabel(prev).toLowerCase()}`); },
-  });
-  const copyBtn = prevKcal > 0 && (
-    <Button size="sm" variant="secondary" icon={<Copy size={14} />} loading={copyPrev.isPending} onClick={() => copyPrev.mutate()}>
-      Chép bữa {dayLabel(prev).toLowerCase()}
-    </Button>
-  );
 
   const series = Array.from({ length: 14 }, (_, i) => {
     const d = addDays(todayISO(), i - 13);
@@ -358,6 +510,7 @@ export default function Nutrition() {
     return { date: d, calories: row?.calories || 0, protein: row?.protein || 0 };
   });
 
+  const askMenu = () => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." });
   const MACROS = [
     { label: "Đạm", k: "protein", unit: "g", color: "var(--volt)" },
     { label: "Tinh bột", k: "carbs", unit: "g", color: "#38bdf8" },
@@ -377,14 +530,38 @@ export default function Nutrition() {
             <input type="date" aria-label="Chọn ngày" className="h-9 rounded-full bg-transparent px-2 text-sm font-medium outline-none" value={date} max={todayISO()} onChange={(e) => e.target.value && setDate(e.target.value)} />
             <button type="button" aria-label="Ngày sau" disabled={date >= todayISO()} onClick={() => setDate(addDays(date, 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--glass-fill)] disabled:opacity-30"><ChevronRight size={17} /></button>
           </div>
-          <Button variant="secondary" icon={<Sparkles size={16} />} onClick={() => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." })}>Gợi ý thực đơn</Button>
-          <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
+          <Button variant="secondary" className="max-lg:hidden" icon={<Sparkles size={16} />} onClick={askMenu}>Gợi ý thực đơn</Button>
+          <Button className="max-lg:hidden" icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
         </>}
       />
 
+      {/* Điện thoại: một cột theo phương án A */}
+      {data && (
+        <div className="-mt-4 space-y-4 lg:hidden">
+          <MobileCalories day={data} />
+          <MobileMeals day={data} isToday={date === todayISO()} onOpen={setDetail} onAdd={() => setAdding(true)} />
+          {date === todayISO() && <MobileWater />}
+          <button type="button" onClick={askMenu} className="card flex w-full items-center gap-3 p-4 text-left">
+            <AgentAvatar agent="nutribro" size={36} />
+            <span className="min-w-0 flex-1 text-sm">
+              <b className="font-semibold text-nutri">NutriBro: </b>
+              {data.totals.protein < data.targets.protein
+                ? `còn thiếu ${fmt(data.targets.protein - data.totals.protein)} g đạm. Bấm để được gợi ý món cho bữa còn lại.`
+                : "đạm hôm nay đã đủ. Bấm để được gợi ý thực đơn cho bữa còn lại."}
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-muted" />
+          </button>
+        </div>
+      )}
+      {/* Nút nổi ghi bữa: luôn trong tầm ngón cái, ngay trên thanh tab */}
+      <button type="button" onClick={() => setAdding(true)}
+        className="no-print fixed bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))+4.75rem)] right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-ink px-5 font-semibold text-on-ink shadow-[var(--shadow-lg)] transition active:scale-[0.98] lg:hidden">
+        <Camera size={20} /> Ghi bữa
+      </button>
+
       {/* Hàng đầu: calo + macro (vòng) | lịch sử 14 ngày */}
       <div className="grid gap-6 lg:grid-cols-12 xl:gap-8">
-        <Card className="p-6 sm:p-7 lg:col-span-7">
+        <Card className="p-6 sm:p-7 max-lg:hidden lg:col-span-7">
           {isLoading || !data ? <Spinner /> : (
             <div className="flex flex-col gap-7 sm:flex-row sm:items-center">
               <div className="flex items-center gap-5">
@@ -404,7 +581,16 @@ export default function Nutrition() {
                 <p className="mb-4 mt-1 hidden text-sm text-muted sm:block">
                   {data.totals.calories <= data.targets.calories ? `Còn ${fmt(data.targets.calories - data.totals.calories)} kcal cho hôm nay` : `Đã vượt ${fmt(data.totals.calories - data.targets.calories)} kcal`}
                 </p>
-                {data.targets.day_type && (
+                {data.targets.mode === "tracked" ? (
+                  // chế độ "theo vận động thực tế": mục tiêu cộng thêm theo hoạt động + buổi gym hôm nay
+                  <Link to="/workouts?tab=activity" className="-mt-2 mb-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--glass-fill)] px-3 py-1 text-xs text-muted transition hover:text-text"
+                    title={`Cộng ${Math.round((data.targets.eat_back ?? 0.5) * 100)}% calo vận động (phần cộng thêm so với ngồi yên ≈ ${fmt(data.targets.activity_kcal_net ?? 0)} kcal). Bấm để xem.`}>
+                    <Bike size={12} />
+                    {(data.targets.activity_adjust_kcal ?? 0) > 0
+                      ? <>Vận động: <b className="num font-semibold text-text">+{fmt(data.targets.activity_adjust_kcal ?? 0)} kcal</b></>
+                      : <>Chưa có vận động hôm nay — ghi để cộng calo</>}
+                  </Link>
+                ) : data.targets.day_type && (
                   <p className="-mt-2 mb-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--glass-fill)] px-3 py-1 text-xs text-muted"
                     title="Theo lịch tập tuần: ngày tập ăn thêm tinh bột để có sức, ngày nghỉ ăn bớt. Tắt được trong Cài đặt.">
                     {data.targets.day_type === "train" ? <Dumbbell size={12} /> : <Moon size={12} />}
@@ -447,23 +633,22 @@ export default function Nutrition() {
 
       {/* Bữa ăn trong ngày */}
       <section>
-        <div className="mb-4 flex items-end justify-between gap-2">
+        <div className="mb-4 flex items-end justify-between gap-2 max-lg:hidden">
           <div>
             <h2 className="text-xl font-semibold tracking-[-0.02em]">Bữa ăn</h2>
             <p className="text-sm text-muted">{data ? `${data.meals.length} bữa đã ghi` : "Đang tải..."}</p>
           </div>
-          {data && data.meals.length > 0 && copyBtn}
         </div>
         {data && data.meals.length === 0 && (
-          <Card><Empty icon={<Utensils size={22} />} title={`Chưa có bữa ăn nào ${date === todayISO() ? "hôm nay" : "ngày này"}`} text="Chụp ảnh món ăn, mô tả bằng 1 câu hoặc chọn từ thư viện món Việt." action={<div className="flex flex-wrap justify-center gap-2"><Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>{copyBtn}</div>} /></Card>
+          <Card><Empty icon={<Utensils size={22} />} title={`Chưa có bữa ăn nào ${date === todayISO() ? "hôm nay" : "ngày này"}`} text="Chụp ảnh món ăn, mô tả bằng 1 câu hoặc chọn từ thư viện món Việt." action={<div className="flex flex-wrap justify-center gap-2"><Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button></div>} /></Card>
         )}
         {data && date === todayISO() && new Date().getHours() >= 18 && data.meals.length > 0 && !data.meals.some((m) => m.meal_type === "dinner") && (
-          <div className="glass mb-4 flex flex-wrap items-center gap-3 rounded-[22px] px-5 py-3">
+          <div className="glass mb-4 flex flex-wrap items-center gap-3 rounded-[22px] px-5 py-3 max-lg:hidden">
             <p className="flex-1 text-sm text-muted">Chưa ghi bữa tối. Ghi lại để calo và đạm hôm nay chính xác.</p>
             <Button size="sm" variant="secondary" icon={<Plus size={14} />} onClick={() => setAdding(true)}>Ghi bữa tối</Button>
           </div>
         )}
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 max-lg:hidden md:grid-cols-2">
           {data && Object.entries(MEAL_TYPES).map(([type, label]) => {
             const meals = data.meals.filter((m) => m.meal_type === type);
             if (!meals.length) return null;
@@ -479,7 +664,7 @@ export default function Nutrition() {
                       {m.image ? <img src={m.image} className="h-14 w-14 rounded-2xl object-cover" alt="" /> : <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--glass-fill)] text-muted"><Utensils size={18} /></div>}
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{m.name}</p>
-                        <p className="text-xs text-muted">{fmt(m.protein, 1)}g đạm · {fmt(m.carbs, 1)}g carb · {fmt(m.fat, 1)}g béo {m.analysis && "· có phân tích AI"}</p>
+                        <p className="text-xs text-muted">{fmt(m.protein, 1)}g đạm · {fmt(m.carbs, 1)}g carb · {fmt(m.fat, 1)}g béo {m.analysis && m.source !== "library" && m.source !== "manual" && "· có phân tích AI"}</p>
                       </div>
                       <p className="num text-lg font-semibold">{fmt(m.calories)}<span className="font-sans text-xs font-normal text-muted"> kcal</span></p>
                     </button>
@@ -496,34 +681,77 @@ export default function Nutrition() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold tracking-[-0.02em]">Thư viện món Việt</h2>
-            <p className="text-sm text-muted">Ảnh thật, calo/macro ước tính cho 1 khẩu phần phổ biến + mẹo ăn clean</p>
+            <p className="text-sm text-muted">{favOnly ? "Món bạn đã lưu — bấm “Ghi nhanh” để ghi vào hôm nay, không tốn lượt AI" : "Ảnh thật, calo/macro ước tính cho 1 khẩu phần phổ biến + mẹo ăn clean"}</p>
           </div>
-          <div className="card no-lift flex items-center gap-1 rounded-full p-1">
-            <div className="relative">
+          <div className="card no-lift flex w-full items-center gap-1 rounded-full p-1 sm:w-auto">
+            <div className="relative min-w-0 flex-1">
               <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-              <input className="h-10 w-48 rounded-full border border-[var(--card-border)] bg-surface pl-9 pr-3 text-sm text-text outline-none transition placeholder:text-muted focus:border-[var(--primary)] sm:w-56" aria-label="Tìm món trong thư viện" placeholder="Tìm món: phở, cơm tấm..." value={lib} onChange={(e) => setLib(e.target.value)} />
+              <input className="h-10 w-full rounded-full border border-[var(--card-border)] bg-surface pl-9 pr-3 text-sm text-text outline-none transition placeholder:text-muted focus:border-[var(--primary)] sm:w-56" aria-label="Tìm món trong thư viện" placeholder="Tìm món: phở, cơm tấm..." value={lib} onChange={(e) => setLib(e.target.value)} />
             </div>
-            <button type="button" aria-pressed={cleanOnly} onClick={() => setCleanOnly(!cleanOnly)} className={clsx("flex h-10 items-center gap-1 whitespace-nowrap rounded-full px-4 text-xs font-medium transition", cleanOnly ? "bg-volt text-on-volt" : "text-text hover:bg-surface-2")}><Leaf size={13} /> Clean</button>
+            <button type="button" aria-pressed={favOnly} onClick={() => { setFavOnly(!favOnly); if (!favOnly) setCleanOnly(false); }} className={clsx("flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-medium transition sm:px-4", favOnly ? "bg-ink text-on-ink" : "text-text hover:bg-surface-2")}>
+              <Star size={13} className={favOnly ? undefined : "text-[#f59e0b]"} fill={favOnly ? "currentColor" : "#f59e0b"} /> Yêu thích{fav.favs.length > 0 && <span className="num opacity-70">{fav.favs.length}</span>}
+            </button>
+            <button type="button" aria-pressed={cleanOnly} onClick={() => { setCleanOnly(!cleanOnly); setFavOnly(false); }} className={clsx("flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-medium transition sm:px-4", cleanOnly ? "bg-volt text-on-volt" : "text-text hover:bg-surface-2")}><Leaf size={13} /> Clean</button>
           </div>
         </div>
-        {foods && foodPg.total === 0 && (
-          <Card className="p-8 text-center text-sm text-muted">Không có món nào khớp “{lib}”. Thử từ khoá khác hoặc ghi bằng ảnh / mô tả.</Card>
+        {!favOnly && foods?.categories && (
+          // nhóm món: cuộn ngang trên điện thoại, xuống dòng trên máy tính
+          <div className="-mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+            {[["", "Tất cả"], ...Object.entries(foods.categories)].map(([k, v]) => (
+              <button key={k} type="button" aria-pressed={cat === k} onClick={() => setCat(k)}
+                className={clsx("h-8 shrink-0 rounded-full border px-3 text-xs font-medium transition",
+                  cat === k ? "border-transparent bg-ink text-on-ink" : "border-[var(--card-border)] bg-surface text-text hover:border-[var(--primary)]/50")}>
+                {v}
+              </button>
+            ))}
+          </div>
         )}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {foodPg.slice.map((f) => (
-            <FoodTile key={f.id} f={f} onAdd={async () => {
-              try { await quickLogFood(f); invalidate(); toast(`Đã ghi ${f.name} vào hôm nay`); } catch (e) { toast((e as Error).message, "error"); }
-            }} />
-          ))}
-        </div>
-        {foodPg.total > 0 && (
-          <Pager page={foodPg.page} pages={foodPg.pages} onChange={foodPg.setPage}
-            label={<>Món <b className="num text-text">{foodPg.from}–{foodPg.to}</b> / {foodPg.total}</>} />
+        {favOnly ? (
+          <>
+            {favPg.total === 0 && (
+              <Card className="p-8 text-center text-sm text-muted">
+                {fav.favs.length === 0
+                  ? <>Chưa có món yêu thích. Bấm <Star size={13} className="inline -translate-y-px text-[#f59e0b]" fill="#f59e0b" /> trên món bất kỳ trong thư viện, hoặc "Lưu yêu thích" trong chi tiết một bữa đã ăn.</>
+                  : <>Không có món yêu thích nào khớp “{lib}”.</>}
+              </Card>
+            )}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {favPg.slice.map((x) => (
+                <FavoriteTile key={x.id} x={x} onOpen={() => setFavOpen(x)} onRemove={() => fav.remove(x)} onLog={async () => {
+                  try { await post(`/api/nutrition/favorites/${x.id}/log`, { date: todayISO() }); invalidate(); toast(`Đã ghi ${x.name} vào hôm nay`); } catch (e) { toast((e as Error).message, "error"); }
+                }} />
+              ))}
+            </div>
+            {favPg.total > 0 && (
+              <Pager page={favPg.page} pages={favPg.pages} onChange={favPg.setPage}
+                label={<>Món <b className="num text-text">{favPg.from}–{favPg.to}</b> / {favPg.total} · tối đa 30 món</>} />
+            )}
+          </>
+        ) : (
+          <>
+            {foods && foodPg.total === 0 && (
+              <Card className="p-8 text-center text-sm text-muted">
+                Không có món nào khớp{lib ? ` “${lib}”` : ""}{cat ? ` trong nhóm “${foods.categories[cat]}”` : ""}{cleanOnly ? " (đang lọc Clean)" : ""}. Thử từ khoá khác, bỏ bớt bộ lọc, hoặc ghi bằng ảnh / mô tả.
+              </Card>
+            )}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {foodPg.slice.map((f) => (
+                <FoodTile key={f.id} f={f} onAdd={async () => {
+                  try { await quickLogFood(f); invalidate(); toast(`Đã ghi ${f.name} vào hôm nay`); } catch (e) { toast((e as Error).message, "error"); }
+                }} />
+              ))}
+            </div>
+            {foodPg.total > 0 && (
+              <Pager page={foodPg.page} pages={foodPg.pages} onChange={foodPg.setPage}
+                label={<>Món <b className="num text-text">{foodPg.from}–{foodPg.to}</b> / {foodPg.total}</>} />
+            )}
+          </>
         )}
       </section>
 
       <AddMeal open={adding} onClose={() => setAdding(false)} date={date} />
       <MealDetail meal={detail} onClose={() => setDetail(null)} />
+      <FavoriteDetail x={favOpen} date={todayISO()} onClose={() => setFavOpen(null)} />
     </div>
   );
 }

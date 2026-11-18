@@ -592,12 +592,31 @@ export const CHAPTERS: GuideChapter[] = [
         title: "Lịch tập tuần",
         intro: "Gắn mỗi ngày trong tuần với một buổi tập hoặc nghỉ.",
         steps: [
-          "Tab **Lịch tuần** → chọn buổi tập cho từng ngày (hoặc để Nghỉ) → **Lưu lịch**.",
+          "Tab **Lịch tuần** → chọn buổi tập cho một ngày → chọn **Chỉ ngày này** (xếp riêng) hoặc **Mọi thứ X** (sửa lịch mẫu). Lịch tự lưu.",
+          "Bấm **‹ ›** để xem lại tuần trước (buổi đã tập thật) hoặc xếp trước tối đa 2 tuần sau.",
           "Hoặc nhờ HeadBro: \"Lên lịch tập cả tuần cho mình\".",
         ],
         notes: ["Lịch tuần quyết định ngày nào là ngày tập/ngày nghỉ, ảnh hưởng tới calo mục tiêu (xem Dinh dưỡng) và nhắc nhở."],
         ask: ["Lên lịch tập 1 tuần theo mục tiêu của mình"],
         keywords: "lich tap tuan schedule ngay nghi",
+      },
+      {
+        id: "hoat-dong-khac",
+        title: "Hoạt động khác (đạp xe, đá bóng, bơi…)",
+        intro: "Ghi vận động ngoài buổi gym để tính calo và phút vận động theo khuyến nghị WHO.",
+        steps: [
+          "Trang **Tập luyện** → tab **Hoạt động khác**.",
+          "Chọn hoạt động (8 ô hay dùng hoặc tìm trong ~40 hoạt động) → chọn thời gian → chọn mức **Nhẹ / Trung bình / Mạnh** (Trung bình: vẫn nói chuyện được nhưng không hát được) → **Lưu hoạt động**.",
+          "Có đồng hồ / ứng dụng chạy bộ: mở **Thêm chi tiết** để nhập quãng đường hoặc nhịp tim — mức độ tự tính theo tốc độ.",
+          "Hoặc kể với Trợ lý AI: \"chiều nay đạp xe 40 phút\" → bấm **Xác nhận lưu** trên thẻ.",
+        ],
+        notes: [
+          "Calo = MET (Compendium of Physical Activities) × cân nặng × thời gian. Buổi gym tự tính, không cần ghi lại ở đây.",
+          "Mặc định mục tiêu calo đã gồm vận động trung bình nên KHÔNG cộng thêm. Muốn cộng theo vận động thật: Cài đặt → \"Mục tiêu calo thay đổi theo vận động\" (ăn bù 50%).",
+          "Ghi trùng (cùng hoạt động, cùng ngày, thời gian gần giống) sẽ được hỏi lại trước khi lưu.",
+        ],
+        keywords: "hoat dong khac dap xe da bong boi di bo chay cau long met calo van dong who 150 phut",
+        link: { to: "/workouts?tab=activity", label: "Mở Hoạt động khác" },
       },
       {
         id: "goi-y-nhom-co",
@@ -790,17 +809,6 @@ export const CHAPTERS: GuideChapter[] = [
         ],
         notes: ["Phân tích AI của bữa ăn được lưu lại để xem bất cứ lúc nào."],
         keywords: "sua bua an xoa bua an an lai",
-      },
-      {
-        id: "chep-ngay",
-        title: "Chép bữa hôm qua",
-        intro: "Ăn giống hôm qua? Chép cả ngày chỉ với 1 lần bấm.",
-        steps: [
-          "Ở phần **Bữa ăn** (hoặc khi ngày còn trống), bấm **Chép bữa hôm qua**.",
-          "Đang xem ngày cũ thì nút chép từ ngày liền trước ngày đó.",
-          "Xoá bớt món không ăn sau khi chép.",
-        ],
-        keywords: "chep bua hom qua copy ngay",
       },
       {
         id: "yeu-thich",

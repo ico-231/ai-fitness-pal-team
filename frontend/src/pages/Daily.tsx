@@ -56,16 +56,16 @@ function CheckinForm({ initial, onDone }: { initial?: Readiness | null; onDone: 
         <input type="range" min={0} max={12} step={0.5} value={f.sleep_hours} onChange={(e) => setF({ ...f, sleep_hours: +e.target.value })} className="w-full accent-[var(--primary)]" />
       </Field>
       <Field label="Chất lượng giấc ngủ">
-        <ScalePicker value={f.sleep_quality} onChange={(v) => setF({ ...f, sleep_quality: v })} labels={["😫", "😕", "😐", "🙂", "😴"]} low="Rất tệ" high="Rất ngon" />
+        <ScalePicker value={f.sleep_quality} onChange={(v) => setF({ ...f, sleep_quality: v })} labels={["Rất tệ", "Tệ", "Ổn", "Ngon", "Rất ngon"]} />
       </Field>
-      <Field label="Mức độ mệt mỏi">
-        <ScalePicker value={flip(f.fatigue)} onChange={(v) => setF({ ...f, fatigue: flip(v) })} labels={["🥵", "😓", "😐", "🙂", "⚡"]} low="Kiệt sức" high="Tràn năng lượng" />
+      <Field label="Năng lượng (mệt mỏi)">
+        <ScalePicker value={flip(f.fatigue)} onChange={(v) => setF({ ...f, fatigue: flip(v) })} labels={["Kiệt sức", "Mệt", "Vừa", "Khoẻ", "Sung sức"]} />
       </Field>
       <Field label="Đau nhức cơ (DOMS)">
-        <ScalePicker value={flip(f.soreness)} onChange={(v) => setF({ ...f, soreness: flip(v) })} labels={["1", "2", "3", "4", "5"]} low="Rất đau" high="Không đau" />
+        <ScalePicker value={flip(f.soreness)} onChange={(v) => setF({ ...f, soreness: flip(v) })} labels={["Rất đau", "Đau", "Hơi đau", "Nhẹ", "Không"]} />
       </Field>
       <Field label="Căng thẳng">
-        <ScalePicker value={flip(f.stress)} onChange={(v) => setF({ ...f, stress: flip(v) })} labels={["😰", "😟", "😐", "🙂", "😌"]} low="Rất căng thẳng" high="Thư giãn" />
+        <ScalePicker value={flip(f.stress)} onChange={(v) => setF({ ...f, stress: flip(v) })} labels={["Rất căng", "Căng", "Vừa", "Ổn", "Thư giãn"]} />
       </Field>
       <Field label="Cân nặng sáng nay (kg) — tuỳ chọn" hint="Cân sau khi thức dậy, trước khi ăn để số liệu ổn định">
         <DecimalInput className="input" value={weight} onValue={(_, raw) => setWeight(raw)} placeholder="Vd: 68,5" />
@@ -74,7 +74,7 @@ function CheckinForm({ initial, onDone }: { initial?: Readiness | null; onDone: 
         <input className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Vd: hơi đau vai trái" />
       </Field>
       <Button className="w-full" size="lg" loading={save.isPending} onClick={() => save.mutate(f)}>
-        Tính điểm sẵn sàng
+        Lưu check-in
       </Button>
     </div>
   );
@@ -127,6 +127,34 @@ function TodayPlan({ readiness }: { readiness: Readiness | null }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Ô tự nhập lượng nước: gõ số ml rồi bấm + (thêm) hoặc − (bớt). */
+function WaterCustom({ busy, onAdd, max }: { busy: boolean; onAdd: (ml: number) => void; max: number }) {
+  const [ml, setMl] = useState<number | null>(null);
+  const ok = ml != null && ml >= 10 && ml <= 2000;
+  const apply = (sign: 1 | -1) => {
+    if (!ok) return;
+    onAdd(sign === 1 ? Math.round(ml) : -Math.min(Math.round(ml), max));
+    setMl(null);
+  };
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <label className="flex h-8 w-[104px] items-center gap-1 rounded-full bg-[var(--surface-2)] px-3 text-sm focus-within:ring-2 focus-within:ring-[var(--volt)]">
+        <DecimalInput
+          aria-label="Số ml nước tự nhập"
+          placeholder="Tự nhập"
+          className="no-focus-ring num w-full min-w-0 bg-transparent outline-none placeholder:text-muted"
+          value={ml ?? ""}
+          onValue={(n) => setMl(n)}
+          onKeyDown={(e) => e.key === "Enter" && apply(1)}
+        />
+        <span className="text-xs text-muted">ml</span>
+      </label>
+      <Button size="sm" variant="secondary" icon={<Plus size={13} />} aria-label="Thêm số ml đã nhập" disabled={!ok || busy} onClick={() => apply(1)} />
+      <Button size="sm" variant="ghost" icon={<Minus size={13} />} aria-label="Bớt số ml đã nhập" disabled={!ok || busy || max <= 0} onClick={() => apply(-1)} />
     </div>
   );
 }
@@ -239,25 +267,28 @@ export default function Daily() {
           {!editing && <TodayPlan readiness={r} />}
         </Card>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* Nước uống */}
           <Card className="p-6">
             <div className="flex items-center gap-5">
               <Ring value={data.water_ml} max={data.water_target_ml || 1} size={118} stroke={10} color="#38bdf8" track="var(--surface-3)">
                 <div>
-                  <p className="num text-[26px] font-semibold leading-none">{fmt(data.water_ml / 1000, 1)}</p>
+                  {/* 2 chữ số: +250 ml phải thấy ngay 1,25 chứ không làm tròn thành 1,3 */}
+                  <p className="num text-[24px] font-semibold leading-none">{fmt(data.water_ml / 1000, 2)}</p>
                   <p className="mt-0.5 text-[11px] text-muted">/ {fmt(data.water_target_ml / 1000, 1)} L</p>
                 </div>
               </Ring>
               <div className="min-w-0 flex-1">
                 <p className="eyebrow flex items-center gap-1.5"><Droplets size={13} className="text-info" /> Nước uống</p>
-                <p className="mt-1 text-sm text-muted">{waterPct >= 100 ? "Đã đủ nước hôm nay" : `Đạt ${waterPct}% mục tiêu`}</p>
+                <p className="mt-1 text-sm text-muted">
+                  {fmt(data.water_ml)} ml · {waterPct >= 100 ? "đã đủ nước hôm nay" : `đạt ${waterPct}% mục tiêu`}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {[250, 500].map((v) => (
-                    <Button key={v} size="sm" variant="secondary" icon={<Plus size={13} />} onClick={() => water.mutate(v)}>{v} ml</Button>
+                    <Button key={v} size="sm" variant="secondary" icon={<Plus size={13} />} disabled={water.isPending} onClick={() => water.mutate(v)}>{v} ml</Button>
                   ))}
-                  <Button size="sm" variant="ghost" icon={<Minus size={13} />} aria-label="Bớt 250 ml" onClick={() => water.mutate(-250)} />
                 </div>
+                <WaterCustom busy={water.isPending} onAdd={(ml) => water.mutate(ml)} max={data.water_ml} />
               </div>
             </div>
           </Card>
@@ -377,7 +408,7 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
                 "num grid aspect-square place-items-center rounded-xl text-[12px] font-semibold transition",
                 !c.future && "hover:scale-105",
                 trained && "bg-volt text-on-volt",
-                logged && "bg-[color-mix(in_srgb,var(--volt)_28%,transparent)] text-text",
+                logged && "bg-[color-mix(in_srgb,var(--volt)_50%,transparent)] text-text shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--volt)_90%,var(--text)_10%)]",
                 !trained && !logged && !c.future && "border border-dashed border-[var(--glass-border)] font-normal text-muted",
                 c.future && "text-muted opacity-30",
                 c.today && "ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--surface)]",
@@ -390,7 +421,7 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
       </div>
       <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-muted">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-volt" /> Có tập</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[color-mix(in_srgb,var(--volt)_28%,transparent)]" /> Có ghi chép</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[color-mix(in_srgb,var(--volt)_50%,transparent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--volt)_90%,var(--text)_10%)]" /> Có ghi chép</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[var(--muted)]" /> Nghỉ</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] ring-2 ring-[var(--text)]" /> Hôm nay</span>
       </div>

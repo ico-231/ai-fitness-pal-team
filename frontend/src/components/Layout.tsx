@@ -1,11 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { supportsViewTransition, withTransition } from "../lib/transition";
 import clsx from "clsx";
-import { BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, Menu, MessagesSquare, Moon, Scale, Settings, Sun, Utensils, X } from "lucide-react";
+import { BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, MessagesSquare, Moon, Scale, Settings, Sun, Utensils } from "lucide-react";
 import { put } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { voice } from "../lib/media";
+import { Spinner } from "./ui";
+
+const PageSpinner = () => <div className="grid min-h-[50vh] place-items-center"><Spinner /></div>;
 
 const NAV = [
   { to: "/", label: "Tổng quan", short: "Tổng quan", icon: LayoutDashboard, end: true },
@@ -17,7 +20,8 @@ const NAV = [
   { to: "/guide", label: "Hướng dẫn", icon: BookOpen },
   { to: "/settings", label: "Cài đặt", icon: Settings },
 ];
-const MOBILE = [NAV[0], NAV[2], NAV[1], NAV[4], NAV[3]];
+// Thanh tab điện thoại: xếp theo tần suất dùng (Tổng quan · Tập · Ăn uống · Hôm nay · Trợ lý)
+const MOBILE = [NAV[0], NAV[2], NAV[4], NAV[3], NAV[1]];
 const MAIN_NAV = NAV.slice(0, 6);
 
 /**
@@ -79,8 +83,8 @@ const OTHER_NAV = NAV.slice(6);
 
 /** Ảnh logo đặt tại frontend/public/logo.png (vuông, nền trong suốt hoặc bo góc sẵn). */
 export function LogoMark({ size = 40 }: { size?: number | string }) {
-  // ưu tiên logo.png (file gốc của nhóm), không có thì logo.svg, cuối cùng là biểu tượng quả tạ
-  const SRC = ["/logo.png", "/logo.svg"];
+  // logo.png (file gốc của nhóm); lỗi tải thì dùng biểu tượng quả tạ
+  const SRC = ["/logo.png?v=6"];
   const [i, setI] = useState(0);
   const err = i >= SRC.length;
   return err ? (
@@ -89,7 +93,7 @@ export function LogoMark({ size = 40 }: { size?: number | string }) {
     </div>
   ) : (
     <img src={SRC[i]} alt="" width={typeof size === "number" ? size : undefined} height={typeof size === "number" ? size : undefined} onError={() => setI(i + 1)}
-      className="shrink-0 rounded-[24%] shadow-[0_6px_18px_-6px_rgb(132_204_22/0.6)]" style={{ width: size, height: size }} />
+      className="shrink-0 rounded-[24%] shadow-[0_6px_18px_-6px_rgb(198_244_50/0.55)]" style={{ width: size, height: size }} />
   );
 }
 
@@ -165,16 +169,16 @@ function useReminders() {
       const now = new Date();
       const hm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const day = now.toDateString();
-      const notify = (key: string, title: string, body: string) => {
+      const notify = (key: string, title: string, body: string, said: string) => {
         if (fired.has(key + day)) return;
         fired.add(key + day);
-        if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, icon: "/favicon.svg" });
-        voice.speak(body);
+        if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, icon: "/icon-512.png?v=6" });
+        voice.speak(said, { priority: "low" }); // câu nói ngắn hơn chữ trên thông báo (có sẵn file thu âm)
       };
-      if (hm === r.checkin) notify("checkin", "FitBro · Check-in buổi sáng", "Đến giờ check-in để biết hôm nay nên tập nặng hay nhẹ.");
-      if (hm === r.workout) notify("workout", "FitBro · Giờ tập luyện", "Đến giờ tập rồi! Mở Tập luyện để bắt đầu buổi tập.");
+      if (hm === r.checkin) notify("checkin", "FitBro · Check-in buổi sáng", "Đến giờ check-in để biết hôm nay nên tập nặng hay nhẹ.", "Đến giờ check-in buổi sáng rồi nhé.");
+      if (hm === r.workout) notify("workout", "FitBro · Giờ tập luyện", "Đến giờ tập rồi! Mở Tập luyện để bắt đầu buổi tập.", "Đến giờ tập rồi, mình bắt đầu thôi!");
       if (r.water_every_min > 0 && now.getMinutes() % r.water_every_min === 0 && now.getHours() >= 8 && now.getHours() <= 21)
-        notify("water" + hm, "FitBro · Uống nước", "Uống một cốc nước nhé.");
+        notify("water" + hm, "FitBro · Uống nước", "Uống một cốc nước nhé.", "Uống nước nhé.");
     };
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
@@ -183,10 +187,8 @@ function useReminders() {
 
 export function Layout() {
   const { user, signOut } = useAuth();
-  const [open, setOpen] = useState(false);
   const loc = useLocation();
   useReminders();
-  useEffect(() => setOpen(false), [loc.pathname]);
   const navigate = useNavigate();
   // Mọi liên kết nội bộ (thanh điều hướng, nút "?"...) đổi trang qua View Transition → trang cũ mờ đi, trang mới nổi lên.
   // Bắt ở pha capture rồi preventDefault: <Link> của React Router thấy defaultPrevented nên không tự điều hướng lần nữa.
@@ -206,36 +208,14 @@ export function Layout() {
     return () => document.removeEventListener("click", onClick, true);
   }, [navigate]);
   const fullBleed = loc.pathname.startsWith("/chat");
+  // Buổi tập là việc phải làm cho xong (có nút chính dính đáy) → ẩn thanh tab trên điện thoại
+  const focusTask = loc.pathname.startsWith("/workouts/session") || loc.pathname.startsWith("/workouts/camera");
   const railTop = useRef<HTMLElement>(null); // khối điều hướng trên của thanh bên
   const railBottom = useRef<HTMLElement>(null);
   const bottomBar = useRef<HTMLElement>(null);
   // Giao diện "immersive": nền ảnh/aurora + mọi card thành kính mờ (áp cho toàn app)
   const immersive = true;
 
-  const link = (n: (typeof NAV)[number]) => (
-    <NavLink
-      key={n.to}
-      to={n.to}
-      end={n.end}
-      className={({ isActive }) =>
-        clsx(
-          "flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[14px] font-medium transition",
-          isActive ? "bg-ink text-on-ink shadow-sm" : "text-muted hover:bg-surface-2 hover:text-text",
-        )
-      }
-    >
-      <n.icon size={18} />
-      {n.label}
-    </NavLink>
-  );
-  const nav = (
-    <nav className="flex flex-col gap-1">
-      <p className="eyebrow mb-1 px-3.5">Menu</p>
-      {MAIN_NAV.map(link)}
-      <p className="eyebrow mb-1 mt-5 px-3.5">Khác</p>
-      {OTHER_NAV.map(link)}
-    </nav>
-  );
 
   // Thanh biểu tượng mảnh kiểu "rail" cho desktop: chỉ icon, rê chuột hiện tên
   const railLink = (n: (typeof NAV)[number]) => (
@@ -270,7 +250,7 @@ export function Layout() {
         <p className="truncate text-sm font-semibold">{user?.name}</p>
         <p className="truncate text-[11px] text-muted">{user?.email}</p>
       </div>
-      <button onClick={signOut} title="Đăng xuất" aria-label="Đăng xuất" className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface hover:text-danger">
+      <button onClick={signOut} title="Đăng xuất" aria-label="Đăng xuất" className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface hover:text-danger pointer-coarse:h-11 pointer-coarse:w-11">
         <LogOut size={16} />
       </button>
     </div>
@@ -308,55 +288,37 @@ export function Layout() {
         </nav>
       </aside>
 
-      {/* Topbar mobile */}
-      <header className="glass no-print sticky top-0 z-30 flex items-center justify-between border-x-0 border-t-0 px-4 py-2.5 lg:hidden">
-        <Logo />
-        <div className="flex items-center gap-1">
-          <button onClick={() => setOpen(true)} aria-label="Mở menu" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2">
-            <Menu size={20} />
-          </button>
-        </div>
-      </header>
-      {open && (
-        <div className="no-print fixed inset-0 z-50 bg-black/40 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="fade-in m-2 flex h-[calc(100%-1rem)] w-72 flex-col gap-6 overflow-y-auto rounded-[28px] bg-surface px-3 py-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-2">
-              <Logo />
-              <button onClick={() => setOpen(false)} aria-label="Đóng menu" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2">
-                <X size={20} />
-              </button>
-            </div>
-            {nav}
-            <div className="mt-auto">{userBox}</div>
-          </div>
-        </div>
-      )}
+      {/* Điện thoại: không thanh trên. Trang dùng tiêu đề lớn + avatar (bung menu nhỏ); dải nền che vùng tai thỏ khi cuộn. */}
+      <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl lg:hidden" />
 
-      <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "" : "pb-40 lg:pb-24")}>
+      <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "pt-[env(safe-area-inset-top)] lg:pt-0" : focusTask ? "pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+7.5rem)] lg:pb-24 lg:pt-0" : "pt-[env(safe-area-inset-top)] pb-[calc(var(--bottombar-h)+1.5rem)] lg:pb-24 lg:pt-0")}>
+        {/* Suspense riêng cho nội dung trang: khi đang tải code trang mới, thanh điều hướng vẫn hiện (không nháy trắng cả màn) */}
         {fullBleed ? (
-          <Outlet />
+          <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
         ) : (
           <div key={loc.pathname} className="page-main stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
-            <Outlet />
+            <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
           </div>
         )}
       </main>
 
       {/* Bottom nav mobile */}
-      {!fullBleed && (
-        <nav ref={bottomBar} className="liquid no-print fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 rounded-full p-1.5 lg:hidden">
-          <LiquidIndicator container={bottomBar} variant="ink" />
+      {/* Thanh tab điện thoại kiểu nổi (J2 "float"): viên 64px cách mép 16px; mục đang chọn tô viên volt sau icon. */}
+      {!focusTask && (
+        <nav ref={bottomBar} aria-label="Điều hướng chính" data-tab-style="float"
+          className="no-print fixed inset-x-4 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full border border-[var(--card-border)] bg-surface/90 px-2 shadow-[0_8px_30px_-10px_rgb(16_24_40/0.25)] backdrop-blur-xl lg:hidden">
           {MOBILE.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
-              data-pill
               className={({ isActive }) =>
-                clsx("relative z-10 flex flex-col items-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition", isActive ? "text-on-ink" : "text-muted")
+                clsx("group flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[11px] font-medium leading-tight transition", isActive ? "text-text" : "text-muted")
               }
             >
-              <n.icon size={19} />
+              <span className="grid h-7 w-11 place-items-center rounded-full transition group-aria-[current=page]:bg-volt group-aria-[current=page]:text-on-volt">
+                <n.icon size={22} />
+              </span>
               {"short" in n ? n.short : n.label}
             </NavLink>
           ))}

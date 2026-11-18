@@ -11,6 +11,7 @@ Mỗi nhà cung cấp có thể có nhiều key và nhiều model → hệ thố
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -84,7 +85,7 @@ class Endpoint:
     tag: str  # "primary" | "secondary"
 
 
-_clients: dict[tuple[str, str], AsyncOpenAI] = {}
+_clients: dict[tuple[str, str, int], AsyncOpenAI] = {}
 _no_effort: dict[str, bool] = {}
 _cooldown: dict[Endpoint, float] = {}
 _no_usage: dict[str, bool] = {}  # nhà cung cấp không hỗ trợ stream_options.include_usage
@@ -103,9 +104,16 @@ def api_keys() -> list[str]:
 def client(key: str | None = None, base_url: str | None = None) -> AsyncOpenAI:
     s = get_settings()
     k, b = key or api_keys()[0], base_url or s.llm_base_url
-    if (b, k) not in _clients:
-        _clients[(b, k)] = AsyncOpenAI(api_key=k, base_url=b, timeout=s.llm_timeout, max_retries=1)
-    return _clients[(b, k)]
+    # Kết nối HTTP của client gắn với vòng lặp sự kiện tạo ra nó; môi trường tạo vòng lặp mới cho mỗi
+    # request (test, một số runtime serverless) mà dùng lại client cũ sẽ lỗi "Event loop is closed".
+    try:
+        loop_id = id(asyncio.get_running_loop())
+    except RuntimeError:
+        loop_id = 0
+    ck = (b, k, loop_id)
+    if ck not in _clients:
+        _clients[ck] = AsyncOpenAI(api_key=k, base_url=b, timeout=s.llm_timeout, max_retries=1)
+    return _clients[ck]
 
 
 def reset_client() -> None:
@@ -309,19 +317,33 @@ async def complete_json(messages: list[dict], **kw) -> dict:
     return parse_json(text)
 
 
+def _as_object(data: object) -> dict:
+    """Mọi nơi gọi đều đọc kết quả như một object. Model đôi khi trả về MẢNG (vd chỉ liệt kê các món ăn
+    thay vì {"name":..., "items": [...]}) → trước đây gây lỗi 500 'list' object has no attribute 'get'."""
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        dicts = [x for x in data if isinstance(x, dict)]
+        if len(dicts) == 1 and len(data) == 1:
+            return dicts[0]
+        return {"items": dicts}
+    raise LLMError("Mô hình AI trả về dữ liệu không đúng định dạng. Bạn thử lại nhé.")
+
+
 def parse_json(text: str) -> dict:
-    """Bóc JSON kể cả khi model bọc trong ```json ... ``` hoặc thêm chữ thừa."""
+    """Bóc JSON kể cả khi model bọc trong ```json ... ``` hoặc thêm chữ thừa. Luôn trả về dict."""
     t = text.strip()
     t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t, flags=re.MULTILINE).strip()
     try:
-        return json.loads(t)
+        return _as_object(json.loads(t))
     except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", t, flags=re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group(0))
-            except json.JSONDecodeError:
-                pass
+        for pat in (r"\{.*\}", r"\[.*\]"):
+            m = re.search(pat, t, flags=re.DOTALL)
+            if m:
+                try:
+                    return _as_object(json.loads(m.group(0)))
+                except json.JSONDecodeError:
+                    pass
     raise LLMError("Mô hình AI trả về dữ liệu không đúng định dạng JSON.")
 
 

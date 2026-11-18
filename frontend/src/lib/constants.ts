@@ -102,7 +102,8 @@ export const MUSCLES: Record<string, string> = {
 };
 
 // Màu bản đồ nhiệt: tập ít → xanh, tập nhiều → đỏ
-export const HEAT_COLORS = ["var(--muscle-0)", "var(--info)", "#4ade80", "#fb923c", "#ef4444"];
+// Mức 0 = chưa tập (bản đồ ảnh thật không tô, chú thích dùng xám). Mức 1 dùng xanh dương sáng vì màu được NHÂN lên ảnh — màu tối sẽ thành gần đen.
+export const HEAT_COLORS = ["var(--muscle-0)", "#60a5fa", "#4ade80", "#fb923c", "#ef4444"];
 
 export const TOOL_LABELS: Record<string, string> = {
   search_knowledge: "Tra kho kiến thức",
@@ -136,4 +137,7 @@ export const TOOL_LABELS: Record<string, string> = {
   propose_weekly_schedule: "Chuẩn bị lịch tập tuần",
   create_meal_plan: "Lập thực đơn",
   get_insights: "Phân tích điểm cần cải thiện",
+  search_activities: "Tra danh mục hoạt động",
+  propose_activity_log: "Chuẩn bị ghi hoạt động",
+  get_activity_summary: "Xem vận động & phút tuần",
 };

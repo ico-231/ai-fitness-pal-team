@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CircleHelp, Loader2, X } from "lucide-react";
 import { withTransition } from "../lib/transition";
+import { MobileMenuButton } from "./MobileMenu";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
 export function clickable(onClick?: () => void) {
@@ -158,9 +159,11 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     // Đưa focus vào hộp thoại; trả focus về chỗ cũ khi đóng.
+    // Điện thoại: KHÔNG tự focus ô nhập — bàn phím ảo bật lên che nửa hộp thoại trước khi người dùng kịp đọc.
     window.setTimeout(() => {
-      const first = box.current?.querySelector<HTMLElement>("[autofocus], input, textarea, select");
-      (first || box.current)?.focus();
+      const touch = window.matchMedia("(pointer: coarse)").matches;
+      const first = touch ? box.current?.querySelector<HTMLElement>("[autofocus]") : box.current?.querySelector<HTMLElement>("[autofocus], input, textarea, select");
+      (first || box.current)?.focus({ preventScroll: true });
     }, 0);
     const trap = (e: KeyboardEvent) => {
       if (e.key !== "Tab" || !box.current) return;
@@ -201,17 +204,19 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={clsx("fade-in flex max-h-[calc(92dvh/var(--z))] w-full flex-col overflow-hidden rounded-t-[28px] border border-[var(--card-border)] bg-surface shadow-2xl sm:rounded-[28px]", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
+        className={clsx("sheet-in flex max-h-[calc(92dvh/var(--z))] w-full flex-col overflow-hidden rounded-t-[28px] border border-[var(--card-border)] bg-surface shadow-2xl outline-none sm:rounded-[28px]", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+        {/* tay nắm kiểu bottom sheet (chỉ trên điện thoại) */}
+        <span aria-hidden className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-surface-3 sm:hidden" />
+        <div className="flex items-center justify-between gap-3 border-b border-border py-2 pl-5 pr-3 sm:py-3">
           <div className="min-w-0 truncate text-base font-semibold">{title}</div>
           <IconButton onClick={onClose} aria-label="Đóng">
             <X size={18} />
           </IconButton>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-border px-5 py-3">{footer}</div>}
+        <div className={clsx("flex-1 overflow-y-auto overscroll-contain px-5 py-4", !footer && "pb-[max(1rem,env(safe-area-inset-bottom))]")}>{children}</div>
+        {footer && <div className="flex justify-end gap-2 border-t border-border px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:[&>*]:flex-1">{footer}</div>}
       </div>
     </div>,
     document.body,
@@ -220,16 +225,20 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
 
 export function Segmented<T extends string>({ value, onChange, options, size = "md" }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; size?: "sm" | "md" }) {
   return (
-    <div className="inline-flex rounded-full bg-surface-2 p-1">
+    // Nhiều lựa chọn trên màn hẹp: cuộn ngang thay vì gãy chữ ("Gần / đây")
+    <div className="inline-flex max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none]">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
+          onClick={(e) => {
+            onChange(o.value);
+            e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+          }}
           className={clsx(
-            "rounded-full font-medium transition",
-            size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm",
+            "shrink-0 whitespace-nowrap rounded-full font-medium transition",
+            size === "sm" ? "px-3 py-1 text-xs pointer-coarse:py-2" : "px-4 py-1.5 text-sm pointer-coarse:py-2.5",
             value === o.value ? "bg-ink text-on-ink shadow-sm" : "text-muted hover:text-text",
           )}
         >
@@ -291,20 +300,15 @@ export function ScalePicker({ value, onChange, labels, low, high }: { value: num
             key={i}
             onClick={() => onChange(i + 1)}
             className={clsx(
-              "flex flex-col items-center rounded-2xl border py-1.5 leading-tight transition",
-              value === i + 1 ? "border-transparent bg-volt text-on-volt shadow-sm" : "border-transparent bg-surface-2 hover:border-text/20",
+              "flex h-14 flex-col items-center justify-center rounded-2xl border leading-tight transition",
+              value === i + 1 ? "border-transparent bg-volt font-semibold text-on-volt shadow-sm" : "border-transparent bg-surface-2 text-muted hover:border-text/20",
             )}
-            aria-label={`Mức ${i + 1}`}
+            aria-label={l === String(i + 1) ? `Mức ${i + 1}` : `Mức ${i + 1}: ${l}`}
             aria-pressed={value === i + 1}
           >
-            {l === String(i + 1) ? (
-              <span className="num py-1 text-lg font-semibold">{l}</span>
-            ) : (
-              <>
-                <span className="text-lg">{l}</span>
-                <span className={clsx("num text-[11px] font-semibold", value === i + 1 ? "text-on-volt" : "text-muted")}>{i + 1}</span>
-              </>
-            )}
+            {/* Số trên, chữ ngắn dưới (11px): đọc được nghĩa mà không cần chú thích hai đầu thang */}
+            <span className={clsx("num text-base font-semibold", value !== i + 1 && "text-text")}>{i + 1}</span>
+            {l !== String(i + 1) && <span className="max-w-full truncate px-0.5 text-[11px]">{l}</span>}
           </button>
         ))}
       </div>
@@ -331,14 +335,17 @@ export function HelpButton({ to, className }: { to: string; className?: string }
 
 export function PageHeader({ title, subtitle, actions, lead, help }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; lead?: ReactNode; help?: string }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="on-bg text-[32px] leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
-          {lead && <span className="font-light text-muted">{lead} </span>}
-          <span className="font-bold">{title}</span>
-          {help && <HelpButton to={help} className="ml-3 -translate-y-1.5 align-middle" />}
-        </h1>
-        {subtitle && <p className="on-bg mt-2 max-w-2xl text-sm text-muted">{subtitle}</p>}
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
+      <div className="flex min-w-0 flex-1 items-start justify-between gap-3 max-lg:basis-full">
+        <div className="min-w-0 flex-1">
+          <h1 className="on-bg text-[32px] leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
+            {lead && <span className="font-light text-muted">{lead} </span>}
+            <span className="font-bold">{title}</span>
+            {help && <HelpButton to={help} className="ml-3 -translate-y-1.5 align-middle" />}
+          </h1>
+          {subtitle && <p className="on-bg mt-2 max-w-2xl text-sm text-muted">{subtitle}</p>}
+        </div>
+        <MobileMenuButton />
       </div>
       {actions && <div className="no-print flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -371,7 +378,7 @@ export function Pager({ page, pages, onChange, label }: { page: number; pages: n
     if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i);
     else if (nums[nums.length - 1] !== "…") nums.push("…");
   }
-  const btn = "grid h-9 min-w-9 place-items-center rounded-full px-2 text-sm font-medium transition disabled:opacity-35";
+  const btn = "grid h-9 min-w-9 place-items-center rounded-full px-2 text-sm font-medium transition disabled:opacity-35 pointer-coarse:h-11 pointer-coarse:min-w-11";
   return (
     <nav aria-label="Chuyển trang" className="flex flex-wrap items-center justify-between gap-2 pt-3">
       {label ? <p className="px-1 text-xs text-muted">{label}</p> : <span />}
@@ -393,22 +400,50 @@ export function Pager({ page, pages, onChange, label }: { page: number; pages: n
   );
 }
 
-/** Thanh tab dạng viên kính. `extra`: phần tử phụ nằm cuối cùng thanh (vd nút "Buổi tự soạn"). */
-export function Tabs<T extends string>({ value, onChange, tabs, extra }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; icon?: ReactNode }[]; extra?: ReactNode }) {
+/**
+ * Thanh tab dạng viên kính. `extra`: phần tử phụ nằm cuối cùng thanh (vd nút "Buổi tự soạn").
+ * Điện thoại: thanh cuộn ngang → tự cuộn tab đang chọn vào giữa, mờ 2 mép khi còn tab bị khuất, dùng nhãn ngắn `short` nếu có.
+ */
+export function Tabs<T extends string>({ value, onChange, tabs, extra }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; short?: string; icon?: ReactNode }[]; extra?: ReactNode }) {
+  const bar = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const measure = () => {
+    const el = bar.current;
+    if (!el) return;
+    setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  };
+  useEffect(() => {
+    const el = bar.current;
+    const active = el?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (el && active && el.scrollWidth > el.clientWidth) {
+      // chỉ cuộn ngang thanh tab, không kéo cả trang
+      el.scrollTo({ left: active.offsetLeft - (el.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
+    }
+    measure();
+  }, [value]);
+  useEffect(() => {
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const mask = edges.left || edges.right
+    ? `linear-gradient(to right, ${edges.left ? "transparent, #000 28px" : "#000"}, ${edges.right ? "#000 calc(100% - 28px), transparent" : "#000"})`
+    : undefined;
   return (
-    <div className="glass no-print mb-8 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
+    <div ref={bar} onScroll={measure} style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      className="glass no-print mb-8 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
       {tabs.map((t) => (
         <button
           key={t.value}
           onClick={() => t.value !== value && withTransition(() => onChange(t.value))}
           aria-pressed={value === t.value}
+          aria-label={t.label}
           className={clsx(
             "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
             value === t.value ? "bg-volt text-on-volt shadow-[0_6px_18px_-8px_rgb(132_204_22/0.8)]" : "text-muted hover:bg-[var(--glass-fill)] hover:text-text",
           )}
         >
           {t.icon}
-          {t.label}
+          {t.short ? (<><span className="sm:hidden">{t.short}</span><span className="hidden sm:inline">{t.label}</span></>) : t.label}
         </button>
       ))}
       {extra && (
@@ -432,7 +467,7 @@ export function toast(message: string, kind: "ok" | "error" = "ok") {
     document.body.appendChild(el);
   }
   el.className = clsx(
-    "no-print pointer-events-none fixed left-1/2 top-4 z-[80] -translate-x-1/2 rounded-full px-5 py-2.5 text-sm font-medium shadow-xl fade-in",
+    "no-print pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[80] w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl px-5 py-2.5 text-center text-sm font-medium shadow-xl fade-in",
     kind === "ok" ? "bg-ink text-on-ink" : "bg-danger text-on-danger",
   );
   el.textContent = message;

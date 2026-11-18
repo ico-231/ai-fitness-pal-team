@@ -10,6 +10,11 @@ export interface Targets {
   day_type?: "train" | "rest" | null;
   adjust_kcal?: number;
   base_calories?: number;
+  /** "average" = ước lượng trung bình (±150 theo ngày tập) | "tracked" = cộng thêm theo vận động ghi lại */
+  mode?: "average" | "tracked";
+  activity_adjust_kcal?: number;
+  activity_kcal_net?: number;
+  eat_back?: number;
 }
 
 export interface Settings {
@@ -18,6 +23,10 @@ export interface Settings {
   prep_seconds: number;
   auto_camera: boolean;
   calorie_cycling: boolean;
+  /** "average" = ước lượng trung bình | "tracked" = mục tiêu calo thay đổi theo vận động ghi lại */
+  energy_mode?: "average" | "tracked";
+  lifestyle?: "sitting" | "standing" | "manual";
+  eat_back?: number;
   theme: "system" | "light" | "dark";
   reminders: { checkin: string; workout: string; water_every_min: number; enabled: boolean };
 }
@@ -39,6 +48,8 @@ export interface Profile {
   calculated: (Targets & { bmr: number; tdee: number }) | null;
   bmi: number | null;
   settings: Settings;
+  /** mục tiêu nền (kcal) ở chế độ "theo vận động thực tế" cho từng nhịp sinh hoạt; null nếu thiếu hồ sơ / tự đặt tay */
+  energy_preview?: Record<"sitting" | "standing" | "manual", number> | null;
 }
 
 export interface User {
@@ -251,6 +262,12 @@ export interface ScheduleDay {
   note: string;
   is_today: boolean;
   done: boolean;
+  /** ngày cụ thể trong tuần này (YYYY-MM-DD) */
+  date?: string;
+  /** ngày này được xếp riêng, khác lịch mẫu */
+  overridden?: boolean;
+  /** buổi của lịch mẫu cho thứ này (lặp mọi tuần) */
+  template_plan?: ScheduleDay["plan"];
 }
 
 export interface TraceItem {

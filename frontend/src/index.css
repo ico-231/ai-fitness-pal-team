@@ -3,18 +3,26 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---- Mật độ giao diện trên desktop ----
-   Thiết kế gốc canh theo màn 16" ở zoom ~80%. Thay vì để người dùng tự zoom trình duyệt, thu nhỏ cả trang
-   bằng CSS zoom: laptop 13–16" (≥1024 px) = 0.8, màn rất rộng = 0.9, điện thoại/tablet giữ 1.
+   Thiết kế gốc to hơn cần thiết trên laptop. Thay vì để người dùng tự zoom trình duyệt, thu nhỏ cả trang bằng CSS zoom.
+   Mức chính xác do lib/zoom.ts (autoZoom) tính theo bề rộng + chiều cao cửa sổ và gắn inline --z-auto
+   (14" ≈ 0.8, 16" ≈ 0.88, màn rất rộng tới 0.95; điện thoại/tablet = 1). Các media query dưới chỉ là giá trị
+   tạm cho khung hình đầu tiên trước khi JS chạy.
    Cài đặt → "Cỡ giao diện" ghi đè bằng --ui-zoom (gắn inline trên <html>, xem lib/zoom.ts).
    --z = mức zoom thực tế; chỗ nào cần cao đúng bằng màn hình dùng calc(100dvh / var(--z)). */
 :root { --z-auto: 1; }
 @media (min-width: 1024px) { :root { --z-auto: 0.8; } }
+@media (min-width: 1600px) { :root { --z-auto: 0.85; } }
+@media (min-width: 1728px) { :root { --z-auto: 0.88; } }
 @media (min-width: 2200px) { :root { --z-auto: 0.9; } }
 html {
   --z: var(--ui-zoom, var(--z-auto));
   zoom: var(--z);
 }
 @media print { html { zoom: 1; } }
+/* Trang báo cáo A4 (/report): giữ đúng kích thước tờ giấy trên màn hình, không thu nhỏ theo laptop */
+html.print-page { zoom: 1; }
+@page { size: A4; margin: 10mm; }
+@media print { .report-sheet .recharts-wrapper { break-inside: avoid; } }
 
 /* Thanh bên desktop: kích thước nút co theo chiều cao thật của màn hình (laptop thấp / cửa sổ thu nhỏ) */
 .rail { --rail-btn: 44px; --rail-logo: 44px; --rail-avatar: 40px; --rail-gap: 6px; }
@@ -178,12 +186,63 @@ table {
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* Ô nhập nằm trong một khung đã tự đổi màu viền khi focus (ô chat) → không vẽ thêm khung đen bên trong.
+   Rule :focus-visible ở trên không nằm trong @layer nên thắng class focus-visible:outline-none của Tailwind. */
+.no-focus-ring:focus-visible { outline: none; }
 /* Màn hình cảm ứng (dùng một tay ở phòng gym): mọi nút cao tối thiểu 40px */
 @media (pointer: coarse) {
   main button,
   main [role="button"] {
     min-height: 40px;
   }
+}
+
+/* ---------- Điện thoại ----------
+   --topbar-h: chiều cao thanh trên (trang Chat tính chiều cao khung theo biến này).
+   --bottombar-h: khoảng trống chừa cho thanh điều hướng dưới + vùng an toàn (home indicator iPhone). */
+:root {
+  --topbar-h: 56px;
+  --bottombar-h: calc(88px + env(safe-area-inset-bottom));
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Mở từ Màn hình chính (PWA standalone): cư xử như app gốc */
+@media (display-mode: standalone) {
+  /* cuộn quá đầu/cuối trang không kéo lộ nền trắng/đen phía sau (hiệu ứng "nảy" của trang web) */
+  html, body { overscroll-behavior-y: none; }
+  /* nhấn giữ nút/ảnh giao diện không bật menu "Lưu ảnh / Mở liên kết / Sao chép" của Safari;
+     chữ nội dung (tin nhắn chat, hướng dẫn...) vẫn bôi đen & sao chép được */
+  a, button, nav, header, img, svg, [role="button"], .no-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  img { -webkit-user-drag: none; }
+}
+/* Bỏ ô xám nháy khi chạm (Android/iOS) + bỏ trễ chạm-đúp-để-zoom trên nút */
+:where(a, button, [role="button"], label, summary, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* iOS Safari tự phóng to cả trang khi chạm vào ô nhập có cỡ chữ < 16px → giữ tối thiểu 16px trên cảm ứng */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+@media (max-width: 639px) {
+  /* Chữ 10px khó đọc trên màn nhỏ → tối thiểu 11px */
+  .text-\[10px\] { font-size: 11px; }
+}
+/* Điện thoại/tablet: thẻ kính đã gần như đục (94%) nên blur 28px gần như không thấy, nhưng mỗi thẻ blur
+   bắt GPU vẽ lại khi cuộn → giật trên máy tầm trung. Bỏ blur ở thẻ nội dung, giữ ở thanh điều hướng/thanh trên. */
+@media (max-width: 1023px) {
+  .immersive .card { backdrop-filter: none; transition: none; }
+  .immersive main .glass { backdrop-filter: none; }
 }
 
 ::selection {
@@ -252,6 +311,14 @@ body {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
+/* Khung chờ khi đang tải (đúng hình khối thật, không vòng quay giữa trang) */
+.skel {
+  background: var(--surface-3);
+  border-radius: 10px;
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skel-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 .eyebrow {
   font-size: 11px;
   font-weight: 600;
@@ -301,7 +368,7 @@ body {
   font-weight: 700;
 }
 .prose-chat a {
-  color: var(--primary);
+  color: var(--primary-strong); /* --primary (xanh chanh sáng) không đủ tương phản cho chữ trên nền trắng */
   text-decoration: underline;
 }
 .prose-chat table {
@@ -353,6 +420,34 @@ body {
 
 .fade-in {
   animation: fadeIn 0.25s ease both;
+}
+/* Hộp thoại: điện thoại trượt lên từ đáy (bottom sheet), màn lớn hiện dần ở giữa */
+.sheet-in {
+  animation: sheetUp 0.42s var(--spring) both;
+}
+@media (min-width: 640px) {
+  .sheet-in { animation: fadeIn 0.25s ease both; }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+/* Menu nhỏ bung từ avatar (điện thoại): phóng từ góc trên phải */
+.pop-in {
+  animation: popIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pop-in { animation: fadeIn 0.15s ease both; } }
+/* Ngăn menu điện thoại trượt vào từ trái */
+.drawer-in {
+  animation: drawerIn 0.38s var(--spring) both;
+}
+@keyframes drawerIn {
+  from { transform: translateX(-104%); }
+  to { transform: none; }
 }
 @keyframes fadeIn {
   from {
@@ -638,6 +733,7 @@ body {
   ::view-transition-old(page) { animation: fade-out-only 0.18s ease both !important; }
   ::view-transition-new(page) { animation: fade-only 0.3s ease both !important; }
   .liquid-pill.jelly { animation: none !important; }
+  .sheet-in, .drawer-in { animation: fade-only 0.2s ease both !important; }
   .liquid-pill { transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease, opacity 0.2s ease; }
   .immersive .card:hover { transform: translateY(-1px); }
 }
@@ -667,3 +763,8 @@ body {
     break-inside: avoid;
   }
 }
+
+/* recharts 3 cho biểu đồ nhận focus (bấm chuột vào cột) → trình duyệt vẽ khung viền đen quanh cả biểu đồ.
+   Bỏ khung khi bấm chuột, vẫn giữ viền rõ khi người dùng di chuyển bằng bàn phím (Tab). */
+.recharts-wrapper:focus, .recharts-surface:focus, .recharts-wrapper *:focus { outline: none; }
+.recharts-wrapper:focus-visible, .recharts-surface:focus-visible { outline: 2px solid var(--volt); outline-offset: 4px; border-radius: 12px; }

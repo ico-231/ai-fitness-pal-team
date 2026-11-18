@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { fmt } from "../lib/format";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Bot, Camera, Database, Download, KeyRound, LogOut, Palette, Trash2, User, Volume2 } from "lucide-react";
 import { apiUrl, del, post, put, tokenStore } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
@@ -100,7 +100,43 @@ export default function Settings() {
               </div>
             )}
             <div className="mt-3 border-t border-border pt-3">
-              <Toggle checked={s.calorie_cycling ?? true} onChange={(v) => setSetting({ calorie_cycling: v })} label="Calo theo ngày tập / nghỉ (ngày tập +150 kcal, ngày nghỉ −150 kcal tinh bột, dựa theo lịch tập tuần)" />
+              <Toggle checked={s.energy_mode === "tracked"} onChange={(v) => setSetting({ energy_mode: v ? "tracked" : "average" })}
+                label="Mục tiêu calo thay đổi theo vận động mỗi ngày (cộng thêm khi bạn ghi buổi gym / Hoạt động khác)" />
+              {s.energy_mode === "tracked" ? (
+                <div className="mt-3 space-y-3 pl-1">
+                  <div>
+                    <p className="mb-1.5 text-sm">Ngoài giờ tập, bạn chủ yếu:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {([["sitting", "Ngồi học / làm việc"], ["standing", "Đi lại, đứng nhiều"], ["manual", "Lao động chân tay"]] as const).map(([k, label]) => (
+                        <button key={k} type="button" aria-pressed={(s.lifestyle ?? "sitting") === k} onClick={() => setSetting({ lifestyle: k })}
+                          className={"rounded-full border px-3.5 py-1.5 text-sm transition " + ((s.lifestyle ?? "sitting") === k ? "border-transparent bg-ink text-on-ink" : "border-border bg-surface hover:border-primary/60")}>
+                          {label}{p.energy_preview ? <span className="num ml-1 opacity-70">· {fmt(p.energy_preview[k])} kcal</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted">
+                    Mục tiêu nền {p.energy_preview ? <b className="text-text">{fmt(p.energy_preview[s.lifestyle ?? "sitting"])} kcal</b> : "(tính từ hồ sơ)"} chưa gồm tập luyện
+                    {p.calculated ? <> (thay cho {fmt(p.calculated.calories)} kcal ước lượng trung bình)</> : null}.
+                    Mỗi ngày cộng thêm {Math.round((s.eat_back ?? 0.5) * 100)}% calo vận động đã ghi — chỉ ăn bù một phần vì calo vận động thường bị ước cao.
+                  </p>
+                  <details className="text-xs text-muted">
+                    <summary className="cursor-pointer select-none">Nâng cao: tỉ lệ ăn bù</summary>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {[0, 0.5, 0.75, 1].map((v) => (
+                        <button key={v} type="button" aria-pressed={(s.eat_back ?? 0.5) === v} onClick={() => setSetting({ eat_back: v })}
+                          className={"rounded-full border px-3 py-1 transition " + ((s.eat_back ?? 0.5) === v ? "border-transparent bg-ink text-on-ink" : "border-border bg-surface")}>
+                          {Math.round(v * 100)}%
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <Toggle checked={s.calorie_cycling ?? true} onChange={(v) => setSetting({ calorie_cycling: v })} label="Calo theo ngày tập / nghỉ (ngày tập +150 kcal, ngày nghỉ −150 kcal tinh bột, dựa theo lịch tập tuần)" />
+                </div>
+              )}
             </div>
           </div>
           <Button loading={busy} onClick={saveProfile}>Lưu hồ sơ</Button>
@@ -112,6 +148,7 @@ export default function Settings() {
           <CardHeader title="Giọng nói PT & buổi tập" icon={<Volume2 size={16} />} />
           <div className="space-y-4 px-5 pb-5">
             <Toggle checked={s.voice_coach} onChange={(v) => { voice.enabled = v; setSetting({ voice_coach: v }); }} label="Bật giọng PT (đếm giờ, nhắc form, báo nghỉ)" />
+            <VoicePackField />
             <Field label={`Tốc độ đọc: ${s.voice_rate}x`}>
               <input type="range" min={0.7} max={1.5} step={0.1} value={s.voice_rate} className="w-full accent-[var(--primary)]" onChange={(e) => { voice.rate = +e.target.value; setSetting({ voice_rate: +e.target.value }); }} />
             </Field>
@@ -120,7 +157,7 @@ export default function Settings() {
               <Segmented value={String(s.prep_seconds)} onChange={(v) => setSetting({ prep_seconds: +v })} options={["5", "10", "15", "20"].map((x) => ({ value: x, label: `${x}s` }))} />
             </Field>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => voice.speak("Xin chào, mình là huấn luyện viên FitBro. Chuẩn bị, ba, hai, một, bắt đầu!", { force: true })}>Nghe thử giọng</Button>
+              <Button size="sm" variant="outline" onClick={() => voice.speak("Xin chào, tôi là huấn luyện viên FitBro. Chuẩn bị, ba, hai, một, bắt đầu!", { force: true })}>Nghe thử giọng</Button>
               <Button size="sm" variant="outline" icon={<Camera size={14} />} onClick={testCamera}>Kiểm tra camera</Button>
             </div>
             {!voice.hasVietnamese() && <p className="text-xs text-warn-strong">Trình duyệt chưa có giọng tiếng Việt — giọng đọc có thể không chuẩn. Chrome/Edge trên Windows/Android thường có sẵn.</p>}
@@ -161,7 +198,7 @@ export default function Settings() {
       <MemoryCard />
 
       <Card>
-        <CardHeader title="Trạng thái AI" icon={<Bot size={16} />} right={<Link to="/ai-log" className="text-sm font-medium text-primary hover:underline">Nhật ký AI →</Link>} />
+        <CardHeader title="Trạng thái AI" icon={<Bot size={16} />} right={<Link to="/ai-log" className="-my-2 inline-flex min-h-10 items-center rounded-full px-2 text-sm font-medium text-primary-strong hover:underline">Nhật ký AI →</Link>} />
         <p className="px-5 pb-5 text-sm text-muted">
           {config?.ai_enabled ? <>Đang dùng mô hình <b className="text-text">{config.model}</b>. Bạn trò chuyện với HeadBro; phía sau, Router chuyển việc cho 2 agent chuyên môn (tập luyện, dinh dưỡng) cùng Safety Guard. Xem từng bước ở Nhật ký AI.</> : "AI chưa được cấu hình trên server (thiếu LLM_API_KEY). Các tính năng không cần AI vẫn hoạt động bình thường."}
         </p>
@@ -232,5 +269,38 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
         </div>
       </form>
     </Card>
+  );
+}
+
+/** Chọn giọng PT thu sẵn (frontend/public/voice/<giọng>/, liệt kê trong packs.json). Không có giọng nào → ẩn. */
+function VoicePackField() {
+  const [packs, setPacks] = useState<{ id: string; name: string; count: number }[]>([]);
+  const [pack, setPack] = useState(voice.pack ?? "browser");
+  useEffect(() => {
+    fetch("/voice/packs.json")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        setPacks(Array.isArray(list) ? list : []);
+        // giọng đã chọn bị xoá khỏi máy chủ → về giọng trình duyệt
+        if (voice.pack && Array.isArray(list) && !list.some((p: { id: string }) => p.id === voice.pack)) {
+          voice.setPack(null);
+          setPack("browser");
+        }
+      })
+      .catch(() => setPacks([]));
+  }, []);
+  if (!packs.length) return null;
+  return (
+    <Field label="Giọng đọc">
+      <Segmented
+        value={pack}
+        onChange={(v) => {
+          setPack(v);
+          voice.setPack(v === "browser" ? null : v);
+          voice.speak("Xin chào, tôi là huấn luyện viên FitBro.", { force: true });
+        }}
+        options={[{ value: "browser", label: "Trình duyệt" }, ...packs.map((p) => ({ value: p.id, label: p.name }))]}
+      />
+    </Field>
   );
 }

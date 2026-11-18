@@ -57,13 +57,37 @@ def build(db: Session, user: User) -> list[dict]:
 
     # Tiến độ số buổi trong tuần (từ thứ 2)
     week_start = t - dt.timedelta(days=t.weekday())
-    sessions_week = len(stats.completed_sessions(db, uid, week_start, t))
-    if p.training_days and t.weekday() >= 3 and sessions_week < max(1, p.training_days - (6 - t.weekday())):
-        add("warn", f"Tuần này mới tập {sessions_week}/{p.training_days} buổi",
+    week_sessions = stats.completed_sessions(db, uid, week_start, t)
+    sessions_week = len(week_sessions)
+    # Ngày chỉ có hoạt động khác đủ 30 phút quy đổi (đá bóng, đạp xe...) cũng tính là đã vận động — không nhắc "thiếu buổi" oan
+    from . import activities as actsvc
+
+    gym_days = {stats.local_date(s.started_at) for s in week_sessions}
+    acts_week = actsvc.list_range(db, uid, week_start, t)
+    act_days: dict[dt.date, float] = {}
+    for a in acts_week:
+        act_days[a.date] = act_days.get(a.date, 0) + a.who_minutes
+    other_days = len([d for d, m in act_days.items() if m >= 30 and d not in gym_days])
+    effective = sessions_week + other_days
+    if p.training_days and t.weekday() >= 3 and effective < max(1, p.training_days - (6 - t.weekday())):
+        extra = f" (+{other_days} buổi hoạt động khác)" if other_days else ""
+        add("warn", f"Tuần này mới tập {sessions_week}/{p.training_days} buổi{extra}",
             ("Hôm nay là ngày nghỉ theo lịch, cứ nghỉ. Nếu muốn bù, hỏi CoachBro cách dồn buổi vào các ngày còn lại."
              if rest_day else "Còn ít ngày trong tuần — một buổi ngắn hôm nay đủ để giữ nhịp."),
             ask={"agent": "coachbro", "text": ("Tuần này mình đang tập thiếu buổi, hôm nay là ngày nghỉ theo lịch. Nên bù vào các ngày còn lại thế nào?"
                           if rest_day else "Tuần này mình đang tập thiếu buổi, gợi ý một buổi tập ngắn hôm nay.")}, priority=3)
+
+    # Phút vận động WHO — chỉ nhắc người có dùng "Hoạt động khác" (tránh làm phiền người chỉ tập gym)
+    uses_activities = bool(actsvc.list_range(db, uid, t - dt.timedelta(days=30), t))
+    if uses_activities and t.weekday() >= 3:
+        wk = actsvc.week_summary(db, user, t)
+        if wk["who_minutes"] < wk["target_min"]:
+            add("info", f"Còn {wk['target_min'] - wk['who_minutes']} phút để đạt 150 phút vận động tuần này",
+                "Khuyến nghị WHO: 150–300 phút aerobic mỗi tuần (phút mạnh tính gấp đôi). Đi bộ nhanh 30 phút là một cách dễ.",
+                action={"label": "Ghi hoạt động", "to": "/workouts?tab=activity"}, priority=4)
+        elif wk["who_minutes"] >= wk["target_min"] and wk["strength_days"] >= wk["strength_target"]:
+            add("good", "Đạt chuẩn vận động WHO tuần này", f"{wk['who_minutes']} phút aerobic và {wk['strength_days']} buổi sức mạnh.",
+                action={"label": "Xem tuần này", "to": "/workouts?tab=activity"}, priority=7)
 
     # Nhóm cơ lớn bị bỏ quên (chỉ khi người dùng đã tập đều)
     month_sessions = len(stats.completed_sessions(db, uid, t - dt.timedelta(days=29), t))
@@ -105,7 +129,7 @@ def build(db: Session, user: User) -> list[dict]:
     # Streak sắp mất
     st = stats.streak(db, uid)
     if st["current"] >= 3 and not st["today_active"] and hour >= 17:
-        add("warn", f"Giữ chuỗi {st['current']} ngày!", "Hôm nay bạn chưa có hoạt động nào. Chỉ cần check-in hoặc ghi 1 bữa ăn.", action={"label": "Check-in", "to": "/daily"}, priority=2)
+        add("warn", f"Giữ chuỗi {st['current']} ngày!", "Hôm nay bạn chưa có hoạt động nào. Chỉ cần check-in, ghi 1 bữa ăn hoặc 1 hoạt động.", action={"label": "Check-in", "to": "/daily"}, priority=2)
 
     # Xu hướng cân nặng ngược mục tiêu (14 ngày)
     ws = [m.weight_kg for m in db.scalars(

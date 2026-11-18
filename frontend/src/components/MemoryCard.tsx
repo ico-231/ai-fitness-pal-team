@@ -36,7 +36,7 @@ export function MemoryCard() {
                     {CAT[m.category] || m.category} · {m.source === "manual" ? "bạn tự thêm" : `${AGENTS[m.source as AgentKey]?.name || m.source} ghi nhớ`} · {timeAgo(m.created_at)}
                   </p>
                 </div>
-                <button className="text-muted hover:text-danger" onClick={() => remove.mutate(m.id)} title="Xoá">
+                <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-danger pointer-coarse:h-11 pointer-coarse:w-11" onClick={() => remove.mutate(m.id)} title="Xoá" aria-label="Xoá ghi nhớ này">
                   <Trash2 size={15} />
                 </button>
               </li>
@@ -44,7 +44,7 @@ export function MemoryCard() {
           </ul>
         )}
         <div className="flex gap-2">
-          <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Tự thêm, vd: Không ăn được thịt bò" onKeyDown={(e) => e.key === "Enter" && text.trim() && add.mutate(undefined as never)} />
+          <input className="input" aria-label="Thêm điều HeadBro cần nhớ về bạn" value={text} onChange={(e) => setText(e.target.value)} placeholder="Tự thêm, vd: Không ăn được thịt bò" onKeyDown={(e) => e.key === "Enter" && text.trim() && add.mutate(undefined as never)} />
           <Button variant="outline" icon={<Plus size={15} />} disabled={!text.trim()} loading={add.isPending} onClick={() => add.mutate(undefined as never)}>
             Thêm
           </Button>

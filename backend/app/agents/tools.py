@@ -19,6 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import BodyMetric, Goal, Memory, PendingAction, Profile, User, WorkoutPlan
+from ..services import activities as actsvc
 from ..services import exercises as exsvc
 from ..services import foods as foodsvc
 from ..services import formulas, stats
@@ -123,6 +124,78 @@ def get_readiness(ctx: ToolContext) -> dict:
 # ============================================================================
 # CoachBro — tập luyện
 # ============================================================================
+
+
+# ---- Hoạt động khác (đạp xe, đá bóng, bơi...) — calo do SERVER tính, không do mô hình tự nghĩ
+@tool(
+    "search_activities",
+    "Tìm hoạt động ngoài gym trong danh mục (đạp xe, đá bóng, bơi, cầu lông, đi bộ, chạy, yoga, việc nhà...). "
+    "Trả về activity_code để dùng cho propose_activity_log. Không có mục tập tạ: buổi gym phải ghi bằng buổi tập trong app (trang Tập luyện).",
+    _obj({"query": {"type": "string", "description": "Tên hoạt động người dùng nói, vd 'đá banh', 'đạp xe'"}}, ["query"]),
+    agents=("coachbro", "headbro"),
+)
+def search_activities(ctx: ToolContext, query) -> dict:
+    items = actsvc.search(query or "", limit=5)
+    return {"activities": [{"activity_code": a["id"], "name": a["name"], "has_distance": a["distance"], "steps_based": a["steps"]} for a in items]
+            or "Không có trong danh mục — hỏi người dùng hoạt động gần giống nhất."}
+
+
+@tool(
+    "propose_activity_log",
+    "Đề xuất ghi 1 hoạt động ngoài gym. Server tự tính calo theo MET + cân nặng → tạo thẻ Xác nhận (human-in-the-loop). "
+    "Gọi 1 lần cho MỖI hoạt động. Thiếu thời gian thì hỏi lại người dùng, đừng đoán. Không tự đưa số calo.",
+    _obj({
+        "activity_code": {"type": "string", "description": "Từ search_activities"},
+        "duration_min": {"type": "number", "description": "Số phút"},
+        "intensity": {"type": "string", "enum": list(actsvc.INTENSITIES), "description": "Nhẹ: vẫn hát được · Trung bình: nói được, không hát được · Mạnh: chỉ nói vài từ. Không rõ thì 'moderate'"},
+        "distance_km": {"type": "number"}, "steps": {"type": "integer", "description": "Chỉ cho hoạt động đếm bước"},
+        "date": {"type": "string", "description": "YYYY-MM-DD theo giờ Việt Nam; 'hôm qua' = hôm nay − 1. Mặc định hôm nay"},
+    }, ["activity_code"]),
+    agents=("coachbro", "headbro"),
+)
+def propose_activity_log(ctx: ToolContext, activity_code, duration_min=None, intensity="moderate", distance_km=None, steps=None, date=None) -> dict:
+    a = actsvc.get(str(activity_code))
+    if not a:
+        return {"error": "activity_code không có trong danh mục — gọi search_activities trước"}
+    if not a["steps"] and not duration_min:
+        return {"need_info": f"Hỏi người dùng {a['name'].lower()} trong bao lâu (phút) trước khi ghi."}
+    try:
+        day = dt.date.fromisoformat(date) if date else stats.today()
+        actsvc._check_date(day)
+        est = actsvc.estimate(ctx.db, ctx.user, a["id"], duration_min, intensity, distance_km, steps)
+    except (actsvc.ActivityError, ValueError) as e:
+        return {"error": str(e), "hint": "Giải thích lỗi cho người dùng bằng 1 câu."}
+    dup = actsvc.find_duplicate(ctx.db, ctx.user.id, day, a["id"], est["minutes"])
+    warnings = list(est["warnings"])
+    if dup:
+        warnings.append(f"Hôm đó đã có {dup.name.lower()} {round(dup.duration_min)} phút — có thể trùng.")
+    payload = {"activity_code": a["id"], "name": a["name"], "duration_min": est["minutes"] if not a["steps"] else None,
+               "intensity": est["intensity"], "distance_km": est["distance_km"], "steps": est["steps"], "date": day.isoformat(),
+               # chỉ để HIỂN THỊ trên thẻ; khi xác nhận server tính lại từ đầu
+               "preview_kcal": est["kcal_gross"], "preview_net": est["kcal_net"], "who_minutes": est["who_minutes"], "warnings": warnings}
+    dur = f"{round(est['minutes'])} phút" if not a["steps"] else f"{steps:,} bước".replace(",", ".")
+    summary = f"Ghi hoạt động: {a['name']} · {dur} · mức {est['intensity_vi'].lower()} — ≈ {est['kcal_gross']} kcal"
+    res = _pending(ctx, "log_activity", payload, summary)
+    res["calories_from_server"] = est["kcal_gross"]
+    res["note"] = "Dùng đúng số calo này khi trả lời. " + (" ".join(warnings) if warnings else "")
+    return res
+
+
+@tool(
+    "get_activity_summary",
+    "Vận động của người dùng: hôm nay (hoạt động khác + buổi gym, calo) và tuần này theo WHO (phút aerobic, buổi sức mạnh).",
+    agents=("coachbro", "headbro", "nutribro"),
+)
+def get_activity_summary(ctx: ToolContext) -> dict:
+    b = actsvc.body_info(ctx.db, ctx.user)
+    day = actsvc.day_energy(ctx.db, ctx.user, stats.today(), b)
+    week = actsvc.week_summary(ctx.db, ctx.user, None, b)
+    return {
+        "today": {"activities": [f"{a['name']} {round(a['duration_min'])}′ ({a['intensity_vi']}) ≈ {round(a['kcal_gross'])} kcal" for a in day["activities"]],
+                  "gym": [f"{g['name']} {g['minutes']}′ ≈ {g['kcal_gross']} kcal" for g in day["gym"]], "kcal_burned_extra": day["total_kcal_net"]},
+        "week_who": f"{week['who_minutes']}/{week['target_min']} phút aerobic, {week['strength_days']}/{week['strength_target']} buổi sức mạnh",
+        "calorie_mode": "theo vận động thực tế" if b["mode"] == "tracked" else "ước lượng trung bình (vận động đã tính sẵn trong mục tiêu)",
+    }
 
 _FOCUS_ENUM = list(exsvc.FOCUS.keys())
 
@@ -762,6 +835,8 @@ def summarize_result(name: str, result: dict) -> str:
         return f"Tìm thấy {result.get('total_matches', 0)} bài, hiển thị {len(result.get('exercises', []))}"
     if name == "create_workout_plan":
         return f"Đã lưu buổi tập ({result.get('exercise_count')} bài, ~{result.get('est_minutes')} phút)"
+    if "need_info" in result:  # thiếu thông tin → agent phải hỏi lại, KHÔNG có thẻ nào được tạo
+        return f"Cần hỏi thêm: {result['need_info']}"
     if name.startswith("propose_"):
         return "Đã tạo thẻ chờ xác nhận"
     if name == "remember":
@@ -835,6 +910,16 @@ def execute_action(db: Session, user: User, pa: PendingAction, overrides: dict |
             stats.recompute_targets(prof)
         db.commit()
         return {"metric_id": bm.id}
+    if pa.type == "log_activity":
+        # chỉ cho sửa thời lượng / mức / quãng đường trên thẻ; calo luôn tính lại ở server
+        allowed = {k: (overrides or {})[k] for k in ("duration_min", "intensity", "distance_km", "steps") if k in (overrides or {})}
+        q = {**pa.payload, **allowed}
+        d = dt.date.fromisoformat(q.get("date") or stats.today().isoformat())
+        a = actsvc.save(db, user, {**q, "date": d}, source="chat", force=True)
+        dur = f"{a.steps:,} bước".replace(",", ".") if a.steps else f"{round(a.duration_min)} phút"
+        # số ĐÃ LƯU thật (có thể khác thẻ nếu người dùng sửa nhanh) → thẻ hiển thị theo số này
+        return {"activity_id": a.id, "kcal": round(a.kcal_gross),
+                "summary": f"Đã ghi: {a.name} · {dur} · mức {actsvc.INTENSITY_VI.get(a.intensity, a.intensity).lower()} — ≈ {round(a.kcal_gross)} kcal"}
     if pa.type == "save_schedule":
         schedsvc.save_schedule(db, user.id, p.get("days") or {}, p.get("note") or "", source="ai")
         return {"ok": True}

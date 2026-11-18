@@ -1,4 +1,5 @@
 """Trí nhớ AI, lịch tập tuần, nhắc nhở chủ động."""
+import datetime as dt
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from ..models import Memory, User
 from ..security import get_current_user
 from ..services import insights as insightsvc
 from ..services import schedule as schedsvc
+from ..services import stats
 
 router = APIRouter(prefix="/api", tags=["extras"])
 
@@ -21,6 +23,11 @@ class MemoryIn(BaseModel):
 class ScheduleIn(BaseModel):
     days: dict = {}  # {"0": {"plan_id": "tpl_leg"}, ...}
     note: str = ""
+
+
+class ScheduleDateIn(BaseModel):
+    plan_id: str | None = None  # None = nghỉ ngày đó
+    reset: bool = False  # True = bỏ ngoại lệ, về theo tuần mẫu
 
 
 def memory_out(m: Memory) -> dict:
@@ -59,6 +66,21 @@ def get_schedule(user: User = Depends(get_current_user), db: Session = Depends(g
 def put_schedule(body: ScheduleIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     schedsvc.save_schedule(db, user.id, body.days, body.note, source="manual")
     return schedsvc.schedule_out(db, user.id)
+
+
+@router.get("/schedule/week")
+def get_schedule_week(start: dt.date | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lịch của một tuần (start = ngày bất kỳ trong tuần; mặc định tuần này)."""
+    return schedsvc.week_out(db, user.id, start or stats.today())
+
+
+@router.put("/schedule/date/{day}")
+def put_schedule_date(day: dt.date, body: ScheduleDateIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        schedsvc.set_date(db, user.id, day, body.plan_id, body.reset)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return schedsvc.week_out(db, user.id, day)
 
 
 @router.get("/insights")

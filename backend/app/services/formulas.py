@@ -27,7 +27,8 @@ def tdee(weight_kg: float, height_cm: float, age: int, gender: str, activity_lev
 
 
 def nutrition_targets(
-    weight_kg: float, height_cm: float, age: int, gender: str, goal: str, activity_level: str = "moderate"
+    weight_kg: float, height_cm: float, age: int, gender: str, goal: str, activity_level: str = "moderate",
+    multiplier: float | None = None,
 ) -> dict:
     """Mục tiêu calo + macro + nước mỗi ngày.
 
@@ -36,7 +37,8 @@ def nutrition_targets(
     - Béo = 27% tổng calo.  Carb = phần còn lại.
     - Nước = 35 ml/kg.
     """
-    t = tdee(weight_kg, height_cm, age, gender, activity_level)
+    t = (bmr_mifflin(weight_kg, height_cm, age, gender) * multiplier if multiplier
+         else tdee(weight_kg, height_cm, age, gender, activity_level))
     min_kcal = 1200 if gender == "female" else 1500
     kcal = max(min_kcal, round(t + GOAL_CALORIE_DELTA.get(goal, 0)))
     protein = round(weight_kg * GOAL_PROTEIN_PER_KG.get(goal, 1.6))
@@ -195,3 +197,59 @@ def overload_suggestion(last_sets: list[dict], target_reps: int, is_compound: bo
         "duration_sec": 0,
         "reason": f"Lần trước chưa đủ {target_reps} rep ở {top_w}kg → giữ mức tạ, cố thêm 1 rep mỗi set.",
     }
+
+
+# ---------------------------------------------------------------------------
+# Vận động ngoài gym ("Hoạt động khác") — M8
+# ---------------------------------------------------------------------------
+
+# Hệ số sinh hoạt NỀN (không gồm tập luyện) cho chế độ "mục tiêu theo vận động thực tế".
+LIFESTYLE_FACTORS = {"sitting": 1.2, "standing": 1.375, "manual": 1.55}
+LIFESTYLE_LABELS = {"sitting": "Chủ yếu ngồi học / làm việc", "standing": "Đi lại, đứng nhiều", "manual": "Lao động chân tay"}
+# Số bước đã nằm sẵn trong hệ số nền → chỉ cộng phần VƯỢT mức này (tránh tính trùng).
+STEP_BASELINE = {"sitting": 5000, "standing": 7500, "manual": 10000}
+STEPS_PER_MIN = 100  # nhịp đi bộ thường
+
+# Phân loại cường độ theo MET tuyệt đối (WHO 2020): < 3 nhẹ, 3–5,9 vừa, ≥ 6 mạnh.
+def who_intensity(met: float) -> str:
+    return "vigorous" if met >= 6 else "moderate" if met >= 3 else "light"
+
+
+def met_from_speed(speed_mets: list[dict], speed_kmh: float) -> float:
+    """Bảng MET theo tốc độ (Compendium): lấy mức đầu tiên có max_kmh ≥ tốc độ."""
+    for row in speed_mets:
+        if speed_kmh <= row["max_kmh"]:
+            return row["met"]
+    return speed_mets[-1]["met"]
+
+
+def keytel_kcal(avg_hr: float, weight_kg: float, age: int, gender: str, minutes: float) -> float:
+    """Calo tổng theo nhịp tim trung bình (Keytel 2005). Chỉ đáng tin khi nhịp tim ổn định ~90–180."""
+    if gender == "female":
+        per_min = (-20.4022 + 0.4472 * avg_hr - 0.1263 * weight_kg + 0.074 * age) / 4.184
+    else:
+        per_min = (-55.0969 + 0.6309 * avg_hr + 0.1988 * weight_kg + 0.2017 * age) / 4.184
+    return max(0.0, per_min * minutes)
+
+
+def activity_energy(met: float, weight_kg: float, minutes: float, bmr: float | None = None) -> dict:
+    """Năng lượng một hoạt động.
+
+    - gross = MET × kg × giờ (định nghĩa MET của Compendium: 1 MET ≈ 1 kcal/kg/giờ lúc nghỉ chuẩn).
+    - net = gross − phần nghỉ của CHÍNH người đó trong khoảng thời gian ấy (BMR/24 × giờ) → phần CỘNG THÊM so với ngồi yên.
+      Thiếu BMR → net = (MET − 1) × kg × giờ (ước lượng thô).
+    """
+    h = minutes / 60
+    gross = met * weight_kg * h
+    rest = (bmr / 24 * h) if bmr else weight_kg * h
+    return {"kcal_gross": round(gross), "kcal_net": max(0, round(gross - rest)), "formula": "met_net_bmr" if bmr else "met_net_basic"}
+
+
+def who_minutes(minutes: float, met: float, intensity: str | None = None) -> float:
+    """Phút quy đổi theo WHO: phút mức vừa ×1, phút mức mạnh ×2, mức nhẹ không tính.
+
+    intensity = mức người dùng tự chọn theo talk test (cường độ TƯƠNG ĐỐI, WHO chấp nhận) → dùng mức đó;
+    không có (vd tính theo tốc độ) → phân loại theo MET tuyệt đối. Dưới 3 MET luôn là nhẹ.
+    """
+    c = "light" if met < 3 else (intensity if intensity in ("light", "moderate", "vigorous") else who_intensity(met))
+    return minutes * 2 if c == "vigorous" else minutes if c == "moderate" else 0.0

@@ -1,0 +1,3302 @@
+[
+ {
+  "id": "001",
+  "part": "1. Câu cố định",
+  "say": "Bắt đầu buổi tập.",
+  "type": "Bắt đầu buổi tập."
+ },
+ {
+  "id": "002",
+  "part": "1. Câu cố định",
+  "say": "Bắt đầu buổi tập nhẹ.",
+  "type": "Bắt đầu buổi tập nhẹ."
+ },
+ {
+  "id": "003",
+  "part": "1. Câu cố định",
+  "say": "Cố lên nào!",
+  "type": "Cố lên nào!"
+ },
+ {
+  "id": "004",
+  "part": "1. Câu cố định",
+  "say": "Chuẩn bị bài đầu tiên.",
+  "type": "Chuẩn bị bài đầu tiên."
+ },
+ {
+  "id": "005",
+  "part": "1. Câu cố định",
+  "say": "Chuẩn bị bài tiếp theo.",
+  "type": "Chuẩn bị bài tiếp theo."
+ },
+ {
+  "id": "006",
+  "part": "1. Câu cố định",
+  "say": "Bắt đầu!",
+  "type": "Bắt đầu!"
+ },
+ {
+  "id": "007",
+  "part": "1. Câu cố định",
+  "say": "Hết giờ nghỉ.",
+  "type": "Hết giờ nghỉ."
+ },
+ {
+  "id": "008",
+  "part": "1. Câu cố định",
+  "say": "Hiệp cuối.",
+  "type": "Hiệp cuối."
+ },
+ {
+  "id": "009",
+  "part": "1. Câu cố định",
+  "say": "Còn 10 giây.",
+  "type": "Còn mười giây."
+ },
+ {
+  "id": "010",
+  "part": "1. Câu cố định",
+  "say": "Còn 10 giây, cố lên!",
+  "type": "Còn mười giây, cố lên!"
+ },
+ {
+  "id": "011",
+  "part": "1. Câu cố định",
+  "say": "Được một nửa rồi, cố lên!",
+  "type": "Được một nửa rồi, cố lên!"
+ },
+ {
+  "id": "012",
+  "part": "1. Câu cố định",
+  "say": "Xong hiệp khởi động.",
+  "type": "Xong hiệp khởi động."
+ },
+ {
+  "id": "013",
+  "part": "1. Câu cố định",
+  "say": "Xong bài này rồi.",
+  "type": "Xong bài này rồi."
+ },
+ {
+  "id": "014",
+  "part": "1. Câu cố định",
+  "say": "Kỷ lục mới!",
+  "type": "Kỷ lục mới!"
+ },
+ {
+  "id": "015",
+  "part": "1. Câu cố định",
+  "say": "Làm tốt lắm!",
+  "type": "Làm tốt lắm!"
+ },
+ {
+  "id": "016",
+  "part": "1. Câu cố định",
+  "say": "Đủ số lần rồi, tốt lắm!",
+  "type": "Đủ số lần rồi, tốt lắm!"
+ },
+ {
+  "id": "017",
+  "part": "1. Câu cố định",
+  "say": "Xong buổi tập rồi!",
+  "type": "Xong buổi tập rồi!"
+ },
+ {
+  "id": "018",
+  "part": "1. Câu cố định",
+  "say": "Đẹp lắm!",
+  "type": "Đẹp lắm!"
+ },
+ {
+  "id": "019",
+  "part": "1. Câu cố định",
+  "say": "Chuẩn rồi, giữ như vậy!",
+  "type": "Chuẩn rồi, giữ như vậy!"
+ },
+ {
+  "id": "020",
+  "part": "1. Câu cố định",
+  "say": "Tốt, tiếp tục!",
+  "type": "Tốt, tiếp tục!"
+ },
+ {
+  "id": "021",
+  "part": "1. Câu cố định",
+  "say": "Camera đã sẵn sàng.",
+  "type": "Camera đã sẵn sàng."
+ },
+ {
+  "id": "022",
+  "part": "1. Câu cố định",
+  "say": "Đến giờ tập rồi, mình bắt đầu thôi!",
+  "type": "Đến giờ tập rồi, mình bắt đầu thôi!"
+ },
+ {
+  "id": "023",
+  "part": "1. Câu cố định",
+  "say": "Đến giờ check-in buổi sáng rồi nhé.",
+  "type": "Đến giờ check-in buổi sáng rồi nhé."
+ },
+ {
+  "id": "024",
+  "part": "1. Câu cố định",
+  "say": "Uống nước nhé.",
+  "type": "Uống nước nhé."
+ },
+ {
+  "id": "551",
+  "part": "1. Câu cố định",
+  "say": "Xin chào, tôi là huấn luyện viên FitBro.",
+  "type": "Xin chào, tôi là huấn luyện viên FitBro."
+ },
+ {
+  "id": "026",
+  "part": "1. Câu cố định",
+  "say": "Chuẩn bị, ba, hai, một, bắt đầu!",
+  "type": "Chuẩn bị, ba, hai, một, bắt đầu!"
+ },
+ {
+  "id": "027",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 2.",
+  "type": "Hiệp hai."
+ },
+ {
+  "id": "028",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 3.",
+  "type": "Hiệp ba."
+ },
+ {
+  "id": "029",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 4.",
+  "type": "Hiệp bốn."
+ },
+ {
+  "id": "030",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 5.",
+  "type": "Hiệp năm."
+ },
+ {
+  "id": "031",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 6.",
+  "type": "Hiệp sáu."
+ },
+ {
+  "id": "032",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 7.",
+  "type": "Hiệp bảy."
+ },
+ {
+  "id": "033",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 8.",
+  "type": "Hiệp tám."
+ },
+ {
+  "id": "034",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 9.",
+  "type": "Hiệp chín."
+ },
+ {
+  "id": "035",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Hiệp 10.",
+  "type": "Hiệp mười."
+ },
+ {
+  "id": "036",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "1 hiệp.",
+  "type": "Một hiệp."
+ },
+ {
+  "id": "037",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "2 hiệp.",
+  "type": "Hai hiệp."
+ },
+ {
+  "id": "038",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "3 hiệp.",
+  "type": "Ba hiệp."
+ },
+ {
+  "id": "039",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "4 hiệp.",
+  "type": "Bốn hiệp."
+ },
+ {
+  "id": "040",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "5 hiệp.",
+  "type": "Năm hiệp."
+ },
+ {
+  "id": "041",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "6 hiệp.",
+  "type": "Sáu hiệp."
+ },
+ {
+  "id": "042",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "7 hiệp.",
+  "type": "Bảy hiệp."
+ },
+ {
+  "id": "043",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "8 hiệp.",
+  "type": "Tám hiệp."
+ },
+ {
+  "id": "044",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "9 hiệp.",
+  "type": "Chín hiệp."
+ },
+ {
+  "id": "045",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "10 hiệp.",
+  "type": "Mười hiệp."
+ },
+ {
+  "id": "046",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 5 giây.",
+  "type": "Nghỉ năm giây."
+ },
+ {
+  "id": "047",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 10 giây.",
+  "type": "Nghỉ mười giây."
+ },
+ {
+  "id": "048",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 15 giây.",
+  "type": "Nghỉ mười lăm giây."
+ },
+ {
+  "id": "049",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 20 giây.",
+  "type": "Nghỉ hai mươi giây."
+ },
+ {
+  "id": "050",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 25 giây.",
+  "type": "Nghỉ hai mươi lăm giây."
+ },
+ {
+  "id": "051",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 30 giây.",
+  "type": "Nghỉ ba mươi giây."
+ },
+ {
+  "id": "052",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 35 giây.",
+  "type": "Nghỉ ba mươi lăm giây."
+ },
+ {
+  "id": "053",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 40 giây.",
+  "type": "Nghỉ bốn mươi giây."
+ },
+ {
+  "id": "054",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 45 giây.",
+  "type": "Nghỉ bốn mươi lăm giây."
+ },
+ {
+  "id": "055",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 50 giây.",
+  "type": "Nghỉ năm mươi giây."
+ },
+ {
+  "id": "056",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 55 giây.",
+  "type": "Nghỉ năm mươi lăm giây."
+ },
+ {
+  "id": "057",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 1 phút.",
+  "type": "Nghỉ một phút."
+ },
+ {
+  "id": "058",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 1 phút 15 giây.",
+  "type": "Nghỉ một phút mười lăm giây."
+ },
+ {
+  "id": "059",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 1 phút rưỡi.",
+  "type": "Nghỉ một phút rưỡi."
+ },
+ {
+  "id": "060",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 1 phút 45 giây.",
+  "type": "Nghỉ một phút bốn mươi lăm giây."
+ },
+ {
+  "id": "061",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 2 phút.",
+  "type": "Nghỉ hai phút."
+ },
+ {
+  "id": "062",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 2 phút 15 giây.",
+  "type": "Nghỉ hai phút mười lăm giây."
+ },
+ {
+  "id": "063",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 2 phút rưỡi.",
+  "type": "Nghỉ hai phút rưỡi."
+ },
+ {
+  "id": "064",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 2 phút 45 giây.",
+  "type": "Nghỉ hai phút bốn mươi lăm giây."
+ },
+ {
+  "id": "065",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 3 phút.",
+  "type": "Nghỉ ba phút."
+ },
+ {
+  "id": "066",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 3 phút 15 giây.",
+  "type": "Nghỉ ba phút mười lăm giây."
+ },
+ {
+  "id": "067",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 3 phút rưỡi.",
+  "type": "Nghỉ ba phút rưỡi."
+ },
+ {
+  "id": "068",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 3 phút 45 giây.",
+  "type": "Nghỉ ba phút bốn mươi lăm giây."
+ },
+ {
+  "id": "069",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 4 phút.",
+  "type": "Nghỉ bốn phút."
+ },
+ {
+  "id": "070",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 4 phút 15 giây.",
+  "type": "Nghỉ bốn phút mười lăm giây."
+ },
+ {
+  "id": "071",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 4 phút rưỡi.",
+  "type": "Nghỉ bốn phút rưỡi."
+ },
+ {
+  "id": "072",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 4 phút 45 giây.",
+  "type": "Nghỉ bốn phút bốn mươi lăm giây."
+ },
+ {
+  "id": "073",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 5 phút.",
+  "type": "Nghỉ năm phút."
+ },
+ {
+  "id": "074",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 5 phút 15 giây.",
+  "type": "Nghỉ năm phút mười lăm giây."
+ },
+ {
+  "id": "075",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 5 phút rưỡi.",
+  "type": "Nghỉ năm phút rưỡi."
+ },
+ {
+  "id": "076",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 5 phút 45 giây.",
+  "type": "Nghỉ năm phút bốn mươi lăm giây."
+ },
+ {
+  "id": "077",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 6 phút.",
+  "type": "Nghỉ sáu phút."
+ },
+ {
+  "id": "078",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 6 phút 15 giây.",
+  "type": "Nghỉ sáu phút mười lăm giây."
+ },
+ {
+  "id": "079",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 6 phút rưỡi.",
+  "type": "Nghỉ sáu phút rưỡi."
+ },
+ {
+  "id": "080",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 6 phút 45 giây.",
+  "type": "Nghỉ sáu phút bốn mươi lăm giây."
+ },
+ {
+  "id": "081",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 7 phút.",
+  "type": "Nghỉ bảy phút."
+ },
+ {
+  "id": "082",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 7 phút 15 giây.",
+  "type": "Nghỉ bảy phút mười lăm giây."
+ },
+ {
+  "id": "083",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 7 phút rưỡi.",
+  "type": "Nghỉ bảy phút rưỡi."
+ },
+ {
+  "id": "084",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 7 phút 45 giây.",
+  "type": "Nghỉ bảy phút bốn mươi lăm giây."
+ },
+ {
+  "id": "085",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 8 phút.",
+  "type": "Nghỉ tám phút."
+ },
+ {
+  "id": "086",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 8 phút 15 giây.",
+  "type": "Nghỉ tám phút mười lăm giây."
+ },
+ {
+  "id": "087",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 8 phút rưỡi.",
+  "type": "Nghỉ tám phút rưỡi."
+ },
+ {
+  "id": "088",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 8 phút 45 giây.",
+  "type": "Nghỉ tám phút bốn mươi lăm giây."
+ },
+ {
+  "id": "089",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 9 phút.",
+  "type": "Nghỉ chín phút."
+ },
+ {
+  "id": "090",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 9 phút 15 giây.",
+  "type": "Nghỉ chín phút mười lăm giây."
+ },
+ {
+  "id": "091",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 9 phút rưỡi.",
+  "type": "Nghỉ chín phút rưỡi."
+ },
+ {
+  "id": "092",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 9 phút 45 giây.",
+  "type": "Nghỉ chín phút bốn mươi lăm giây."
+ },
+ {
+  "id": "093",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Nghỉ 10 phút.",
+  "type": "Nghỉ mười phút."
+ },
+ {
+  "id": "094",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 1 lần.",
+  "type": "Mỗi hiệp một lần."
+ },
+ {
+  "id": "095",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 2 lần.",
+  "type": "Mỗi hiệp hai lần."
+ },
+ {
+  "id": "096",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 3 lần.",
+  "type": "Mỗi hiệp ba lần."
+ },
+ {
+  "id": "097",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 4 lần.",
+  "type": "Mỗi hiệp bốn lần."
+ },
+ {
+  "id": "098",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 lần.",
+  "type": "Mỗi hiệp năm lần."
+ },
+ {
+  "id": "099",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 6 lần.",
+  "type": "Mỗi hiệp sáu lần."
+ },
+ {
+  "id": "100",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 7 lần.",
+  "type": "Mỗi hiệp bảy lần."
+ },
+ {
+  "id": "101",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 8 lần.",
+  "type": "Mỗi hiệp tám lần."
+ },
+ {
+  "id": "102",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 9 lần.",
+  "type": "Mỗi hiệp chín lần."
+ },
+ {
+  "id": "103",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 10 lần.",
+  "type": "Mỗi hiệp mười lần."
+ },
+ {
+  "id": "104",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 11 lần.",
+  "type": "Mỗi hiệp mười một lần."
+ },
+ {
+  "id": "105",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 12 lần.",
+  "type": "Mỗi hiệp mười hai lần."
+ },
+ {
+  "id": "106",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 13 lần.",
+  "type": "Mỗi hiệp mười ba lần."
+ },
+ {
+  "id": "107",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 14 lần.",
+  "type": "Mỗi hiệp mười bốn lần."
+ },
+ {
+  "id": "108",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 15 lần.",
+  "type": "Mỗi hiệp mười lăm lần."
+ },
+ {
+  "id": "109",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 16 lần.",
+  "type": "Mỗi hiệp mười sáu lần."
+ },
+ {
+  "id": "110",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 17 lần.",
+  "type": "Mỗi hiệp mười bảy lần."
+ },
+ {
+  "id": "111",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 18 lần.",
+  "type": "Mỗi hiệp mười tám lần."
+ },
+ {
+  "id": "112",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 19 lần.",
+  "type": "Mỗi hiệp mười chín lần."
+ },
+ {
+  "id": "113",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 20 lần.",
+  "type": "Mỗi hiệp hai mươi lần."
+ },
+ {
+  "id": "114",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 21 lần.",
+  "type": "Mỗi hiệp hai mươi mốt lần."
+ },
+ {
+  "id": "115",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 22 lần.",
+  "type": "Mỗi hiệp hai mươi hai lần."
+ },
+ {
+  "id": "116",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 23 lần.",
+  "type": "Mỗi hiệp hai mươi ba lần."
+ },
+ {
+  "id": "117",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 24 lần.",
+  "type": "Mỗi hiệp hai mươi tư lần."
+ },
+ {
+  "id": "118",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 25 lần.",
+  "type": "Mỗi hiệp hai mươi lăm lần."
+ },
+ {
+  "id": "119",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 26 lần.",
+  "type": "Mỗi hiệp hai mươi sáu lần."
+ },
+ {
+  "id": "120",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 27 lần.",
+  "type": "Mỗi hiệp hai mươi bảy lần."
+ },
+ {
+  "id": "121",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 28 lần.",
+  "type": "Mỗi hiệp hai mươi tám lần."
+ },
+ {
+  "id": "122",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 29 lần.",
+  "type": "Mỗi hiệp hai mươi chín lần."
+ },
+ {
+  "id": "123",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 30 lần.",
+  "type": "Mỗi hiệp ba mươi lần."
+ },
+ {
+  "id": "124",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 31 lần.",
+  "type": "Mỗi hiệp ba mươi mốt lần."
+ },
+ {
+  "id": "125",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 32 lần.",
+  "type": "Mỗi hiệp ba mươi hai lần."
+ },
+ {
+  "id": "126",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 33 lần.",
+  "type": "Mỗi hiệp ba mươi ba lần."
+ },
+ {
+  "id": "127",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 34 lần.",
+  "type": "Mỗi hiệp ba mươi tư lần."
+ },
+ {
+  "id": "128",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 35 lần.",
+  "type": "Mỗi hiệp ba mươi lăm lần."
+ },
+ {
+  "id": "129",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 36 lần.",
+  "type": "Mỗi hiệp ba mươi sáu lần."
+ },
+ {
+  "id": "130",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 37 lần.",
+  "type": "Mỗi hiệp ba mươi bảy lần."
+ },
+ {
+  "id": "131",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 38 lần.",
+  "type": "Mỗi hiệp ba mươi tám lần."
+ },
+ {
+  "id": "132",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 39 lần.",
+  "type": "Mỗi hiệp ba mươi chín lần."
+ },
+ {
+  "id": "133",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 40 lần.",
+  "type": "Mỗi hiệp bốn mươi lần."
+ },
+ {
+  "id": "134",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 41 lần.",
+  "type": "Mỗi hiệp bốn mươi mốt lần."
+ },
+ {
+  "id": "135",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 42 lần.",
+  "type": "Mỗi hiệp bốn mươi hai lần."
+ },
+ {
+  "id": "136",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 43 lần.",
+  "type": "Mỗi hiệp bốn mươi ba lần."
+ },
+ {
+  "id": "137",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 44 lần.",
+  "type": "Mỗi hiệp bốn mươi tư lần."
+ },
+ {
+  "id": "138",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 45 lần.",
+  "type": "Mỗi hiệp bốn mươi lăm lần."
+ },
+ {
+  "id": "139",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 46 lần.",
+  "type": "Mỗi hiệp bốn mươi sáu lần."
+ },
+ {
+  "id": "140",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 47 lần.",
+  "type": "Mỗi hiệp bốn mươi bảy lần."
+ },
+ {
+  "id": "141",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 48 lần.",
+  "type": "Mỗi hiệp bốn mươi tám lần."
+ },
+ {
+  "id": "142",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 49 lần.",
+  "type": "Mỗi hiệp bốn mươi chín lần."
+ },
+ {
+  "id": "143",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 50 lần.",
+  "type": "Mỗi hiệp năm mươi lần."
+ },
+ {
+  "id": "144",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 51 lần.",
+  "type": "Mỗi hiệp năm mươi mốt lần."
+ },
+ {
+  "id": "145",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 52 lần.",
+  "type": "Mỗi hiệp năm mươi hai lần."
+ },
+ {
+  "id": "146",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 53 lần.",
+  "type": "Mỗi hiệp năm mươi ba lần."
+ },
+ {
+  "id": "147",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 54 lần.",
+  "type": "Mỗi hiệp năm mươi tư lần."
+ },
+ {
+  "id": "148",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 55 lần.",
+  "type": "Mỗi hiệp năm mươi lăm lần."
+ },
+ {
+  "id": "149",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 56 lần.",
+  "type": "Mỗi hiệp năm mươi sáu lần."
+ },
+ {
+  "id": "150",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 57 lần.",
+  "type": "Mỗi hiệp năm mươi bảy lần."
+ },
+ {
+  "id": "151",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 58 lần.",
+  "type": "Mỗi hiệp năm mươi tám lần."
+ },
+ {
+  "id": "152",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 59 lần.",
+  "type": "Mỗi hiệp năm mươi chín lần."
+ },
+ {
+  "id": "153",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 60 lần.",
+  "type": "Mỗi hiệp sáu mươi lần."
+ },
+ {
+  "id": "154",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 61 lần.",
+  "type": "Mỗi hiệp sáu mươi mốt lần."
+ },
+ {
+  "id": "155",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 62 lần.",
+  "type": "Mỗi hiệp sáu mươi hai lần."
+ },
+ {
+  "id": "156",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 63 lần.",
+  "type": "Mỗi hiệp sáu mươi ba lần."
+ },
+ {
+  "id": "157",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 64 lần.",
+  "type": "Mỗi hiệp sáu mươi tư lần."
+ },
+ {
+  "id": "158",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 65 lần.",
+  "type": "Mỗi hiệp sáu mươi lăm lần."
+ },
+ {
+  "id": "159",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 66 lần.",
+  "type": "Mỗi hiệp sáu mươi sáu lần."
+ },
+ {
+  "id": "160",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 67 lần.",
+  "type": "Mỗi hiệp sáu mươi bảy lần."
+ },
+ {
+  "id": "161",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 68 lần.",
+  "type": "Mỗi hiệp sáu mươi tám lần."
+ },
+ {
+  "id": "162",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 69 lần.",
+  "type": "Mỗi hiệp sáu mươi chín lần."
+ },
+ {
+  "id": "163",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 70 lần.",
+  "type": "Mỗi hiệp bảy mươi lần."
+ },
+ {
+  "id": "164",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 71 lần.",
+  "type": "Mỗi hiệp bảy mươi mốt lần."
+ },
+ {
+  "id": "165",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 72 lần.",
+  "type": "Mỗi hiệp bảy mươi hai lần."
+ },
+ {
+  "id": "166",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 73 lần.",
+  "type": "Mỗi hiệp bảy mươi ba lần."
+ },
+ {
+  "id": "167",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 74 lần.",
+  "type": "Mỗi hiệp bảy mươi tư lần."
+ },
+ {
+  "id": "168",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 75 lần.",
+  "type": "Mỗi hiệp bảy mươi lăm lần."
+ },
+ {
+  "id": "169",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 76 lần.",
+  "type": "Mỗi hiệp bảy mươi sáu lần."
+ },
+ {
+  "id": "170",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 77 lần.",
+  "type": "Mỗi hiệp bảy mươi bảy lần."
+ },
+ {
+  "id": "171",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 78 lần.",
+  "type": "Mỗi hiệp bảy mươi tám lần."
+ },
+ {
+  "id": "172",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 79 lần.",
+  "type": "Mỗi hiệp bảy mươi chín lần."
+ },
+ {
+  "id": "173",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 80 lần.",
+  "type": "Mỗi hiệp tám mươi lần."
+ },
+ {
+  "id": "174",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 81 lần.",
+  "type": "Mỗi hiệp tám mươi mốt lần."
+ },
+ {
+  "id": "175",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 82 lần.",
+  "type": "Mỗi hiệp tám mươi hai lần."
+ },
+ {
+  "id": "176",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 83 lần.",
+  "type": "Mỗi hiệp tám mươi ba lần."
+ },
+ {
+  "id": "177",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 84 lần.",
+  "type": "Mỗi hiệp tám mươi tư lần."
+ },
+ {
+  "id": "178",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 85 lần.",
+  "type": "Mỗi hiệp tám mươi lăm lần."
+ },
+ {
+  "id": "179",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 86 lần.",
+  "type": "Mỗi hiệp tám mươi sáu lần."
+ },
+ {
+  "id": "180",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 87 lần.",
+  "type": "Mỗi hiệp tám mươi bảy lần."
+ },
+ {
+  "id": "181",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 88 lần.",
+  "type": "Mỗi hiệp tám mươi tám lần."
+ },
+ {
+  "id": "182",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 89 lần.",
+  "type": "Mỗi hiệp tám mươi chín lần."
+ },
+ {
+  "id": "183",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 90 lần.",
+  "type": "Mỗi hiệp chín mươi lần."
+ },
+ {
+  "id": "184",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 91 lần.",
+  "type": "Mỗi hiệp chín mươi mốt lần."
+ },
+ {
+  "id": "185",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 92 lần.",
+  "type": "Mỗi hiệp chín mươi hai lần."
+ },
+ {
+  "id": "186",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 93 lần.",
+  "type": "Mỗi hiệp chín mươi ba lần."
+ },
+ {
+  "id": "187",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 94 lần.",
+  "type": "Mỗi hiệp chín mươi tư lần."
+ },
+ {
+  "id": "188",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 95 lần.",
+  "type": "Mỗi hiệp chín mươi lăm lần."
+ },
+ {
+  "id": "189",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 96 lần.",
+  "type": "Mỗi hiệp chín mươi sáu lần."
+ },
+ {
+  "id": "190",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 97 lần.",
+  "type": "Mỗi hiệp chín mươi bảy lần."
+ },
+ {
+  "id": "191",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 98 lần.",
+  "type": "Mỗi hiệp chín mươi tám lần."
+ },
+ {
+  "id": "192",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 99 lần.",
+  "type": "Mỗi hiệp chín mươi chín lần."
+ },
+ {
+  "id": "193",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 100 lần.",
+  "type": "Mỗi hiệp một trăm lần."
+ },
+ {
+  "id": "194",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 giây.",
+  "type": "Mỗi hiệp năm giây."
+ },
+ {
+  "id": "195",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 10 giây.",
+  "type": "Mỗi hiệp mười giây."
+ },
+ {
+  "id": "196",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 15 giây.",
+  "type": "Mỗi hiệp mười lăm giây."
+ },
+ {
+  "id": "197",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 20 giây.",
+  "type": "Mỗi hiệp hai mươi giây."
+ },
+ {
+  "id": "198",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 25 giây.",
+  "type": "Mỗi hiệp hai mươi lăm giây."
+ },
+ {
+  "id": "199",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 30 giây.",
+  "type": "Mỗi hiệp ba mươi giây."
+ },
+ {
+  "id": "200",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 35 giây.",
+  "type": "Mỗi hiệp ba mươi lăm giây."
+ },
+ {
+  "id": "201",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 40 giây.",
+  "type": "Mỗi hiệp bốn mươi giây."
+ },
+ {
+  "id": "202",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 45 giây.",
+  "type": "Mỗi hiệp bốn mươi lăm giây."
+ },
+ {
+  "id": "203",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 50 giây.",
+  "type": "Mỗi hiệp năm mươi giây."
+ },
+ {
+  "id": "204",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 55 giây.",
+  "type": "Mỗi hiệp năm mươi lăm giây."
+ },
+ {
+  "id": "205",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 1 phút.",
+  "type": "Mỗi hiệp một phút."
+ },
+ {
+  "id": "206",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 1 phút 15 giây.",
+  "type": "Mỗi hiệp một phút mười lăm giây."
+ },
+ {
+  "id": "207",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 1 phút rưỡi.",
+  "type": "Mỗi hiệp một phút rưỡi."
+ },
+ {
+  "id": "208",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 1 phút 45 giây.",
+  "type": "Mỗi hiệp một phút bốn mươi lăm giây."
+ },
+ {
+  "id": "209",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 2 phút.",
+  "type": "Mỗi hiệp hai phút."
+ },
+ {
+  "id": "210",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 2 phút 15 giây.",
+  "type": "Mỗi hiệp hai phút mười lăm giây."
+ },
+ {
+  "id": "211",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 2 phút rưỡi.",
+  "type": "Mỗi hiệp hai phút rưỡi."
+ },
+ {
+  "id": "212",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 2 phút 45 giây.",
+  "type": "Mỗi hiệp hai phút bốn mươi lăm giây."
+ },
+ {
+  "id": "213",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 3 phút.",
+  "type": "Mỗi hiệp ba phút."
+ },
+ {
+  "id": "214",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 3 phút 15 giây.",
+  "type": "Mỗi hiệp ba phút mười lăm giây."
+ },
+ {
+  "id": "215",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 3 phút rưỡi.",
+  "type": "Mỗi hiệp ba phút rưỡi."
+ },
+ {
+  "id": "216",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 3 phút 45 giây.",
+  "type": "Mỗi hiệp ba phút bốn mươi lăm giây."
+ },
+ {
+  "id": "217",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 4 phút.",
+  "type": "Mỗi hiệp bốn phút."
+ },
+ {
+  "id": "218",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 4 phút 15 giây.",
+  "type": "Mỗi hiệp bốn phút mười lăm giây."
+ },
+ {
+  "id": "219",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 4 phút rưỡi.",
+  "type": "Mỗi hiệp bốn phút rưỡi."
+ },
+ {
+  "id": "220",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 4 phút 45 giây.",
+  "type": "Mỗi hiệp bốn phút bốn mươi lăm giây."
+ },
+ {
+  "id": "221",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 phút.",
+  "type": "Mỗi hiệp năm phút."
+ },
+ {
+  "id": "222",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 phút 15 giây.",
+  "type": "Mỗi hiệp năm phút mười lăm giây."
+ },
+ {
+  "id": "223",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 phút rưỡi.",
+  "type": "Mỗi hiệp năm phút rưỡi."
+ },
+ {
+  "id": "224",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 5 phút 45 giây.",
+  "type": "Mỗi hiệp năm phút bốn mươi lăm giây."
+ },
+ {
+  "id": "225",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 6 phút.",
+  "type": "Mỗi hiệp sáu phút."
+ },
+ {
+  "id": "226",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 6 phút 15 giây.",
+  "type": "Mỗi hiệp sáu phút mười lăm giây."
+ },
+ {
+  "id": "227",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 6 phút rưỡi.",
+  "type": "Mỗi hiệp sáu phút rưỡi."
+ },
+ {
+  "id": "228",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 6 phút 45 giây.",
+  "type": "Mỗi hiệp sáu phút bốn mươi lăm giây."
+ },
+ {
+  "id": "229",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 7 phút.",
+  "type": "Mỗi hiệp bảy phút."
+ },
+ {
+  "id": "230",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 7 phút 15 giây.",
+  "type": "Mỗi hiệp bảy phút mười lăm giây."
+ },
+ {
+  "id": "231",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 7 phút rưỡi.",
+  "type": "Mỗi hiệp bảy phút rưỡi."
+ },
+ {
+  "id": "232",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 7 phút 45 giây.",
+  "type": "Mỗi hiệp bảy phút bốn mươi lăm giây."
+ },
+ {
+  "id": "233",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 8 phút.",
+  "type": "Mỗi hiệp tám phút."
+ },
+ {
+  "id": "234",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 8 phút 15 giây.",
+  "type": "Mỗi hiệp tám phút mười lăm giây."
+ },
+ {
+  "id": "235",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 8 phút rưỡi.",
+  "type": "Mỗi hiệp tám phút rưỡi."
+ },
+ {
+  "id": "236",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 8 phút 45 giây.",
+  "type": "Mỗi hiệp tám phút bốn mươi lăm giây."
+ },
+ {
+  "id": "237",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 9 phút.",
+  "type": "Mỗi hiệp chín phút."
+ },
+ {
+  "id": "238",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 9 phút 15 giây.",
+  "type": "Mỗi hiệp chín phút mười lăm giây."
+ },
+ {
+  "id": "239",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 9 phút rưỡi.",
+  "type": "Mỗi hiệp chín phút rưỡi."
+ },
+ {
+  "id": "240",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 9 phút 45 giây.",
+  "type": "Mỗi hiệp chín phút bốn mươi lăm giây."
+ },
+ {
+  "id": "241",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 10 phút.",
+  "type": "Mỗi hiệp mười phút."
+ },
+ {
+  "id": "242",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 15 phút.",
+  "type": "Mỗi hiệp mười lăm phút."
+ },
+ {
+  "id": "243",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 20 phút.",
+  "type": "Mỗi hiệp hai mươi phút."
+ },
+ {
+  "id": "244",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 25 phút.",
+  "type": "Mỗi hiệp hai mươi lăm phút."
+ },
+ {
+  "id": "245",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 30 phút.",
+  "type": "Mỗi hiệp ba mươi phút."
+ },
+ {
+  "id": "246",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 35 phút.",
+  "type": "Mỗi hiệp ba mươi lăm phút."
+ },
+ {
+  "id": "247",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 40 phút.",
+  "type": "Mỗi hiệp bốn mươi phút."
+ },
+ {
+  "id": "248",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 45 phút.",
+  "type": "Mỗi hiệp bốn mươi lăm phút."
+ },
+ {
+  "id": "249",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 50 phút.",
+  "type": "Mỗi hiệp năm mươi phút."
+ },
+ {
+  "id": "250",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 55 phút.",
+  "type": "Mỗi hiệp năm mươi lăm phút."
+ },
+ {
+  "id": "251",
+  "part": "2. Hiệp, nghỉ, số lần",
+  "say": "Mỗi hiệp 60 phút.",
+  "type": "Mỗi hiệp sáu mươi phút."
+ },
+ {
+  "id": "252",
+  "part": "3. Đếm số",
+  "say": "1.",
+  "type": "Một."
+ },
+ {
+  "id": "253",
+  "part": "3. Đếm số",
+  "say": "2.",
+  "type": "Hai."
+ },
+ {
+  "id": "254",
+  "part": "3. Đếm số",
+  "say": "3.",
+  "type": "Ba."
+ },
+ {
+  "id": "255",
+  "part": "3. Đếm số",
+  "say": "4.",
+  "type": "Bốn."
+ },
+ {
+  "id": "256",
+  "part": "3. Đếm số",
+  "say": "5.",
+  "type": "Năm."
+ },
+ {
+  "id": "257",
+  "part": "3. Đếm số",
+  "say": "6.",
+  "type": "Sáu."
+ },
+ {
+  "id": "258",
+  "part": "3. Đếm số",
+  "say": "7.",
+  "type": "Bảy."
+ },
+ {
+  "id": "259",
+  "part": "3. Đếm số",
+  "say": "8.",
+  "type": "Tám."
+ },
+ {
+  "id": "260",
+  "part": "3. Đếm số",
+  "say": "9.",
+  "type": "Chín."
+ },
+ {
+  "id": "261",
+  "part": "3. Đếm số",
+  "say": "10.",
+  "type": "Mười."
+ },
+ {
+  "id": "262",
+  "part": "3. Đếm số",
+  "say": "11.",
+  "type": "Mười một."
+ },
+ {
+  "id": "263",
+  "part": "3. Đếm số",
+  "say": "12.",
+  "type": "Mười hai."
+ },
+ {
+  "id": "264",
+  "part": "3. Đếm số",
+  "say": "13.",
+  "type": "Mười ba."
+ },
+ {
+  "id": "265",
+  "part": "3. Đếm số",
+  "say": "14.",
+  "type": "Mười bốn."
+ },
+ {
+  "id": "266",
+  "part": "3. Đếm số",
+  "say": "15.",
+  "type": "Mười lăm."
+ },
+ {
+  "id": "267",
+  "part": "3. Đếm số",
+  "say": "16.",
+  "type": "Mười sáu."
+ },
+ {
+  "id": "268",
+  "part": "3. Đếm số",
+  "say": "17.",
+  "type": "Mười bảy."
+ },
+ {
+  "id": "269",
+  "part": "3. Đếm số",
+  "say": "18.",
+  "type": "Mười tám."
+ },
+ {
+  "id": "270",
+  "part": "3. Đếm số",
+  "say": "19.",
+  "type": "Mười chín."
+ },
+ {
+  "id": "271",
+  "part": "3. Đếm số",
+  "say": "20.",
+  "type": "Hai mươi."
+ },
+ {
+  "id": "272",
+  "part": "3. Đếm số",
+  "say": "21.",
+  "type": "Hai mươi mốt."
+ },
+ {
+  "id": "273",
+  "part": "3. Đếm số",
+  "say": "22.",
+  "type": "Hai mươi hai."
+ },
+ {
+  "id": "274",
+  "part": "3. Đếm số",
+  "say": "23.",
+  "type": "Hai mươi ba."
+ },
+ {
+  "id": "275",
+  "part": "3. Đếm số",
+  "say": "24.",
+  "type": "Hai mươi tư."
+ },
+ {
+  "id": "276",
+  "part": "3. Đếm số",
+  "say": "25.",
+  "type": "Hai mươi lăm."
+ },
+ {
+  "id": "277",
+  "part": "3. Đếm số",
+  "say": "26.",
+  "type": "Hai mươi sáu."
+ },
+ {
+  "id": "278",
+  "part": "3. Đếm số",
+  "say": "27.",
+  "type": "Hai mươi bảy."
+ },
+ {
+  "id": "279",
+  "part": "3. Đếm số",
+  "say": "28.",
+  "type": "Hai mươi tám."
+ },
+ {
+  "id": "280",
+  "part": "3. Đếm số",
+  "say": "29.",
+  "type": "Hai mươi chín."
+ },
+ {
+  "id": "281",
+  "part": "3. Đếm số",
+  "say": "30.",
+  "type": "Ba mươi."
+ },
+ {
+  "id": "282",
+  "part": "3. Đếm số",
+  "say": "31.",
+  "type": "Ba mươi mốt."
+ },
+ {
+  "id": "283",
+  "part": "3. Đếm số",
+  "say": "32.",
+  "type": "Ba mươi hai."
+ },
+ {
+  "id": "284",
+  "part": "3. Đếm số",
+  "say": "33.",
+  "type": "Ba mươi ba."
+ },
+ {
+  "id": "285",
+  "part": "3. Đếm số",
+  "say": "34.",
+  "type": "Ba mươi tư."
+ },
+ {
+  "id": "286",
+  "part": "3. Đếm số",
+  "say": "35.",
+  "type": "Ba mươi lăm."
+ },
+ {
+  "id": "287",
+  "part": "3. Đếm số",
+  "say": "36.",
+  "type": "Ba mươi sáu."
+ },
+ {
+  "id": "288",
+  "part": "3. Đếm số",
+  "say": "37.",
+  "type": "Ba mươi bảy."
+ },
+ {
+  "id": "289",
+  "part": "3. Đếm số",
+  "say": "38.",
+  "type": "Ba mươi tám."
+ },
+ {
+  "id": "290",
+  "part": "3. Đếm số",
+  "say": "39.",
+  "type": "Ba mươi chín."
+ },
+ {
+  "id": "291",
+  "part": "3. Đếm số",
+  "say": "40.",
+  "type": "Bốn mươi."
+ },
+ {
+  "id": "292",
+  "part": "3. Đếm số",
+  "say": "41.",
+  "type": "Bốn mươi mốt."
+ },
+ {
+  "id": "293",
+  "part": "3. Đếm số",
+  "say": "42.",
+  "type": "Bốn mươi hai."
+ },
+ {
+  "id": "294",
+  "part": "3. Đếm số",
+  "say": "43.",
+  "type": "Bốn mươi ba."
+ },
+ {
+  "id": "295",
+  "part": "3. Đếm số",
+  "say": "44.",
+  "type": "Bốn mươi tư."
+ },
+ {
+  "id": "296",
+  "part": "3. Đếm số",
+  "say": "45.",
+  "type": "Bốn mươi lăm."
+ },
+ {
+  "id": "297",
+  "part": "3. Đếm số",
+  "say": "46.",
+  "type": "Bốn mươi sáu."
+ },
+ {
+  "id": "298",
+  "part": "3. Đếm số",
+  "say": "47.",
+  "type": "Bốn mươi bảy."
+ },
+ {
+  "id": "299",
+  "part": "3. Đếm số",
+  "say": "48.",
+  "type": "Bốn mươi tám."
+ },
+ {
+  "id": "300",
+  "part": "3. Đếm số",
+  "say": "49.",
+  "type": "Bốn mươi chín."
+ },
+ {
+  "id": "301",
+  "part": "3. Đếm số",
+  "say": "50.",
+  "type": "Năm mươi."
+ },
+ {
+  "id": "302",
+  "part": "3. Đếm số",
+  "say": "51.",
+  "type": "Năm mươi mốt."
+ },
+ {
+  "id": "303",
+  "part": "3. Đếm số",
+  "say": "52.",
+  "type": "Năm mươi hai."
+ },
+ {
+  "id": "304",
+  "part": "3. Đếm số",
+  "say": "53.",
+  "type": "Năm mươi ba."
+ },
+ {
+  "id": "305",
+  "part": "3. Đếm số",
+  "say": "54.",
+  "type": "Năm mươi tư."
+ },
+ {
+  "id": "306",
+  "part": "3. Đếm số",
+  "say": "55.",
+  "type": "Năm mươi lăm."
+ },
+ {
+  "id": "307",
+  "part": "3. Đếm số",
+  "say": "56.",
+  "type": "Năm mươi sáu."
+ },
+ {
+  "id": "308",
+  "part": "3. Đếm số",
+  "say": "57.",
+  "type": "Năm mươi bảy."
+ },
+ {
+  "id": "309",
+  "part": "3. Đếm số",
+  "say": "58.",
+  "type": "Năm mươi tám."
+ },
+ {
+  "id": "310",
+  "part": "3. Đếm số",
+  "say": "59.",
+  "type": "Năm mươi chín."
+ },
+ {
+  "id": "311",
+  "part": "3. Đếm số",
+  "say": "60.",
+  "type": "Sáu mươi."
+ },
+ {
+  "id": "312",
+  "part": "3. Đếm số",
+  "say": "61.",
+  "type": "Sáu mươi mốt."
+ },
+ {
+  "id": "313",
+  "part": "3. Đếm số",
+  "say": "62.",
+  "type": "Sáu mươi hai."
+ },
+ {
+  "id": "314",
+  "part": "3. Đếm số",
+  "say": "63.",
+  "type": "Sáu mươi ba."
+ },
+ {
+  "id": "315",
+  "part": "3. Đếm số",
+  "say": "64.",
+  "type": "Sáu mươi tư."
+ },
+ {
+  "id": "316",
+  "part": "3. Đếm số",
+  "say": "65.",
+  "type": "Sáu mươi lăm."
+ },
+ {
+  "id": "317",
+  "part": "3. Đếm số",
+  "say": "66.",
+  "type": "Sáu mươi sáu."
+ },
+ {
+  "id": "318",
+  "part": "3. Đếm số",
+  "say": "67.",
+  "type": "Sáu mươi bảy."
+ },
+ {
+  "id": "319",
+  "part": "3. Đếm số",
+  "say": "68.",
+  "type": "Sáu mươi tám."
+ },
+ {
+  "id": "320",
+  "part": "3. Đếm số",
+  "say": "69.",
+  "type": "Sáu mươi chín."
+ },
+ {
+  "id": "321",
+  "part": "3. Đếm số",
+  "say": "70.",
+  "type": "Bảy mươi."
+ },
+ {
+  "id": "322",
+  "part": "3. Đếm số",
+  "say": "71.",
+  "type": "Bảy mươi mốt."
+ },
+ {
+  "id": "323",
+  "part": "3. Đếm số",
+  "say": "72.",
+  "type": "Bảy mươi hai."
+ },
+ {
+  "id": "324",
+  "part": "3. Đếm số",
+  "say": "73.",
+  "type": "Bảy mươi ba."
+ },
+ {
+  "id": "325",
+  "part": "3. Đếm số",
+  "say": "74.",
+  "type": "Bảy mươi tư."
+ },
+ {
+  "id": "326",
+  "part": "3. Đếm số",
+  "say": "75.",
+  "type": "Bảy mươi lăm."
+ },
+ {
+  "id": "327",
+  "part": "3. Đếm số",
+  "say": "76.",
+  "type": "Bảy mươi sáu."
+ },
+ {
+  "id": "328",
+  "part": "3. Đếm số",
+  "say": "77.",
+  "type": "Bảy mươi bảy."
+ },
+ {
+  "id": "329",
+  "part": "3. Đếm số",
+  "say": "78.",
+  "type": "Bảy mươi tám."
+ },
+ {
+  "id": "330",
+  "part": "3. Đếm số",
+  "say": "79.",
+  "type": "Bảy mươi chín."
+ },
+ {
+  "id": "331",
+  "part": "3. Đếm số",
+  "say": "80.",
+  "type": "Tám mươi."
+ },
+ {
+  "id": "332",
+  "part": "3. Đếm số",
+  "say": "81.",
+  "type": "Tám mươi mốt."
+ },
+ {
+  "id": "333",
+  "part": "3. Đếm số",
+  "say": "82.",
+  "type": "Tám mươi hai."
+ },
+ {
+  "id": "334",
+  "part": "3. Đếm số",
+  "say": "83.",
+  "type": "Tám mươi ba."
+ },
+ {
+  "id": "335",
+  "part": "3. Đếm số",
+  "say": "84.",
+  "type": "Tám mươi tư."
+ },
+ {
+  "id": "336",
+  "part": "3. Đếm số",
+  "say": "85.",
+  "type": "Tám mươi lăm."
+ },
+ {
+  "id": "337",
+  "part": "3. Đếm số",
+  "say": "86.",
+  "type": "Tám mươi sáu."
+ },
+ {
+  "id": "338",
+  "part": "3. Đếm số",
+  "say": "87.",
+  "type": "Tám mươi bảy."
+ },
+ {
+  "id": "339",
+  "part": "3. Đếm số",
+  "say": "88.",
+  "type": "Tám mươi tám."
+ },
+ {
+  "id": "340",
+  "part": "3. Đếm số",
+  "say": "89.",
+  "type": "Tám mươi chín."
+ },
+ {
+  "id": "341",
+  "part": "3. Đếm số",
+  "say": "90.",
+  "type": "Chín mươi."
+ },
+ {
+  "id": "342",
+  "part": "3. Đếm số",
+  "say": "91.",
+  "type": "Chín mươi mốt."
+ },
+ {
+  "id": "343",
+  "part": "3. Đếm số",
+  "say": "92.",
+  "type": "Chín mươi hai."
+ },
+ {
+  "id": "344",
+  "part": "3. Đếm số",
+  "say": "93.",
+  "type": "Chín mươi ba."
+ },
+ {
+  "id": "345",
+  "part": "3. Đếm số",
+  "say": "94.",
+  "type": "Chín mươi tư."
+ },
+ {
+  "id": "346",
+  "part": "3. Đếm số",
+  "say": "95.",
+  "type": "Chín mươi lăm."
+ },
+ {
+  "id": "347",
+  "part": "3. Đếm số",
+  "say": "96.",
+  "type": "Chín mươi sáu."
+ },
+ {
+  "id": "348",
+  "part": "3. Đếm số",
+  "say": "97.",
+  "type": "Chín mươi bảy."
+ },
+ {
+  "id": "349",
+  "part": "3. Đếm số",
+  "say": "98.",
+  "type": "Chín mươi tám."
+ },
+ {
+  "id": "350",
+  "part": "3. Đếm số",
+  "say": "99.",
+  "type": "Chín mươi chín."
+ },
+ {
+  "id": "351",
+  "part": "3. Đếm số",
+  "say": "100.",
+  "type": "Một trăm."
+ },
+ {
+  "id": "352",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Xuống sâu hơn, đùi gần song song sàn.",
+  "type": "Xuống sâu hơn, đùi gần song song sàn."
+ },
+ {
+  "id": "353",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng thẳng, khoá hông ở cuối mỗi lần.",
+  "type": "Đứng thẳng, khoá hông ở cuối mỗi lần."
+ },
+ {
+  "id": "354",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ thấp hơn, gối sau gần chạm sàn.",
+  "type": "Hạ thấp hơn, gối sau gần chạm sàn."
+ },
+ {
+  "id": "355",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng thẳng lại sau mỗi lần.",
+  "type": "Đứng thẳng lại sau mỗi lần."
+ },
+ {
+  "id": "356",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ ngực xuống sâu hơn, khuỷu tay gập khoảng 90 độ.",
+  "type": "Hạ ngực xuống sâu hơn, khuỷu tay gập khoảng chín mươi độ."
+ },
+ {
+  "id": "357",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy lên duỗi hết tay ở cuối mỗi lần.",
+  "type": "Đẩy lên duỗi hết tay ở cuối mỗi lần."
+ },
+ {
+  "id": "358",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Cuốn tạ lên hết, gần chạm vai.",
+  "type": "Cuốn tạ lên hết, gần chạm vai."
+ },
+ {
+  "id": "359",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ tạ xuống duỗi gần hết tay.",
+  "type": "Hạ tạ xuống duỗi gần hết tay."
+ },
+ {
+  "id": "360",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy tạ lên duỗi hết tay trên đầu.",
+  "type": "Đẩy tạ lên duỗi hết tay trên đầu."
+ },
+ {
+  "id": "361",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ tạ xuống ngang vai rồi mới đẩy tiếp.",
+  "type": "Hạ tạ xuống ngang vai rồi mới đẩy tiếp."
+ },
+ {
+  "id": "362",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Gập hông sâu hơn, đẩy mông ra sau.",
+  "type": "Gập hông sâu hơn, đẩy mông ra sau."
+ },
+ {
+  "id": "363",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng thẳng, siết mông khoá hông ở cuối.",
+  "type": "Đứng thẳng, siết mông khoá hông ở cuối."
+ },
+ {
+  "id": "364",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Dang tay qua đầu và bật chân rộng cùng lúc.",
+  "type": "Dang tay qua đầu và bật chân rộng cùng lúc."
+ },
+ {
+  "id": "365",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Giữ ngực cao, lưng đừng đổ về trước.",
+  "type": "Giữ ngực cao, lưng đừng đổ về trước."
+ },
+ {
+  "id": "366",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Giữ thân trên thẳng đứng.",
+  "type": "Giữ thân trên thẳng đứng."
+ },
+ {
+  "id": "367",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Siết bụng, đừng võng hông.",
+  "type": "Siết bụng, đừng võng hông."
+ },
+ {
+  "id": "368",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ hông xuống, giữ thân thẳng.",
+  "type": "Hạ hông xuống, giữ thân thẳng."
+ },
+ {
+  "id": "369",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đừng đung đưa người lấy đà.",
+  "type": "Đừng đung đưa người lấy đà."
+ },
+ {
+  "id": "370",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Siết bụng, đừng ngả lưng ra sau.",
+  "type": "Siết bụng, đừng ngả lưng ra sau."
+ },
+ {
+  "id": "371",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy hông ra sau, đừng ngồi xuống như squat.",
+  "type": "Đẩy hông ra sau, đừng ngồi xuống như squat."
+ },
+ {
+  "id": "372",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Giữ tạ sát chân, đừng để tạ trôi ra trước.",
+  "type": "Giữ tạ sát chân, đừng để tạ trôi ra trước."
+ },
+ {
+  "id": "373",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Nâng hông lên, siết bụng.",
+  "type": "Nâng hông lên, siết bụng."
+ },
+ {
+  "id": "374",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Hạ hông xuống thành đường thẳng.",
+  "type": "Hạ hông xuống thành đường thẳng."
+ },
+ {
+  "id": "375",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy gối trái ra ngoài theo hướng mũi chân.",
+  "type": "Đẩy gối trái ra ngoài theo hướng mũi chân."
+ },
+ {
+  "id": "376",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy gối phải ra ngoài theo hướng mũi chân.",
+  "type": "Đẩy gối phải ra ngoài theo hướng mũi chân."
+ },
+ {
+  "id": "377",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Giữ khuỷu tay trái sát thân, không đưa ra trước.",
+  "type": "Giữ khuỷu tay trái sát thân, không đưa ra trước."
+ },
+ {
+  "id": "378",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Giữ khuỷu tay phải sát thân, không đưa ra trước.",
+  "type": "Giữ khuỷu tay phải sát thân, không đưa ra trước."
+ },
+ {
+  "id": "379",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy tay trái lên đều với tay kia.",
+  "type": "Đẩy tay trái lên đều với tay kia."
+ },
+ {
+  "id": "380",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đẩy tay phải lên đều với tay kia.",
+  "type": "Đẩy tay phải lên đều với tay kia."
+ },
+ {
+  "id": "381",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đặt camera ngang hông, đứng nghiêng 45 độ, cách 2 đến 2 phẩy 5 mét, thấy cả người.",
+  "type": "Đặt camera ngang hông, đứng nghiêng bốn mươi lăm độ, cách hai đến hai phẩy năm mét, thấy cả người."
+ },
+ {
+  "id": "382",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng nghiêng hoàn toàn với camera, thấy cả 2 chân.",
+  "type": "Đứng nghiêng hoàn toàn với camera, thấy cả hai chân."
+ },
+ {
+  "id": "383",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đặt camera thấp, nhìn nghiêng thân người.",
+  "type": "Đặt camera thấp, nhìn nghiêng thân người."
+ },
+ {
+  "id": "384",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng nghiêng hoặc chính diện, thấy từ đầu tới hông.",
+  "type": "Đứng nghiêng hoặc chính diện, thấy từ đầu tới hông."
+ },
+ {
+  "id": "385",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng hoặc ngồi chính diện camera, thấy từ đầu tới hông.",
+  "type": "Đứng hoặc ngồi chính diện camera, thấy từ đầu tới hông."
+ },
+ {
+  "id": "386",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng nghiêng hoàn toàn với camera, thấy cả người.",
+  "type": "Đứng nghiêng hoàn toàn với camera, thấy cả người."
+ },
+ {
+  "id": "387",
+  "part": "4. Nhắc form và đặt camera",
+  "say": "Đứng chính diện, cách camera 2 phẩy 5 mét, thấy cả người.",
+  "type": "Đứng chính diện, cách camera hai phẩy năm mét, thấy cả người."
+ },
+ {
+  "id": "388",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Squat tạ đòn.",
+  "type": "Chuẩn bị: Squat tạ đòn."
+ },
+ {
+  "id": "389",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Romanian deadlift tạ đòn.",
+  "type": "Chuẩn bị: Romanian deadlift tạ đòn."
+ },
+ {
+  "id": "390",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Lunge tạ đơn.",
+  "type": "Chuẩn bị: Lunge tạ đơn."
+ },
+ {
+  "id": "391",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn đùi sau nằm.",
+  "type": "Chuẩn bị: Cuốn đùi sau nằm."
+ },
+ {
+  "id": "392",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhón bắp chân tạ đơn.",
+  "type": "Chuẩn bị: Nhón bắp chân tạ đơn."
+ },
+ {
+  "id": "393",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy ngực tạ đòn.",
+  "type": "Chuẩn bị: Đẩy ngực tạ đòn."
+ },
+ {
+  "id": "394",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy ngực dốc lên tạ đơn.",
+  "type": "Chuẩn bị: Đẩy ngực dốc lên tạ đơn."
+ },
+ {
+  "id": "395",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dips xà kép.",
+  "type": "Chuẩn bị: Dips xà kép."
+ },
+ {
+  "id": "396",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Bay ngực tạ đơn.",
+  "type": "Chuẩn bị: Bay ngực tạ đơn."
+ },
+ {
+  "id": "397",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Hít đất.",
+  "type": "Chuẩn bị: Hít đất."
+ },
+ {
+  "id": "398",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo xà.",
+  "type": "Chuẩn bị: Kéo xà."
+ },
+ {
+  "id": "399",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Chèo tạ đòn cúi người.",
+  "type": "Chuẩn bị: Chèo tạ đòn cúi người."
+ },
+ {
+  "id": "400",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo xô cáp.",
+  "type": "Chuẩn bị: Kéo xô cáp."
+ },
+ {
+  "id": "401",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo cáp ngồi.",
+  "type": "Chuẩn bị: Kéo cáp ngồi."
+ },
+ {
+  "id": "402",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhún vai tạ đơn.",
+  "type": "Chuẩn bị: Nhún vai tạ đơn."
+ },
+ {
+  "id": "403",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy vai tạ đơn ngồi.",
+  "type": "Chuẩn bị: Đẩy vai tạ đơn ngồi."
+ },
+ {
+  "id": "404",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dang tay ngang tạ đơn.",
+  "type": "Chuẩn bị: Dang tay ngang tạ đơn."
+ },
+ {
+  "id": "405",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dang tay sau tạ đơn.",
+  "type": "Chuẩn bị: Dang tay sau tạ đơn."
+ },
+ {
+  "id": "406",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Bay ngược cáp.",
+  "type": "Chuẩn bị: Bay ngược cáp."
+ },
+ {
+  "id": "407",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhún vai tạ đòn.",
+  "type": "Chuẩn bị: Nhún vai tạ đòn."
+ },
+ {
+  "id": "408",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay trước tạ đòn.",
+  "type": "Chuẩn bị: Cuốn tay trước tạ đòn."
+ },
+ {
+  "id": "409",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Ép tay sau cáp.",
+  "type": "Chuẩn bị: Ép tay sau cáp."
+ },
+ {
+  "id": "410",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn búa tạ đơn.",
+  "type": "Chuẩn bị: Cuốn búa tạ đơn."
+ },
+ {
+  "id": "411",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Skull crusher tạ đòn.",
+  "type": "Chuẩn bị: Skull crusher tạ đòn."
+ },
+ {
+  "id": "412",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Hít đất kim cương.",
+  "type": "Chuẩn bị: Hít đất kim cương."
+ },
+ {
+  "id": "413",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Goblet squat tạ đơn.",
+  "type": "Chuẩn bị: Goblet squat tạ đơn."
+ },
+ {
+  "id": "414",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Chèo tạ đơn cúi người.",
+  "type": "Chuẩn bị: Chèo tạ đơn cúi người."
+ },
+ {
+  "id": "415",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dead bug.",
+  "type": "Chuẩn bị: Dead bug."
+ },
+ {
+  "id": "416",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Lunge bước đi.",
+  "type": "Chuẩn bị: Lunge bước đi."
+ },
+ {
+  "id": "417",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Hít đất quỳ gối.",
+  "type": "Chuẩn bị: Hít đất quỳ gối."
+ },
+ {
+  "id": "418",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Glute bridge bước chân.",
+  "type": "Chuẩn bị: Glute bridge bước chân."
+ },
+ {
+  "id": "419",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Inchworm.",
+  "type": "Chuẩn bị: Inchworm."
+ },
+ {
+  "id": "420",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dips ghế trên sàn.",
+  "type": "Chuẩn bị: Dips ghế trên sàn."
+ },
+ {
+  "id": "421",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Gập bụng.",
+  "type": "Chuẩn bị: Gập bụng."
+ },
+ {
+  "id": "422",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Plank xoay hông.",
+  "type": "Chuẩn bị: Plank xoay hông."
+ },
+ {
+  "id": "423",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nằm nâng chân.",
+  "type": "Chuẩn bị: Nằm nâng chân."
+ },
+ {
+  "id": "424",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Plank nghiêng.",
+  "type": "Chuẩn bị: Plank nghiêng."
+ },
+ {
+  "id": "425",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Bật nhảy dang tay chân.",
+  "type": "Chuẩn bị: Bật nhảy dang tay chân."
+ },
+ {
+  "id": "426",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Burpee.",
+  "type": "Chuẩn bị: Burpee."
+ },
+ {
+  "id": "427",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Leo núi tại chỗ.",
+  "type": "Chuẩn bị: Leo núi tại chỗ."
+ },
+ {
+  "id": "428",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Squat bật nhảy.",
+  "type": "Chuẩn bị: Squat bật nhảy."
+ },
+ {
+  "id": "429",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhảy dây.",
+  "type": "Chuẩn bị: Nhảy dây."
+ },
+ {
+  "id": "430",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn cơ toàn thân.",
+  "type": "Chuẩn bị: Giãn cơ toàn thân."
+ },
+ {
+  "id": "431",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn đùi sau.",
+  "type": "Chuẩn bị: Giãn đùi sau."
+ },
+ {
+  "id": "432",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn cột sống.",
+  "type": "Chuẩn bị: Giãn cột sống."
+ },
+ {
+  "id": "433",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn ngực và vai trước.",
+  "type": "Chuẩn bị: Giãn ngực và vai trước."
+ },
+ {
+  "id": "434",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn bắp chân vào tường.",
+  "type": "Chuẩn bị: Giãn bắp chân vào tường."
+ },
+ {
+  "id": "435",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo xà tay ngửa.",
+  "type": "Chuẩn bị: Kéo xà tay ngửa."
+ },
+ {
+  "id": "436",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Chèo T-bar.",
+  "type": "Chuẩn bị: Chèo T-bar."
+ },
+ {
+  "id": "437",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn lưng trên.",
+  "type": "Chuẩn bị: Giãn lưng trên."
+ },
+ {
+  "id": "438",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhón bắp chân không tạ.",
+  "type": "Chuẩn bị: Nhón bắp chân không tạ."
+ },
+ {
+  "id": "439",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy hông tạ đòn.",
+  "type": "Chuẩn bị: Đẩy hông tạ đòn."
+ },
+ {
+  "id": "440",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Romanian deadlift tạ đơn.",
+  "type": "Chuẩn bị: Romanian deadlift tạ đơn."
+ },
+ {
+  "id": "441",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn kiểu vận động viên chạy.",
+  "type": "Chuẩn bị: Giãn kiểu vận động viên chạy."
+ },
+ {
+  "id": "442",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Plank đeo tạ.",
+  "type": "Chuẩn bị: Plank đeo tạ."
+ },
+ {
+  "id": "443",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Arnold press tạ đơn.",
+  "type": "Chuẩn bị: Arnold press tạ đơn."
+ },
+ {
+  "id": "444",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nâng vai sau tạ đơn.",
+  "type": "Chuẩn bị: Nâng vai sau tạ đơn."
+ },
+ {
+  "id": "445",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Split squat.",
+  "type": "Chuẩn bị: Split squat."
+ },
+ {
+  "id": "446",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Front squat tạ đòn.",
+  "type": "Chuẩn bị: Front squat tạ đòn."
+ },
+ {
+  "id": "447",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đạp đùi máy 45 độ.",
+  "type": "Chuẩn bị: Đạp đùi máy bốn mươi lăm độ."
+ },
+ {
+  "id": "448",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Deadlift tạ đòn.",
+  "type": "Chuẩn bị: Deadlift tạ đòn."
+ },
+ {
+  "id": "449",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Bước lên bục tạ đơn.",
+  "type": "Chuẩn bị: Bước lên bục tạ đơn."
+ },
+ {
+  "id": "450",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Squat tạ đơn.",
+  "type": "Chuẩn bị: Squat tạ đơn."
+ },
+ {
+  "id": "451",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đá đùi trước.",
+  "type": "Chuẩn bị: Đá đùi trước."
+ },
+ {
+  "id": "452",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn đùi sau ngồi.",
+  "type": "Chuẩn bị: Cuốn đùi sau ngồi."
+ },
+ {
+  "id": "453",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nhón bắp chân đứng.",
+  "type": "Chuẩn bị: Nhón bắp chân đứng."
+ },
+ {
+  "id": "454",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dạng hông ngồi.",
+  "type": "Chuẩn bị: Dạng hông ngồi."
+ },
+ {
+  "id": "455",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Deadlift tạ đơn.",
+  "type": "Chuẩn bị: Deadlift tạ đơn."
+ },
+ {
+  "id": "456",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy ngực tạ đơn.",
+  "type": "Chuẩn bị: Đẩy ngực tạ đơn."
+ },
+ {
+  "id": "457",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy ngực dốc lên tạ đòn.",
+  "type": "Chuẩn bị: Đẩy ngực dốc lên tạ đòn."
+ },
+ {
+  "id": "458",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy ngực máy.",
+  "type": "Chuẩn bị: Đẩy ngực máy."
+ },
+ {
+  "id": "459",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Ép ngực máy.",
+  "type": "Chuẩn bị: Ép ngực máy."
+ },
+ {
+  "id": "460",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Ép ngực cáp.",
+  "type": "Chuẩn bị: Ép ngực cáp."
+ },
+ {
+  "id": "461",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Hít đất dốc lên.",
+  "type": "Chuẩn bị: Hít đất dốc lên."
+ },
+ {
+  "id": "462",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Hít đất dốc xuống.",
+  "type": "Chuẩn bị: Hít đất dốc xuống."
+ },
+ {
+  "id": "463",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Pullover tạ đơn.",
+  "type": "Chuẩn bị: Pullover tạ đơn."
+ },
+ {
+  "id": "464",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Chèo tạ đòn một tay.",
+  "type": "Chuẩn bị: Chèo tạ đòn một tay."
+ },
+ {
+  "id": "465",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đẩy vai tạ đòn ngồi.",
+  "type": "Chuẩn bị: Đẩy vai tạ đòn ngồi."
+ },
+ {
+  "id": "466",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Nâng tạ đơn trước mặt.",
+  "type": "Chuẩn bị: Nâng tạ đơn trước mặt."
+ },
+ {
+  "id": "467",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo tạ đơn lên cằm.",
+  "type": "Chuẩn bị: Kéo tạ đơn lên cằm."
+ },
+ {
+  "id": "468",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Kéo tạ đòn lên cằm.",
+  "type": "Chuẩn bị: Kéo tạ đòn lên cằm."
+ },
+ {
+  "id": "469",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay trước tạ đơn.",
+  "type": "Chuẩn bị: Cuốn tay trước tạ đơn."
+ },
+ {
+  "id": "470",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay ghế preacher tạ đòn.",
+  "type": "Chuẩn bị: Cuốn tay ghế preacher tạ đòn."
+ },
+ {
+  "id": "471",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay ghế preacher tạ đơn.",
+  "type": "Chuẩn bị: Cuốn tay ghế preacher tạ đơn."
+ },
+ {
+  "id": "472",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay tập trung.",
+  "type": "Chuẩn bị: Cuốn tay tập trung."
+ },
+ {
+  "id": "473",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Cuốn tay ghế dốc tạ đơn.",
+  "type": "Chuẩn bị: Cuốn tay ghế dốc tạ đơn."
+ },
+ {
+  "id": "474",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Duỗi tay sau nằm tạ đơn.",
+  "type": "Chuẩn bị: Duỗi tay sau nằm tạ đơn."
+ },
+ {
+  "id": "475",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Đá tay sau tạ đơn.",
+  "type": "Chuẩn bị: Đá tay sau tạ đơn."
+ },
+ {
+  "id": "476",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dips tay sau.",
+  "type": "Chuẩn bị: Dips tay sau."
+ },
+ {
+  "id": "477",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Dips ghế.",
+  "type": "Chuẩn bị: Dips ghế."
+ },
+ {
+  "id": "478",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Gập bụng đạp xe.",
+  "type": "Chuẩn bị: Gập bụng đạp xe."
+ },
+ {
+  "id": "479",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Xoay người Nga.",
+  "type": "Chuẩn bị: Xoay người Nga."
+ },
+ {
+  "id": "480",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Treo xà nâng chân.",
+  "type": "Chuẩn bị: Treo xà nâng chân."
+ },
+ {
+  "id": "481",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Chạy bộ.",
+  "type": "Chuẩn bị: Chạy bộ."
+ },
+ {
+  "id": "482",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Jack burpee.",
+  "type": "Chuẩn bị: Jack burpee."
+ },
+ {
+  "id": "483",
+  "part": "5. Tên bài",
+  "say": "Chuẩn bị: Giãn tay sau qua đầu.",
+  "type": "Chuẩn bị: Giãn tay sau qua đầu."
+ },
+ {
+  "id": "484",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Chào buổi sáng!",
+  "type": "Chào buổi sáng!"
+ },
+ {
+  "id": "485",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Chào buổi trưa!",
+  "type": "Chào buổi trưa!"
+ },
+ {
+  "id": "486",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Chào buổi chiều!",
+  "type": "Chào buổi chiều!"
+ },
+ {
+  "id": "487",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Chào buổi tối!",
+  "type": "Chào buổi tối!"
+ },
+ {
+  "id": "488",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay cơ thể bạn hồi phục rất tốt.",
+  "type": "Hôm nay cơ thể bạn hồi phục rất tốt."
+ },
+ {
+  "id": "489",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay cơ thể bạn ở trạng thái khá tốt.",
+  "type": "Hôm nay cơ thể bạn ở trạng thái khá tốt."
+ },
+ {
+  "id": "490",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay cơ thể bạn mới hồi phục ở mức trung bình.",
+  "type": "Hôm nay cơ thể bạn mới hồi phục ở mức trung bình."
+ },
+ {
+  "id": "491",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay cơ thể bạn cần được phục hồi.",
+  "type": "Hôm nay cơ thể bạn cần được phục hồi."
+ },
+ {
+  "id": "492",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn chưa check-in buổi sáng, hãy check-in để biết hôm nay nên tập nặng hay nhẹ.",
+  "type": "Bạn chưa check-in buổi sáng, hãy check-in để biết hôm nay nên tập nặng hay nhẹ."
+ },
+ {
+  "id": "493",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Có thể tập nặng, thử tăng tạ hoặc phá kỷ lục.",
+  "type": "Có thể tập nặng, thử tăng tạ hoặc phá kỷ lục."
+ },
+ {
+  "id": "494",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Tập theo kế hoạch bình thường, giữ đúng kỹ thuật và thời gian nghỉ.",
+  "type": "Tập theo kế hoạch bình thường, giữ đúng kỹ thuật và thời gian nghỉ."
+ },
+ {
+  "id": "495",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nên giảm bớt khối lượng, bớt một hiệp mỗi bài hoặc giảm tạ, ưu tiên kỹ thuật.",
+  "type": "Nên giảm bớt khối lượng, bớt một hiệp mỗi bài hoặc giảm tạ, ưu tiên kỹ thuật."
+ },
+ {
+  "id": "496",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nên nghỉ hoặc chỉ tập phục hồi nhẹ như giãn cơ, đi bộ, và ngủ sớm.",
+  "type": "Nên nghỉ hoặc chỉ tập phục hồi nhẹ như giãn cơ, đi bộ, và ngủ sớm."
+ },
+ {
+  "id": "497",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn chưa ghi bữa ăn nào hôm nay.",
+  "type": "Bạn chưa ghi bữa ăn nào hôm nay."
+ },
+ {
+  "id": "498",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay bạn mới ăn chưa tới một nửa lượng ca-lo mục tiêu.",
+  "type": "Hôm nay bạn mới ăn chưa tới một nửa lượng ca-lo mục tiêu."
+ },
+ {
+  "id": "499",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay bạn đã ăn khoảng một nửa lượng ca-lo mục tiêu.",
+  "type": "Hôm nay bạn đã ăn khoảng một nửa lượng ca-lo mục tiêu."
+ },
+ {
+  "id": "500",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay bạn đã ăn gần đủ lượng ca-lo mục tiêu.",
+  "type": "Hôm nay bạn đã ăn gần đủ lượng ca-lo mục tiêu."
+ },
+ {
+  "id": "501",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay bạn đã ăn vượt lượng ca-lo mục tiêu.",
+  "type": "Hôm nay bạn đã ăn vượt lượng ca-lo mục tiêu."
+ },
+ {
+  "id": "502",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Lượng đạm hôm nay đã đủ.",
+  "type": "Lượng đạm hôm nay đã đủ."
+ },
+ {
+  "id": "503",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn nên ăn thêm đạm.",
+  "type": "Bạn nên ăn thêm đạm."
+ },
+ {
+  "id": "504",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn đã hoàn thành buổi tập hôm nay.",
+  "type": "Bạn đã hoàn thành buổi tập hôm nay."
+ },
+ {
+  "id": "505",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập rất chăm chỉ.",
+  "type": "Trong bảy ngày qua bạn tập rất chăm chỉ."
+ },
+ {
+  "id": "506",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Tuần này bạn đã phá kỷ lục cá nhân.",
+  "type": "Tuần này bạn đã phá kỷ lục cá nhân."
+ },
+ {
+  "id": "507",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Rất tốt!",
+  "type": "Rất tốt!"
+ },
+ {
+  "id": "508",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Tuần này bạn chưa có buổi tập nào.",
+  "type": "Tuần này bạn chưa có buổi tập nào."
+ },
+ {
+  "id": "509",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Hôm nay bạn chưa ghi lượng nước uống.",
+  "type": "Hôm nay bạn chưa ghi lượng nước uống."
+ },
+ {
+  "id": "510",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn mới uống chưa tới một nửa lượng nước cần.",
+  "type": "Bạn mới uống chưa tới một nửa lượng nước cần."
+ },
+ {
+  "id": "511",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn đã uống hơn một nửa lượng nước cần.",
+  "type": "Bạn đã uống hơn một nửa lượng nước cần."
+ },
+ {
+  "id": "512",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn đã uống đủ nước hôm nay.",
+  "type": "Bạn đã uống đủ nước hôm nay."
+ },
+ {
+  "id": "513",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Bạn đang giữ chuỗi hoạt động liên tục, giữ vững phong độ!",
+  "type": "Bạn đang giữ chuỗi hoạt động liên tục, giữ vững phong độ!"
+ },
+ {
+  "id": "514",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 1 buổi.",
+  "type": "Trong bảy ngày qua bạn tập một buổi."
+ },
+ {
+  "id": "515",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 2 buổi.",
+  "type": "Trong bảy ngày qua bạn tập hai buổi."
+ },
+ {
+  "id": "516",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 3 buổi.",
+  "type": "Trong bảy ngày qua bạn tập ba buổi."
+ },
+ {
+  "id": "517",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 4 buổi.",
+  "type": "Trong bảy ngày qua bạn tập bốn buổi."
+ },
+ {
+  "id": "518",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 5 buổi.",
+  "type": "Trong bảy ngày qua bạn tập năm buổi."
+ },
+ {
+  "id": "519",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 6 buổi.",
+  "type": "Trong bảy ngày qua bạn tập sáu buổi."
+ },
+ {
+  "id": "520",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 7 buổi.",
+  "type": "Trong bảy ngày qua bạn tập bảy buổi."
+ },
+ {
+  "id": "521",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 8 buổi.",
+  "type": "Trong bảy ngày qua bạn tập tám buổi."
+ },
+ {
+  "id": "522",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 9 buổi.",
+  "type": "Trong bảy ngày qua bạn tập chín buổi."
+ },
+ {
+  "id": "523",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 10 buổi.",
+  "type": "Trong bảy ngày qua bạn tập mười buổi."
+ },
+ {
+  "id": "524",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 11 buổi.",
+  "type": "Trong bảy ngày qua bạn tập mười một buổi."
+ },
+ {
+  "id": "525",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 12 buổi.",
+  "type": "Trong bảy ngày qua bạn tập mười hai buổi."
+ },
+ {
+  "id": "526",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 13 buổi.",
+  "type": "Trong bảy ngày qua bạn tập mười ba buổi."
+ },
+ {
+  "id": "527",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Trong 7 ngày qua bạn tập 14 buổi.",
+  "type": "Trong bảy ngày qua bạn tập mười bốn buổi."
+ },
+ {
+  "id": "528",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 1 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là một buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "529",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 2 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là hai buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "530",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 3 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là ba buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "531",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 4 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là bốn buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "532",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 5 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là năm buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "533",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 6 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là sáu buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "534",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Mục tiêu của bạn là 7 buổi mỗi tuần, bắt đầu từ hôm nay nhé.",
+  "type": "Mục tiêu của bạn là bảy buổi mỗi tuần, bắt đầu từ hôm nay nhé."
+ },
+ {
+  "id": "535",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là ngực.",
+  "type": "Nhóm cơ tập nhiều nhất là ngực."
+ },
+ {
+  "id": "536",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là vai.",
+  "type": "Nhóm cơ tập nhiều nhất là vai."
+ },
+ {
+  "id": "537",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là tay trước.",
+  "type": "Nhóm cơ tập nhiều nhất là tay trước."
+ },
+ {
+  "id": "538",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là tay sau.",
+  "type": "Nhóm cơ tập nhiều nhất là tay sau."
+ },
+ {
+  "id": "539",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là cẳng tay.",
+  "type": "Nhóm cơ tập nhiều nhất là cẳng tay."
+ },
+ {
+  "id": "540",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là bụng.",
+  "type": "Nhóm cơ tập nhiều nhất là bụng."
+ },
+ {
+  "id": "541",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là liên sườn.",
+  "type": "Nhóm cơ tập nhiều nhất là liên sườn."
+ },
+ {
+  "id": "542",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là cầu vai.",
+  "type": "Nhóm cơ tập nhiều nhất là cầu vai."
+ },
+ {
+  "id": "543",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là lưng trên.",
+  "type": "Nhóm cơ tập nhiều nhất là lưng trên."
+ },
+ {
+  "id": "544",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là lưng xô.",
+  "type": "Nhóm cơ tập nhiều nhất là lưng xô."
+ },
+ {
+  "id": "545",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là lưng dưới.",
+  "type": "Nhóm cơ tập nhiều nhất là lưng dưới."
+ },
+ {
+  "id": "546",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là mông.",
+  "type": "Nhóm cơ tập nhiều nhất là mông."
+ },
+ {
+  "id": "547",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là đùi trước.",
+  "type": "Nhóm cơ tập nhiều nhất là đùi trước."
+ },
+ {
+  "id": "548",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là đùi sau.",
+  "type": "Nhóm cơ tập nhiều nhất là đùi sau."
+ },
+ {
+  "id": "549",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là bắp chân.",
+  "type": "Nhóm cơ tập nhiều nhất là bắp chân."
+ },
+ {
+  "id": "550",
+  "part": "6. Tóm tắt Dashboard",
+  "say": "Nhóm cơ tập nhiều nhất là đùi trong.",
+  "type": "Nhóm cơ tập nhiều nhất là đùi trong."
+ }
+]

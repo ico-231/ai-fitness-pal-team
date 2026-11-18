@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "FitBro AI — Trợ lý thể hình",
+  "short_name": "FitBro",
+  "description": "Trợ lý thể hình đa tác tử: HLV tập luyện, chuyên gia dinh dưỡng, camera chỉnh form.",
+  "lang": "vi",
+  "start_url": "/?source=homescreen",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f2f4",
+  "theme_color": "#f1f2f4",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    { "src": "/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Check-in sáng", "short_name": "Check-in", "url": "/daily" },
+    { "name": "Ghi bữa ăn", "short_name": "Bữa ăn", "url": "/nutrition" },
+    { "name": "Hỏi HeadBro", "short_name": "Trợ lý AI", "url": "/chat" }
+  ]
+}

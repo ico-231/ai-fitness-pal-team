@@ -45,7 +45,7 @@ function VisualBlock({ v }: { v: Visual }) {
       </div>
     );
   if (v === "heat") {
-    const labels = ["Chưa tập", "Ít", "Vừa", "Nhiều", "Rất nhiều"];
+    const labels = ["Chưa tập", "Ít", "Trung bình", "Nhiều", "Rất nhiều"];
     return (
       <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-2xl bg-[var(--glass-fill)] p-4 text-xs">
         {labels.map((l, i) => (

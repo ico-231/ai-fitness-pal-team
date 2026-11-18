@@ -172,31 +172,16 @@ def repeat_meal(mid: str, body: RepeatIn, user: User = Depends(get_current_user)
     return meal_out(m)
 
 
-class CopyDayIn(BaseModel):
-    from_date: dt.date
-    to_date: dt.date | None = None
-    meal_types: list[MealType] | None = None  # None = chép tất cả bữa
-
-
 def _clone(src: Meal, user: User, day: dt.date, meal_type: str | None = None) -> Meal:
     return Meal(user_id=user.id, date=day, meal_type=meal_type or src.meal_type, name=src.name, items=src.items,
                 calories=src.calories, protein=src.protein, carbs=src.carbs, fat=src.fat, image=src.image,
                 analysis=src.analysis, source=src.source)
 
 
-@router.post("/nutrition/copy-day")
-def copy_day(body: CopyDayIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Chép các bữa của một ngày (mặc định: hôm qua) sang ngày khác (mặc định: hôm nay)."""
-    to = _not_future(body.to_date)
-    if to == body.from_date:
-        raise HTTPException(400, "Ngày nguồn và ngày đích trùng nhau")
-    src = [m for m in stats.meals_on(db, user.id, body.from_date) if not body.meal_types or m.meal_type in body.meal_types]
-    if not src:
-        raise HTTPException(404, "Ngày đó chưa có bữa ăn nào để chép")
-    new = [_clone(m, user, to) for m in src]
-    db.add_all(new)
-    db.commit()
-    return {"copied": len(new), "meals": [meal_out(m) for m in new]}
+def _guess_meal_type() -> str:
+    """Món yêu thích lưu từ thư viện không gắn bữa → đoán theo giờ Việt Nam lúc ghi."""
+    h = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=7)).hour
+    return "breakfast" if h < 10 else "lunch" if h < 14 else "snack" if h < 17 else "dinner"
 
 
 # ---- Món yêu thích: lưu bản chụp món (tên, macro, ảnh) trong settings của hồ sơ, không cần bảng mới
@@ -230,6 +215,26 @@ def add_favorite(mid: str, user: User = Depends(get_current_user), db: Session =
     return {"ok": True, "favorites": _favs(db, user)}
 
 
+@router.post("/nutrition/foods/{food_id}/favorite")
+def add_food_favorite(food_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lưu một món trong Thư viện món Việt vào Yêu thích (1 khẩu phần chuẩn). Dùng chung danh sách với bữa đã ăn."""
+    raw = foodsvc.get_food(food_id)
+    if not raw:
+        raise HTTPException(404, "Không tìm thấy món trong thư viện")
+    f = foodsvc.public(raw)
+    key = f["name"].strip().lower()
+    favs = [x for x in _favs(db, user) if x.get("food_id") != food_id and x["name"].strip().lower() != key]
+    fav = {"id": f"food-{food_id}", "food_id": food_id, "name": f["name"], "meal_type": None,
+           "items": [{"name": f["name"], "grams": f.get("grams"), "calories": f["calories"], "protein": f["protein"],
+                      "carbs": f["carbs"], "fat": f["fat"], "food_id": food_id, "servings": 1}],
+           "calories": round(f["calories"]), "protein": round(f["protein"], 1), "carbs": round(f["carbs"], 1),
+           "fat": round(f["fat"], 1), "image": f.get("image"),
+           "serving": f"{f.get('serving')} (~{f.get('grams')} g)" if f.get("serving") else None,
+           "analysis": f"{f.get('summary') or ''} Mẹo: {f.get('tip') or ''}".strip(), "source": "library"}
+    _save_favs(db, user, [fav, *favs])
+    return {"ok": True, "favorites": _favs(db, user)}
+
+
 @router.delete("/nutrition/favorites/{fid}")
 def delete_favorite(fid: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     _save_favs(db, user, [f for f in _favs(db, user) if f["id"] != fid])
@@ -241,7 +246,8 @@ def log_favorite(fid: str, body: RepeatIn, user: User = Depends(get_current_user
     f = next((x for x in _favs(db, user) if x["id"] == fid), None)
     if not f:
         raise HTTPException(404, "Không tìm thấy món yêu thích")
-    m = Meal(user_id=user.id, date=_not_future(body.date), meal_type=body.meal_type or f["meal_type"], name=f["name"],
+    meal_type = body.meal_type or f.get("meal_type") or _guess_meal_type()
+    m = Meal(user_id=user.id, date=_not_future(body.date), meal_type=meal_type, name=f["name"],
              items=f.get("items") or [], calories=f["calories"], protein=f["protein"], carbs=f["carbs"], fat=f["fat"],
              image=f.get("image"), analysis=f.get("analysis") or "", source=f.get("source") or "manual")
     db.add(m)
@@ -266,4 +272,5 @@ async def analyze(body: AnalyzeIn, user: User = Depends(get_current_user), db: S
 
 @router.get("/foods")
 def foods(q: str = "", category: str | None = None, clean: bool = False):
-    return {"categories": foodsvc.CATEGORIES, "items": foodsvc.search_foods(q, category or None, clean)}
+    # trả đủ cả thư viện (≈ 220 món); giao diện tự chia trang
+    return {"categories": foodsvc.CATEGORIES, "items": foodsvc.search_foods(q, category or None, clean, limit=1000)}

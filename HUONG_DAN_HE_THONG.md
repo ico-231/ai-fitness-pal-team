@@ -35,7 +35,7 @@
 |---|---|
 | 1. Sai tư thế, dễ chấn thương | **Camera AI** đếm rep, chấm điểm form, nhắc lỗi bằng giọng nói; CoachBro giải thích kỹ thuật |
 | 2. Khó theo dõi tiến độ | **Dashboard** báo cáo tuần/tháng/quý/năm, PR (kỷ lục), bản đồ nhiệt cơ, **điểm sẵn sàng** hằng ngày, InBody |
-| 3. Kiểm soát dinh dưỡng | **Nutrition**: chụp ảnh / mô tả 1 câu / chọn 66 món Việt có ảnh thật → calo & macro, lưu lịch sử + phân tích |
+| 3. Kiểm soát dinh dưỡng | **Nutrition**: chụp ảnh / mô tả 1 câu / chọn 224 món Việt (166 món có ảnh thật) → calo & macro, lưu lịch sử + phân tích |
 | 4. Thiếu kèm cặp, nhắc nhở | **3 agent AI** tư vấn cá nhân hoá, streak, huy hiệu, nhắc nhở, giọng PT trong buổi tập |
 
 **Công nghệ:**
@@ -81,7 +81,7 @@ Bản cũ **có** một backend LangGraph khá đầy đủ (`backend/app/agents
 | Daily cập nhật nhưng Dashboard không đổi | Tất cả trang đọc **cùng 1 nguồn dữ liệu trên server**; sau mỗi thao tác ghi, React Query làm mới toàn bộ → luôn đồng bộ (có test tự động `test_checkin_updates_dashboard`) |
 | CoachBro hỗ trợ gì ở phần sẵn sàng? | Trang Daily có khung giải thích + nút "Hôm nay nên tập gì?" (gửi kèm điểm từng thành phần cho CoachBro). CoachBro tự đọc điểm sẵn sàng trước khi soạn buổi tập |
 | Nutrition chưa có lịch sử, phải lưu phân tích trước đó | Nhật ký theo **ngày** (chọn ngày, biểu đồ 14 ngày). Mỗi bữa **lưu phân tích AI + ảnh thu nhỏ** → bấm vào xem lại bất cứ lúc nào |
-| Ảnh thực + thêm nhiều món + tóm tắt ngắn | 66 món/thực phẩm Việt, ảnh thật từ Wikimedia, mỗi món có **tóm tắt** + **mẹo ăn clean** |
+| Ảnh thực + thêm nhiều món + tóm tắt ngắn | 224 món/thực phẩm Việt (lọc theo 13 nhóm), ảnh thật từ Wikimedia, mỗi món có **tóm tắt** + **mẹo ăn clean** |
 | InBody: CoachBro giúp đặt mục tiêu qua câu hỏi + nhập tay | **"Đặt cùng HeadBro"** (hỏi từng bước, chốt mục tiêu bằng thẻ xác nhận) + **"Tự nhập"** |
 | Hỏi Coach lên mục tiêu → lại tự lập kế hoạch tập | Prompt HeadBro cấm tự lập giáo án khi đặt mục tiêu; việc lập giáo án chỉ thuộc CoachBro |
 | Biểu đồ InBody lỗi | Viết lại bằng Recharts, dữ liệu từ server, chọn Cân nặng / Cơ & mỡ / Số đo |
@@ -397,7 +397,7 @@ erDiagram
 
 **Dữ liệu tĩnh** (`backend/data/`):
 - `exercises.json` — 1.324 bài (ExerciseDB): tên, nhóm cơ chính/phụ, dụng cụ, các bước, mã ảnh GIF (tải từ CDN jsDelivr).
-- `foods.json` — 66 món/thực phẩm Việt: khẩu phần, calo, macro, ảnh (Wikimedia Commons), tóm tắt, mẹo clean eating. Giá trị là **ước tính** cho khẩu phần phổ biến.
+- `foods.json` — 224 món/thực phẩm Việt (thêm món bằng `scripts/foods_extra.py` + `scripts/build_foods.py`): khẩu phần, calo, macro, ảnh (Wikimedia Commons), tóm tắt, mẹo clean eating. Giá trị là **ước tính** cho khẩu phần phổ biến.
 
 ---
 
@@ -876,9 +876,9 @@ Lần 1 tìm ra **2 lỗi thật** đã sửa: guard không chặn câu hỏi "c
 ### 16.5. MCP server — FitBro dùng được từ Claude Desktop, Cursor...
 
 `backend/mcp_server.py` (SDK `mcp` 2.x, giao thức Model Context Protocol):
-- **22 công cụ chỉ đọc** lấy thẳng từ registry của agent (cùng mô tả + JSON schema): hồ sơ, hôm nay, điểm sẵn sàng, lịch sử tập, PR, khối lượng cơ, dinh dưỡng, chỉ số cơ thể, mục tiêu, lịch tuần, insights, thư viện bài tập/món ăn, `search_knowledge`...
+- **24 công cụ chỉ đọc** lấy thẳng từ registry của agent (cùng mô tả + JSON schema): hồ sơ, hôm nay, điểm sẵn sàng, lịch sử tập, PR, khối lượng cơ, dinh dưỡng, chỉ số cơ thể, mục tiêu, lịch tuần, insights, thư viện bài tập/món ăn, `search_knowledge`, hoạt động khác (`search_activities`, `get_activity_summary`)... Công cụ mới thêm vào registry tự xuất hiện ở đây.
 - **`ask_fitbro`**: hỏi thẳng đội agent (chạy nguyên guard → router → agent, có trace).
-- Công cụ ghi (`propose_*`, `create_*`, `remember`) **không mở** — ở FitBro mọi thao tác ghi phải qua thẻ Xác nhận.
+- Công cụ ghi (`propose_*`, `create_*`, `remember`) **không mở** — ở FitBro mọi thao tác ghi phải qua thẻ Xác nhận. Vì vậy `propose_activity_log` (ghi hoạt động) cũng cố ý không mở qua MCP.
 - Chạy stdio (ứng dụng MCP tự khởi động) hoặc `--http` (Streamable HTTP, chỉ nghe 127.0.0.1, có `MCP_TOKEN`).
 
 Cấu hình Claude Desktop (`claude_desktop_config.json`):
@@ -926,11 +926,11 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 
 **Đang dùng:**
 - **Ảnh nền:** khu tập ngoài trời của Aibek Skakov trên Pexels (giấy phép Pexels, dùng miễn phí). Đã nén thành `bg/bg-light.webp` (2400px, WebP). Thả file `bg-light.jpg` mới vào cùng thư mục thì app ưu tiên dùng file đó.
-- **Logo:** `logo.svg`, vẽ lại bằng SVG theo thiết kế nhóm gửi; cũng dùng làm favicon. Có file gốc thì đặt `logo.png`, app sẽ ưu tiên dùng. Không cần sửa code, chỉ cần đặt file vào thư mục `frontend/public/` rồi build lại:
+- **Logo:** `logo.png` (ấm tạ + dao nĩa trên nền xanh chanh, file nhóm gửi); favicon cắt từ cùng ảnh. Avatar trợ lý AI (HeadBro): `ai-avatar.png`. Không cần sửa code, chỉ cần đặt file vào thư mục `frontend/public/` rồi build lại:
 
 | File | Dùng cho | Gợi ý |
 |---|---|---|
-| `frontend/public/logo.png` (ưu tiên) hoặc `logo.svg` | Logo ở thanh điều hướng, trang đăng nhập, thanh trên điện thoại | Ảnh vuông, tối thiểu 256×256, đã bo góc sẵn hoặc nền trong suốt |
+| `frontend/public/logo.png` | Logo ở thanh điều hướng, trang đăng nhập, thanh trên điện thoại | Ảnh vuông, tối thiểu 256×256, đã bo góc sẵn hoặc nền trong suốt |
 | `frontend/public/bg/bg-light.jpg` (hoặc `.webp`) | Ảnh nền giao diện sáng | Ảnh ngang, rộng ≥ 1920px, dưới ~600 KB |
 | `frontend/public/bg/bg-dark.jpg` (tuỳ chọn) | Ảnh nền giao diện tối | Thiếu file này thì dùng ảnh sáng phủ lớp tối |
 
@@ -974,7 +974,7 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 | Mục tiêu tự đạt | Mục tiêu theo chỉ số cơ thể đạt 100% tự chuyển "Đã đạt" và app chúc mừng 1 lần (`just_achieved`). Mục tiêu số buổi/tuần và mục tiêu tự theo dõi không tự đóng. |
 | Bản nhẹ theo điểm sẵn sàng | Điểm sẵn sàng "Trung bình" thì bớt 1 set mỗi bài và giảm tạ gợi ý 10%; "Cần phục hồi" thì còn nửa số set và giảm 20%. Bật sẵn, tắt được ở màn tổng quan buổi tập; chương trình gốc giữ nguyên. |
 | Sửa số đo InBody | Nút bút chì ở Lịch sử đo (`PUT /api/body/metrics/{id}`). Thêm, sửa hay xoá lần cân đều cập nhật cân nặng hồ sơ theo lần cân mới nhất, nên calo và đạm mục tiêu không bị lệch. |
-| Chép ngày ăn, món yêu thích | Nút "Chép bữa hôm qua" (`POST /api/nutrition/copy-day`). Lưu món yêu thích trong chi tiết bữa ăn, ghi lại ở tab "Yêu thích" của hộp Ghi bữa ăn. Món yêu thích lưu trong cài đặt hồ sơ, không cần bảng mới. |
+| Món yêu thích | (Nút "Chép bữa hôm qua" đã bỏ 18/11 vì bấm nhiều lần sinh món trùng.) Lưu món yêu thích trong chi tiết bữa ăn, ghi lại ở tab "Yêu thích" của hộp Ghi bữa ăn. Món yêu thích lưu trong cài đặt hồ sơ, không cần bảng mới. |
 | Calo ngày tập / nghỉ | Theo lịch tập tuần: ngày tập +150 kcal, ngày nghỉ −150 kcal, điều chỉnh qua tinh bột, đạm giữ nguyên (`stats.day_targets`). Chưa có lịch và chưa tập thì giữ nguyên. Tắt được trong Cài đặt (`calorie_cycling`). |
 | Test mới | `test_edit_delete_set_and_warmup`, `test_overload_uses_plan_target`, `test_bodyweight_and_time_prs`, `test_goal_auto_achieved_and_metric_edit`, `test_copy_day_and_favorites`, `test_calorie_cycling`. Tổng 52 test. |
 
@@ -1017,5 +1017,5 @@ Toàn bộ app (kể cả trang đăng nhập và onboarding) dùng nền toàn 
 | Sáng / tối | Bỏ nút ở thanh điều hướng; chỉ đổi trong Cài đặt. |
 | Chuyển động | Chuyển trang và chuyển tab dùng View Transitions (`lib/transition.ts`), dự phòng 500 ms nếu trình duyệt không vẽ kịp. Khối nổi khi rê chuột, nút thu nhỏ khi bấm (lò xo). Thanh điều hướng Liquid Glass + viên chỉ báo trượt. Máy bật "giảm chuyển động" chỉ còn mờ dần. |
 | Kính mờ | Sửa lỗi build chỉ giữ `-webkit-backdrop-filter` (Chrome/Edge không đọc); mức làm mờ 8–10px để khối vẫn trong suốt. |
-| Icon tab | `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`; đường dẫn có `?v=4` để trình duyệt tải icon mới. |
+| Icon tab | `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`; đường dẫn có `?v=5` để trình duyệt tải icon mới. |
 

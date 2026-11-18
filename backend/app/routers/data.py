@@ -6,8 +6,9 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import AgentTrace, BodyMetric, Conversation, DailyLog, Goal, Meal, Memory, PendingAction, User, WeeklySchedule, WorkoutPlan, WorkoutSession
+from ..models import Activity, AgentTrace, BodyMetric, Conversation, DailyLog, Goal, Meal, Memory, PendingAction, User, WeeklySchedule, WorkoutPlan, WorkoutSession
 from ..security import get_current_user
+from ..services import activities as actsvc
 from ..services import schedule as schedsvc
 from ..services import stats
 from .body import metric_out
@@ -37,6 +38,7 @@ def export(user: User = Depends(get_current_user), db: Session = Depends(get_db)
         "workout_sessions": [session_out(s) for s in db.scalars(select(WorkoutSession).where(WorkoutSession.user_id == uid))],
         "workout_plans": [plan_out(p) for p in db.scalars(select(WorkoutPlan).where(WorkoutPlan.user_id == uid))],
         "meals": [meal_out(m) for m in db.scalars(select(Meal).where(Meal.user_id == uid).order_by(Meal.date))],
+        "activities": [actsvc.out(a) for a in db.scalars(select(Activity).where(Activity.user_id == uid).order_by(Activity.date))],
         "body_metrics": [metric_out(m) for m in db.scalars(select(BodyMetric).where(BodyMetric.user_id == uid).order_by(BodyMetric.date))],
         "goals": [{"title": g.title, "metric": g.metric, "start": g.start_value, "target": g.target_value,
                    "deadline": g.deadline.isoformat() if g.deadline else None, "status": g.status}
@@ -58,7 +60,7 @@ def wipe(body: WipeIn, user: User = Depends(get_current_user), db: Session = Dep
         db.delete(sess)  # xoá kèm các set
     for conv in db.scalars(select(Conversation).where(Conversation.user_id == uid)):
         db.delete(conv)  # xoá kèm tin nhắn
-    for model in (DailyLog, Meal, BodyMetric, Goal, WorkoutPlan, PendingAction, Memory, WeeklySchedule, AgentTrace):
+    for model in (Activity, DailyLog, Meal, BodyMetric, Goal, WorkoutPlan, PendingAction, Memory, WeeklySchedule, AgentTrace):
         db.execute(delete(model).where(model.user_id == uid))
     # Lượt AI đã dùng hôm nay giữ nguyên (xoá dữ liệu không phải cách để có thêm lượt). Món yêu thích là dữ liệu → xoá.
     p = stats.get_profile(db, user)

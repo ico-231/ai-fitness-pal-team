@@ -1,3 +1,4 @@
+import { MobileMenuButton } from "../components/MobileMenu";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
@@ -144,7 +145,7 @@ export default function Chat() {
 
   return (
     // Trang Trợ lý AI chỉ còn khung chat (theo góp ý: bỏ các khối chỉ số hai bên cho gọn, tập trung vào hội thoại)
-    <div className="flex h-[calc(100dvh/var(--z)-57px)] flex-col lg:h-screen-z lg:pr-2">
+    <div className="flex h-[calc(100dvh/var(--z)-env(safe-area-inset-top)-var(--bottombar-h))] flex-col lg:h-screen-z lg:pr-2">
       <section className="relative flex min-h-0 w-full flex-1 flex-col">
         <header className="flex items-center gap-2 px-3 py-3 sm:px-5">
           <div className="mr-auto flex min-w-0 items-center gap-2">
@@ -157,6 +158,8 @@ export default function Chat() {
             className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-ink px-3.5 text-sm font-medium text-on-ink transition hover:opacity-90">
             <MessageSquarePlus size={15} /> <span className="hidden sm:inline">Mới</span>
           </button>
+          {/* Điện thoại: avatar bung menu nhỏ (InBody, Hướng dẫn, Cài đặt...) như các trang khác */}
+          <MobileMenuButton className="ml-1" />
         </header>
         <ChatView
           key={viewKey}

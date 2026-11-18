@@ -48,7 +48,7 @@ Các mô hình ngôn ngữ lớn (LLM) có thể tư vấn bằng ngôn ngữ t�
 
 | Hạng mục | Kết quả |
 |---|---|
-| Ứng dụng | 10 trang giao diện, 15 bảng dữ liệu, 11 nhóm API, thư viện 1.324 bài tập và 66 món Việt |
+| Ứng dụng | 10 trang giao diện, 15 bảng dữ liệu, 11 nhóm API, thư viện 1.324 bài tập và 224 món Việt |
 | Đa tác tử | Router + 3 agent + bước tổng kết; 31 công cụ có phân quyền; human-in-the-loop |
 | Chất lượng AI | Guardrails 4 lớp, RAG 68 đoạn có nguồn, trace từng bước, bộ eval 3 tầng, MCP server |
 | Kiểm thử | 42 test tự động; eval 39 tình huống với mô hình thật đạt 39/39 |

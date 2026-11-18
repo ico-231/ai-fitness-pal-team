@@ -7,6 +7,19 @@ import { AuthProvider } from "./lib/auth";
 import { DialogHost } from "./components/ui";
 import "./index.css";
 import { applyUiZoom } from "./lib/zoom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Sau mỗi lần deploy, tab đang mở vẫn trỏ tới file JS của bản cũ (đã bị xoá) → chuyển trang sẽ lỗi "Failed to fetch
+// dynamically imported module" và trang trắng. Vite báo sự kiện này → tải lại trang để lấy bản mới (tối đa 1 lần / 30 giây).
+window.addEventListener("vite:preloadError", (e) => {
+  try {
+    const last = Number(sessionStorage.getItem("fitbro-reload-at") || 0);
+    if (Date.now() - last < 30_000) return;
+    sessionStorage.setItem("fitbro-reload-at", String(Date.now()));
+  } catch { /* không có sessionStorage → vẫn tải lại */ }
+  e.preventDefault();
+  location.reload();
+});
 
 applyUiZoom();
 
@@ -16,10 +29,12 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-          <DialogHost />
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+            <DialogHost />
+          </AuthProvider>
+        </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

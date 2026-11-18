@@ -1,20 +1,42 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, BookOpen, Brain, Check, CheckCircle2, Leaf, ListPlus, Plus, X, XCircle, Utensils } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, Check, CheckCircle2, Leaf, ListPlus, Plus, Star, X, XCircle, Utensils } from "lucide-react";
 import { post } from "../../lib/api";
 import { useInvalidateAll } from "../../lib/hooks";
 import { MEAL_TYPES } from "../../lib/constants";
 import type { Card as CardT, Food, MealPlanItem } from "../../lib/types";
-import { fmt } from "../../lib/format";
+import { dayLabel, fmt } from "../../lib/format";
+import { useFavorites, type Favorite } from "../../lib/favorites";
 import { Progress } from "../ui";
 import { ExerciseCard, ExerciseModal, PlanCard } from "../Exercise";
 import { Badge, Button, Modal, toast } from "../ui";
 
+export function FavStar({ on, onClick, label = true, size = "sm" }: { on: boolean; onClick: () => void; label?: boolean; size?: "sm" | "md" }) {
+  return (
+    <Button size={size} variant="outline" aria-pressed={on} onClick={onClick}
+      icon={<Star size={14} className={on ? "text-[#f59e0b]" : undefined} fill={on ? "#f59e0b" : "none"} />}>
+      {label ? (on ? "Đã lưu yêu thích" : "Lưu yêu thích") : undefined}
+    </Button>
+  );
+}
+
+/** Nút ⭐ tròn nằm đè góc ảnh (thẻ món thư viện, thẻ món yêu thích). */
+function StarCorner({ on, onClick, name }: { on: boolean; onClick: () => void; name: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on} aria-label={on ? `Bỏ ${name} khỏi Yêu thích` : `Lưu ${name} vào Yêu thích`}
+      title={on ? "Bỏ khỏi Yêu thích" : "Lưu vào Yêu thích"}
+      className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-surface/90 pointer-coarse:right-1 pointer-coarse:top-1 pointer-coarse:h-10 pointer-coarse:w-10 shadow-sm backdrop-blur transition hover:scale-105">
+      <Star size={15} className={on ? "text-[#f59e0b]" : "text-muted"} fill={on ? "#f59e0b" : "none"} />
+    </button>
+  );
+}
+
 export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
   const [err, setErr] = useState(false);
   const [open, setOpen] = useState(false);
+  const fav = useFavorites();
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
       <button type="button" onClick={() => setOpen(true)} className="group flex flex-1 flex-col text-left" aria-label={`Xem chi tiết ${f.name}`}>
         <div className="relative">
           {f.image && !err ? (
@@ -38,6 +60,7 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
           <span className="mt-1 flex items-center gap-1 text-xs font-medium text-primary-strong">Xem chi tiết <ArrowRight size={12} /></span>
         </div>
       </button>
+      <StarCorner on={!!fav.findFood(f)} onClick={() => fav.toggleFood(f)} name={f.name} />
       {onAdd && (
         <div className="px-3 pb-2.5">
           <button type="button" onClick={onAdd} className="flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-xs font-medium text-muted transition hover:border-primary/60 hover:text-primary-strong">
@@ -50,15 +73,124 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
   );
 }
 
+/** Thẻ món yêu thích (bộ lọc ⭐ của Thư viện món): bấm để xem chi tiết, "Ghi nhanh" để ghi ngay. */
+export function FavoriteTile({ x, onLog, onOpen, onRemove }: { x: Favorite; onLog: () => void; onOpen: () => void; onRemove: () => void }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
+      <button type="button" onClick={onOpen} className="group flex flex-1 flex-col text-left" aria-label={`Xem chi tiết ${x.name}`}>
+        {x.image && !err ? (
+          <img src={x.image} alt={x.name} loading="lazy" onError={() => setErr(true)} className="h-28 w-full bg-surface-2 object-cover transition group-hover:opacity-90" />
+        ) : (
+          <div className="grid h-28 w-full place-items-center bg-surface-2 text-muted" aria-hidden><Utensils size={28} /></div>
+        )}
+        <div className="flex flex-1 flex-col p-3 pb-2">
+          <p className="text-sm font-semibold leading-snug group-hover:text-primary-strong">{x.name}</p>
+          {x.serving && <p className="text-xs text-muted">{x.serving.replace(/ \(~.*\)$/, "")}</p>}
+          <p className="mt-1 text-[13px]">
+            <b>{fmt(x.calories)}</b> kcal · {fmt(x.protein, 1)}g đạm · {fmt(x.carbs, 1)}g carb · {fmt(x.fat, 1)}g béo
+          </p>
+          <span className="mt-auto flex items-center gap-1 pt-1 text-xs font-medium text-primary-strong">Xem chi tiết <ArrowRight size={12} /></span>
+        </div>
+      </button>
+      <StarCorner on onClick={onRemove} name={x.name} />
+      <div className="px-3 pb-2.5">
+        <button type="button" onClick={onLog} className="flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-xs font-medium text-muted transition hover:border-primary/60 hover:text-primary-strong">
+          <Plus size={12} /> Ghi nhanh
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Khung chi tiết món DÙNG CHUNG cho: món thư viện, bữa đã ăn, món yêu thích.
+ * Trước đây mỗi nơi một kiểu (nhóm báo "món ở Hôm nay đã ăn và Thư viện khác nhau") → gom về một chỗ.
+ */
+export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTitle = "Nhận xét", tip, items, children }: {
+  name: string;
+  image?: string | null;
+  emoji?: string;
+  /** dòng nhãn dưới ảnh: loại món, bữa, ngày, nguồn... */
+  tags?: ReactNode;
+  macros: { calories: number; protein: number; carbs: number; fat: number };
+  comment?: string;
+  commentTitle?: ReactNode;
+  tip?: string;
+  /** các thành phần / món trong bữa */
+  items?: { name: string; calories?: number }[];
+  /** phần điều khiển riêng (khẩu phần, bữa, nút...) */
+  children?: ReactNode;
+}) {
+  const [err, setErr] = useState(false);
+  const kcal = { p: macros.protein * 4, c: macros.carbs * 4, fa: macros.fat * 9 };
+  const tot = Math.max(1, kcal.p + kcal.c + kcal.fa);
+  const pct = (v: number) => Math.round((v / tot) * 100);
+  return (
+    <div className="space-y-4">
+      {image && !err ? (
+        <img src={image} alt={name} onError={() => setErr(true)} className="h-48 w-full rounded-xl object-cover" />
+      ) : emoji ? (
+        <div className="grid h-32 w-full place-items-center rounded-xl bg-surface-2 text-5xl" aria-hidden>{emoji}</div>
+      ) : null}
+      {tags && <div className="flex flex-wrap items-center gap-2 text-sm">{tags}</div>}
+      <div className="grid grid-cols-4 gap-2 text-center">
+        {[
+          ["Calo", fmt(macros.calories), "kcal", "var(--energy)"],
+          ["Đạm", fmt(macros.protein, 1), "g", "var(--primary-strong)"],
+          ["Carb", fmt(macros.carbs, 1), "g", "var(--info)"],
+          ["Béo", fmt(macros.fat, 1), "g", "var(--warn)"],
+        ].map(([l, v, u, c]) => (
+          <div key={l} className="rounded-xl bg-surface-2 p-2">
+            <p className="text-[11px] text-muted">{l}</p>
+            <p className="text-lg font-bold" style={{ color: c }}>{v}</p>
+            <p className="text-[11px] text-muted">{u}</p>
+          </div>
+        ))}
+      </div>
+      {tot > 1 && (
+        <div>
+          <p className="mb-1 text-xs text-muted">Năng lượng đến từ: đạm {pct(kcal.p)}% · carb {pct(kcal.c)}% · béo {pct(kcal.fa)}%</p>
+          <div className="flex h-2 overflow-hidden rounded-full bg-surface-3">
+            <div style={{ width: `${pct(kcal.p)}%`, background: "var(--primary-strong)" }} />
+            <div style={{ width: `${pct(kcal.c)}%`, background: "var(--info)" }} />
+            <div style={{ width: `${pct(kcal.fa)}%`, background: "var(--warn)" }} />
+          </div>
+        </div>
+      )}
+      {items && items.length > 1 && (
+        <ul className="text-sm">
+          {items.map((it, i) => (
+            <li key={i} className="flex justify-between border-b border-border py-1 last:border-0">
+              <span>{it.name}</span>
+              {it.calories != null && <span className="text-muted">{fmt(it.calories)} kcal</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {comment && (
+        <div>
+          <p className="text-sm font-semibold">{commentTitle}</p>
+          <p className="whitespace-pre-line text-sm text-muted">{comment}</p>
+        </div>
+      )}
+      {tip && (
+        <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-3">
+          <p className="text-sm font-semibold">Mẹo ăn clean</p>
+          <p className="text-sm">{tip}</p>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClose: () => void }) {
   const [servings, setServings] = useState(1);
   const [mealType, setMealType] = useState(guessMealType);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
   const invalidate = useInvalidateAll();
-  const kcal = { p: f.protein * 4, c: f.carbs * 4, fa: f.fat * 9 };
-  const tot = Math.max(1, kcal.p + kcal.c + kcal.fa);
-  const pct = (v: number) => Math.round((v / tot) * 100);
+  const fav = useFavorites(open);
   const s = servings;
   const log = async () => {
     setBusy(true);
@@ -75,48 +207,18 @@ export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClo
   };
   return (
     <Modal open={open} onClose={onClose} title={f.name}
-      footer={<Button className="w-full sm:w-auto" icon={<Plus size={15} />} loading={busy} onClick={log} autoFocus>Ghi vào nhật ký · {fmt(f.calories * s)} kcal</Button>}>
-      <div className="space-y-4">
-        {f.image && !err ? (
-          <img src={f.image} alt={f.name} onError={() => setErr(true)} className="h-48 w-full rounded-xl object-cover" />
-        ) : (
-          <div className="grid h-32 w-full place-items-center rounded-xl bg-surface-2 text-5xl" aria-hidden>{f.emoji || "🍽️"}</div>
-        )}
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+      footer={<div className="flex w-full flex-wrap justify-end gap-2">
+        <FavStar size="md" on={!!fav.findFood(f)} onClick={() => fav.toggleFood(f)} />
+        <Button icon={<Plus size={15} />} loading={busy} onClick={log} autoFocus>Ghi vào nhật ký · {fmt(f.calories * s)} kcal</Button>
+      </div>}>
+      <FoodSheet name={f.name} image={f.image} emoji={f.emoji}
+        tags={<>
           <Badge color="var(--info)">{f.category_vi}</Badge>
           {f.clean && <Badge color="var(--primary-strong)"><Leaf size={10} /> Clean eating</Badge>}
           <span className="text-muted">1 khẩu phần: {f.serving} (~{f.grams} g)</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          {[
-            ["Calo", fmt(f.calories * s), "kcal", "var(--energy)"],
-            ["Đạm", fmt(f.protein * s, 1), "g", "var(--primary-strong)"],
-            ["Carb", fmt(f.carbs * s, 1), "g", "var(--info)"],
-            ["Béo", fmt(f.fat * s, 1), "g", "var(--warn)"],
-          ].map(([l, v, u, c]) => (
-            <div key={l} className="rounded-xl bg-surface-2 p-2">
-              <p className="text-[11px] text-muted">{l}</p>
-              <p className="text-lg font-bold" style={{ color: c }}>{v}</p>
-              <p className="text-[11px] text-muted">{u}</p>
-            </div>
-          ))}
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-muted">Năng lượng đến từ: đạm {pct(kcal.p)}% · carb {pct(kcal.c)}% · béo {pct(kcal.fa)}%</p>
-          <div className="flex h-2 overflow-hidden rounded-full bg-surface-3">
-            <div style={{ width: `${pct(kcal.p)}%`, background: "var(--primary-strong)" }} />
-            <div style={{ width: `${pct(kcal.c)}%`, background: "var(--info)" }} />
-            <div style={{ width: `${pct(kcal.fa)}%`, background: "var(--warn)" }} />
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-semibold">Nhận xét</p>
-          <p className="text-sm text-muted">{f.summary}</p>
-        </div>
-        <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-3">
-          <p className="text-sm font-semibold">Mẹo ăn clean</p>
-          <p className="text-sm">{f.tip}</p>
-        </div>
+        </>}
+        macros={{ calories: f.calories * s, protein: f.protein * s, carbs: f.carbs * s, fat: f.fat * s }}
+        comment={f.summary} tip={f.tip}>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <p className="mb-1 text-xs text-muted">Số khẩu phần</p>
@@ -133,12 +235,13 @@ export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClo
             </select>
           </div>
         </div>
-      </div>
+      </FoodSheet>
     </Modal>
   );
 }
 
-function guessMealType() {
+export function guessMealType() {
+
   const h = new Date().getHours();
   return h < 10 ? "breakfast" : h < 14 ? "lunch" : h < 17 ? "snack" : "dinner";
 }
@@ -233,12 +336,16 @@ function MealPlanCard({ card }: { card: Extract<CardT, { kind: "mealplan" }> }) 
 
 function ConfirmCard({ card, onStatus }: { card: Extract<CardT, { kind: "confirm" }>; onStatus: (s: string) => void }) {
   const [busy, setBusy] = useState(false);
+  // hoạt động: cho sửa thời lượng / mức trước khi lưu (calo server tính lại, không lấy từ thẻ)
+  const [ov, setOv] = useState<{ duration_min?: number; intensity?: string }>({});
+  const [saved, setSaved] = useState<string | null>(null);
   const invalidate = useInvalidateAll();
   const nav = useNavigate();
   const act = async (ok: boolean) => {
     setBusy(true);
     try {
-      await post(`/api/chat/actions/${card.action_id}/${ok ? "confirm" : "cancel"}`, {});
+      const res = await post<{ result?: { summary?: string } }>(`/api/chat/actions/${card.action_id}/${ok ? "confirm" : "cancel"}`, ok && Object.keys(ov).length ? { overrides: ov } : {});
+      if (res?.result?.summary) setSaved(res.result.summary);
       onStatus(ok ? "confirmed" : "cancelled");
       invalidate();
       toast(ok ? "Đã lưu" : "Đã huỷ");
@@ -248,16 +355,37 @@ function ConfirmCard({ card, onStatus }: { card: Extract<CardT, { kind: "confirm
       setBusy(false);
     }
   };
-  const link = card.action_type === "log_meal" ? "/nutrition" : card.action_type === "save_schedule" ? "/workouts?tab=schedule" : card.action_type === "save_goal" || card.action_type === "log_body_metric" ? "/inbody" : null;
+  const link = card.action_type === "log_meal" ? "/nutrition" : card.action_type === "log_activity" ? "/workouts?tab=activity" : card.action_type === "save_schedule" ? "/workouts?tab=schedule" : card.action_type === "save_goal" || card.action_type === "log_body_metric" ? "/inbody" : null;
   const p = card.payload as Record<string, string | number>;
   return (
     <div className="rounded-xl border border-primary/40 bg-primary-soft/40 p-3.5">
       <p className="text-[13px] font-semibold text-muted">
         {card.status === "confirmed" ? "Đã lưu" : card.status === "cancelled" ? "Đã huỷ" : "Cần bạn xác nhận"}
       </p>
-      <p className="mt-0.5 text-sm font-medium">{card.summary}</p>
-      {card.action_type === "log_meal" && p.meal_type && <p className="mt-0.5 text-xs text-muted">{MEAL_TYPES[p.meal_type as string]} · ngày {p.date}</p>}
+      <p className="mt-0.5 text-sm font-medium">{saved || card.summary}</p>
+      {card.action_type === "log_meal" && p.meal_type && <p className="mt-0.5 text-xs text-muted">{MEAL_TYPES[p.meal_type as string]} · {dayLabel(String(p.date)).toLowerCase()}</p>}
       {card.action_type === "save_goal" && p.plan && <p className="mt-1 whitespace-pre-line text-xs text-muted">{p.plan}</p>}
+      {card.action_type === "log_activity" && (
+        <div className="mt-1 space-y-1.5 text-xs text-muted">
+          <p>{dayLabel(String(p.date))}{p.who_minutes && !saved ? ` · tính ${p.who_minutes} phút vào mục tiêu WHO` : ""} · calo do app tính theo MET và cân nặng của bạn</p>
+          {(p.warnings as unknown as string[] | undefined)?.map((w) => <p key={w} className="text-warn-strong">⚠ {w}</p>)}
+          {card.status === "pending" && p.duration_min != null && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span>Sửa nhanh:</span>
+              {[15, 30, 45, 60, 90].map((m) => (
+                <button key={m} type="button" onClick={() => setOv({ ...ov, duration_min: m })}
+                  className={"rounded-full border px-2 py-0.5 " + ((ov.duration_min ?? p.duration_min) === m ? "border-transparent bg-ink text-on-ink" : "border-border bg-surface")}>{m}′</button>
+              ))}
+              <span className="mx-1 h-4 w-px bg-border" />
+              {([["light", "Nhẹ"], ["moderate", "TB"], ["vigorous", "Mạnh"]] as const).map(([k, l]) => (
+                <button key={k} type="button" onClick={() => setOv({ ...ov, intensity: k })}
+                  className={"rounded-full border px-2 py-0.5 " + ((ov.intensity ?? p.intensity) === k ? "border-transparent bg-ink text-on-ink" : "border-border bg-surface")}>{l}</button>
+              ))}
+            </div>
+          )}
+          {Object.keys(ov).length > 0 && card.status === "pending" && <p>Đã sửa — calo sẽ được tính lại khi lưu.</p>}
+        </div>
+      )}
       <div className="mt-2.5 flex flex-wrap gap-2">
         {card.status === "pending" ? (
           <>
@@ -294,6 +422,8 @@ export function ChatCards({ cards, onCardStatus, compact }: { cards: CardT[]; on
   const nav = useNavigate();
   const invalidate = useInvalidateAll();
   if (!cards.length) return null;
+  // Cùng câu trả lời đã có thẻ "Cần bạn xác nhận" ghi bữa → ẩn "Ghi nhanh" trên thẻ món, tránh bấm cả hai thành ghi trùng
+  const mealConfirm = cards.some((c) => c.kind === "confirm" && c.action_type === "log_meal");
   return (
     <div className="mt-3 space-y-3">
       {cards.map((c, i) => {
@@ -325,7 +455,7 @@ export function ChatCards({ cards, onCardStatus, compact }: { cards: CardT[]; on
                 <FoodTile
                   key={f.id}
                   f={f}
-                  onAdd={async () => {
+                  onAdd={mealConfirm ? undefined : async () => {
                     try {
                       await quickLogFood(f);
                       invalidate();

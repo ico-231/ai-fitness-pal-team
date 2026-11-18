@@ -13,3 +13,15 @@ backend/*.db-*
 backend/.env
 *.db
 *.db-*
+
+# file nghe thử giọng TTS (không đưa lên git)
+voice_test/
+
+# file trung gian khi làm giọng đọc (mp3 thô theo lô, danh sách câu) — bản dùng thật ở frontend/public/voice/
+voice_inbox/
+voice_batches/
+
+# cache TypeScript, báo cáo eval theo từng lần chạy (giữ latest.md)
+*.tsbuildinfo
+backend/evals/reports/eval_*.json
+backend/evals/reports/eval_*.md

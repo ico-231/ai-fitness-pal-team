@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .db import init_db
-from .routers import auth, body, chat, daily, dashboard, data, extras, nutrition, observability, profile, workouts
+from .routers import activities, auth, body, chat, daily, dashboard, data, extras, nutrition, observability, profile, workouts
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("fitbro")
@@ -73,7 +73,15 @@ async def _demo_daily_refresh(request, call_next):
     return await call_next(request)
 
 
-for r in (auth, profile, daily, workouts, nutrition, body, dashboard, chat, data, extras, observability):
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception):
+    """Lỗi bất ngờ: ghi log đầy đủ, trả JSON có câu tiếng Việt (giao diện hiện đúng câu này thay vì
+    'Có lỗi xảy ra' chung chung), không lộ chi tiết kỹ thuật."""
+    log.exception("Lỗi không mong đợi ở %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Hệ thống gặp lỗi khi xử lý yêu cầu này. Bạn thử lại sau ít giây nhé."})
+
+
+for r in (auth, profile, daily, workouts, activities, nutrition, body, dashboard, chat, data, extras, observability):
     app.include_router(r.router)
 
 

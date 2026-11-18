@@ -243,16 +243,80 @@ def test_goal_auto_achieved_and_metric_edit(client, auth):
     assert client.get("/api/profile", headers=auth).json()["weight_kg"] == 70
 
 
-def test_copy_day_and_favorites(client, auth):
+def test_food_favorite_from_library(client, auth):
+    from app.services import foods as foodsvc
+    f = foodsvc.all_foods()[0]
+    favs = client.post(f"/api/nutrition/foods/{f['id']}/favorite", headers=auth).json()["favorites"]
+    assert favs[0]["food_id"] == f["id"] and favs[0]["calories"] == round(f["calories"])
+    # lưu lại cùng món → không trùng
+    assert len(client.post(f"/api/nutrition/foods/{f['id']}/favorite", headers=auth).json()["favorites"]) == len(favs)
+    # ghi món yêu thích không gắn bữa → tự đoán bữa theo giờ
+    meal = client.post(f"/api/nutrition/favorites/food-{f['id']}/log", headers=auth, json={}).json()
+    assert meal["name"] == f["name"] and meal["meal_type"] in ("breakfast", "lunch", "snack", "dinner")
+    assert client.delete(f"/api/nutrition/favorites/food-{f['id']}", headers=auth).status_code == 200
+    assert all(x.get("food_id") != f["id"] for x in client.get("/api/nutrition/favorites", headers=auth).json())
+    assert client.post("/api/nutrition/foods/khong-co/favorite", headers=auth).status_code == 404
+
+
+def test_schedule_week_overrides(client, auth):
+    import datetime as dt
+    from app.services import stats
+    today = stats.today()
+    monday = today - dt.timedelta(days=today.weekday())
+    # tuần mẫu: thứ 2 + thứ 5 tập chân
+    client.put("/api/schedule", headers=auth, json={"days": {"0": {"plan_id": "tpl_leg"}, "3": {"plan_id": "tpl_leg"}}})
+    nxt = monday + dt.timedelta(days=7)
+    w = client.get(f"/api/schedule/week?start={nxt}", headers=auth).json()
+    assert w["offset"] == 1 and w["days"][0]["plan"]["id"] == "tpl_leg" and not w["days"][0]["overridden"]
+    # tuần sau: thứ 2 nghỉ, thứ 3 tập → chỉ đổi đúng ngày đó
+    w = client.put(f"/api/schedule/date/{nxt}", headers=auth, json={"plan_id": None}).json()
+    assert w["days"][0]["rest"] and w["days"][0]["overridden"]
+    w = client.put(f"/api/schedule/date/{nxt + dt.timedelta(days=1)}", headers=auth, json={"plan_id": "tpl_leg"}).json()
+    assert w["days"][1]["plan"]["id"] == "tpl_leg" and w["days"][1]["overridden"]
+    # tuần sau nữa vẫn theo mẫu
+    w2 = client.get(f"/api/schedule/week?start={nxt + dt.timedelta(days=7)}", headers=auth).json()
+    assert w2["days"][0]["plan"]["id"] == "tpl_leg" and not w2["days"][1]["plan"]
+    # đổi tuần mẫu không làm mất ngày đã xếp riêng
+    client.put("/api/schedule", headers=auth, json={"days": {"0": {"plan_id": "tpl_leg"}, "2": {"plan_id": "tpl_leg"}}})
+    w = client.get(f"/api/schedule/week?start={nxt}", headers=auth).json()
+    assert w["days"][0]["rest"] and w["days"][1]["plan"]["id"] == "tpl_leg" and w["days"][2]["plan"]["id"] == "tpl_leg"
+    # về theo mẫu
+    w = client.put(f"/api/schedule/date/{nxt}", headers=auth, json={"reset": True}).json()
+    assert w["days"][0]["plan"]["id"] == "tpl_leg" and not w["days"][0]["overridden"]
+    # chọn đúng như mẫu → không tạo ngoại lệ
+    w = client.put(f"/api/schedule/date/{nxt + dt.timedelta(days=2)}", headers=auth, json={"plan_id": "tpl_leg"}).json()
+    assert not w["days"][2]["overridden"]
+    # giới hạn: ngày đã qua, quá 2 tuần, chương trình không tồn tại
+    assert client.put(f"/api/schedule/date/{today - dt.timedelta(days=1)}", headers=auth, json={"plan_id": None}).status_code == 400
+    assert client.put(f"/api/schedule/date/{monday + dt.timedelta(days=21)}", headers=auth, json={"plan_id": None}).status_code == 400
+    assert client.put(f"/api/schedule/date/{nxt}", headers=auth, json={"plan_id": "khong-co"}).status_code == 400
+    # tuần trước: chỉ xem, có trạng thái
+    w = client.get(f"/api/schedule/week?start={monday - dt.timedelta(days=7)}", headers=auth).json()
+    assert w["offset"] == -1 and all(not d["editable"] for d in w["days"])
+    assert all(d["status"] in ("done", "rest") and d["plan"] is None for d in w["days"])  # không suy "bỏ lỡ" từ lịch mẫu hiện tại
+    # hôm nay đổi riêng → mục tiêu calo (ngày tập/nghỉ) và "hôm nay" theo ngoại lệ
+    client.put(f"/api/schedule/date/{today}", headers=auth, json={"plan_id": "tpl_leg"})
+    s = client.get("/api/schedule", headers=auth).json()
+    assert s["today"]["plan"]["id"] == "tpl_leg"
+    assert client.get("/api/nutrition/day", headers=auth).json()["targets"]["day_type"] == "train"
+
+
+def test_print_report(client, auth):
+    for period in ("week", "month", "khac"):
+        r = client.get(f"/api/dashboard/print?period={period}", headers=auth)
+        assert r.status_code == 200, r.text
+        j = r.json()
+        assert j["report"]["period"] in ("week", "month")
+        assert {"user", "profile", "targets", "water", "goals", "notes"} <= set(j)
+        assert 1 <= len(j["notes"]) <= 4
+
+
+def test_favorites(client, auth):
     import datetime as dt
     y = (dt.date.today() - dt.timedelta(days=1)).isoformat()
     a = client.post("/api/nutrition/meals", headers=auth, json={"date": y, "meal_type": "breakfast", "name": "Bánh mì trứng", "calories": 400, "protein": 18}).json()
-    client.post("/api/nutrition/meals", headers=auth, json={"date": y, "meal_type": "lunch", "name": "Cơm gà", "calories": 650, "protein": 35})
-    r = client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": y, "meal_types": ["breakfast"]}).json()
-    assert r["copied"] == 1
-    r = client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": y}).json()
-    assert r["copied"] == 2
-    assert client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": "2001-01-01"}).status_code == 404
+    # chức năng chép cả ngày đã bỏ (bấm nhiều lần sinh món trùng)
+    assert client.post("/api/nutrition/copy-day", headers=auth, json={"from_date": y}).status_code in (404, 405)
     favs = client.post(f"/api/nutrition/meals/{a['id']}/favorite", headers=auth).json()["favorites"]
     assert favs[0]["name"] == "Bánh mì trứng"
     # thêm lại cùng món không bị trùng
@@ -363,3 +427,46 @@ def test_exercise_progress(client, auth):
     empty = client.get("/api/exercises/0025/progress", headers=auth).json()
     assert empty["points"] == [] and empty["kind"] is None
     assert client.get("/api/exercises/khong-co/progress", headers=auth).status_code == 404
+
+
+def test_meal_analysis_when_model_returns_list(client, auth, monkeypatch):
+    """Model đôi khi trả về MẢNG món thay vì object → trước đây lỗi 500 ('list' object has no attribute 'get')."""
+    from app.agents import llm
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "llm_api_key", "test-key")
+
+    async def fake_complete(messages, **kw):
+        return '[{"name": "Bún", "grams": 200, "calories": 220, "protein": 7, "carbs": 48, "fat": 1},' \
+               ' {"name": "Đậu rán", "grams": 100, "calories": 240, "protein": 17, "carbs": 3, "fat": 18}]'
+
+    monkeypatch.setattr(llm, "complete", fake_complete)
+    r = client.post("/api/nutrition/analyze", headers=auth, json={"text": "Hôm nay tôi ăn bún đậu, có cả giò, chả"})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert len(d["items"]) == 2 and d["calories"] == 460 and d["name"]
+
+
+def test_unexpected_error_returns_vietnamese_json(client, auth, monkeypatch):
+    from app.agents import analyzers
+
+    async def crash(*a, **k):
+        raise ValueError("boom")
+
+    monkeypatch.setattr(analyzers, "analyze_meal", crash)
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    c = TestClient(app, raise_server_exceptions=False)  # như máy chủ thật: lỗi được bộ xử lý chung trả về
+    r = c.post("/api/nutrition/analyze", headers=auth, json={"text": "1 bát phở"})
+    assert r.status_code == 500 and "thử lại" in r.json()["detail"]
+
+
+def test_meal_text_split_into_dishes():
+    """Câu nhiều món được tách để tra thư viện từng món (tra cả câu thì không khớp món nào)."""
+    from app.agents.analyzers import _dish_parts, _library_refs
+
+    assert _dish_parts("nay tôi ăn bún chả và cơm sườn") == ["bún chả", "cơm sườn"]
+    assert _dish_parts("trưa nay ăn 1 bát phở bò, 1 cốc trà sữa") == ["phở bò", "trà sữa"]
+    names = [f["name"] for f in _library_refs("nay tôi ăn bún chả và cơm sườn")]
+    assert "Bún chả" in names and any("sườn" in n for n in names)

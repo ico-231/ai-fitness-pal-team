@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import DailyLog, Meal, User, WorkoutSession, _now
+from ..models import Activity, DailyLog, Meal, User, WorkoutSession, _now
 from ..security import get_current_user
 from ..services import formulas, stats
 
@@ -98,4 +98,9 @@ def calendar(days: int = 35, user: User = Depends(get_current_user), db: Session
         d = out.get(m.date.isoformat())
         if d is not None:
             d["meals"] += 1
+    for a in db.scalars(select(Activity).where(Activity.user_id == user.id, Activity.date >= start)):
+        d = out.get(a.date.isoformat())
+        if d is not None:  # đạp xe / đá bóng ≥ 30 phút quy đổi WHO = một buổi tập trên lịch chuỗi
+            d["workout"] += 1 if a.who_minutes >= 30 else 0
+            d["activity"] = d.get("activity", 0) + 1
     return {"start": start.isoformat(), "end": end.isoformat(), "days": [{"date": k, **v} for k, v in out.items()]}

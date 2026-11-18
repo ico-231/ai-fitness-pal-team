@@ -23,7 +23,10 @@ _KW = {
     "coachbro": [r"tap", r"bai", r"workout", r"gym", r"squat", r"deadlift", r"bench", r"push", r"pull", r"set", r"rep",
                  r"\bta\b", r"giao an", r"lich tap", r"nhom co", r"\bco (tay|nguc|lung|chan|bung|vai|mong)", r"tay", r"nguc",
                  r"lung", r"chan", r"mong", r"vai", r"bung", r"cardio", r"hiit", r"chay bo", r"gian co", r"form", r"ky thuat",
-                 r"\bpr\b", r"coach"],
+                 r"\bpr\b", r"coach",
+                 # hoạt động ngoài gym (M8)
+                 r"dap xe", r"xe dap", r"di bo", r"\bboi\b(?! vi)", r"da bong", r"da banh", r"cau long", r"pickleball",
+                 r"tennis", r"bong ro", r"bong chuyen", r"yoga", r"\bchay\b", r"van dong", r"hoat dong", r"buoc chan", r"leo nui", r"kayak"],
     "headbro": [r"muc tieu", r"san sang", r"readiness", r"inbody", r"can nang", r"\bmo\b", r"tien do", r"bao cao",
                 r"dashboard", r"tong quan", r"dong luc", r"streak", r"chao", r"hello", r"\bhi\b", r"ban la ai", r"head"],
 }

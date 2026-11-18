@@ -86,28 +86,45 @@ CYCLE_KCAL = {"train": 150, "rest": -150}
 
 
 def day_targets(db: Session, user: User, day: dt.date) -> dict:
-    """Mục tiêu dinh dưỡng của một ngày cụ thể.
+    """Mục tiêu dinh dưỡng của một ngày cụ thể. Hai chế độ (Cài đặt → Dinh dưỡng):
 
-    Ngày tập = lịch tuần có buổi tập hôm đó, hoặc đã hoàn thành buổi tập hôm đó → +150 kcal.
-    Ngày nghỉ = có lịch tuần nhưng hôm đó nghỉ và chưa tập → −150 kcal. Chưa có lịch và chưa tập → giữ nguyên.
-    Tắt được trong Cài đặt (calorie_cycling). Mục tiêu tự đặt tay cũng được điều chỉnh vì là mức trung bình.
+    1) "Ước lượng trung bình" (mặc định): mục tiêu = TDEE theo hệ số vận động (ĐÃ gồm tập luyện trung bình).
+       Ngày tập (lịch có buổi / đã tập gym / có hoạt động khác ≥ 30 phút quy đổi WHO) +150 kcal, ngày nghỉ −150 kcal.
+       Hoạt động khác KHÔNG được cộng thêm calo (đã nằm trong hệ số) — chỉ dùng để nhận biết ngày tập.
+    2) "Theo vận động thực tế": nền = BMR × hệ số sinh hoạt (không gồm tập) ± mục tiêu; mỗi ngày cộng thêm
+       eat_back (mặc định 50%) × calo net của hoạt động khác + buổi gym. Bỏ quy tắc ±150 (đã cộng đúng số thật).
+       Mục tiêu tự đặt tay → dùng chính mục tiêu đó làm nền.
     """
-    from ..models import WeeklySchedule
+    from . import activities as actsvc
+    from . import schedule as schedsvc
 
     p = get_profile(db, user)
     base = targets(p)
+    es = actsvc.energy_settings(p)
+    if es["mode"] == "tracked":
+        b = actsvc.body_info(db, user)
+        if not p.targets_manual and b["weight_kg"] and p.height_cm and p.age and p.gender:
+            t = formulas.nutrition_targets(b["weight_kg"], p.height_cm, p.age, p.gender, p.goal, multiplier=es["lifestyle_factor"])
+            base = {**base, **{k: t[k] for k in ("calories", "protein", "carbs", "fat")}}
+        e = actsvc.day_energy(db, user, day, b)
+        adj = round(es["eat_back"] * e["total_kcal_net"])
+        carbs = max(0, round(base["carbs"] + adj / 4))
+        return {**base, "calories": base["calories"] + adj, "carbs": carbs, "day_type": "train" if (e["activities"] or e["gym"]) else None,
+                "adjust_kcal": adj, "base_calories": base["calories"], "mode": "tracked", "activity_kcal_net": e["total_kcal_net"],
+                "activity_adjust_kcal": adj, "eat_back": es["eat_back"]}
     if not (p.settings or {}).get("calorie_cycling", True):
-        return {**base, "day_type": None, "adjust_kcal": 0, "base_calories": base["calories"]}
+        return {**base, "day_type": None, "adjust_kcal": 0, "base_calories": base["calories"], "mode": "average", "activity_adjust_kcal": 0}
     trained = bool(completed_sessions(db, user.id, day, day))
-    sch = db.get(WeeklySchedule, user.id)
-    days = (sch.days if sch else {}) or {}
-    has_schedule = any((v or {}).get("plan_id") for v in days.values())
-    planned = bool((days.get(str(day.weekday())) or {}).get("plan_id"))
+    if not trained:  # đạp xe / đá bóng đủ 30 phút quy đổi cũng là "ngày tập"
+        trained = sum(a.who_minutes for a in actsvc.list_range(db, user.id, day, day)) >= 30
+    days = schedsvc.raw_days(db, user.id)
+    planned = bool(schedsvc.plan_id_for(db, user.id, day, days))
+    has_schedule = schedsvc.has_template(days) or planned
     kind = "train" if trained or planned else "rest" if has_schedule else None
     adj = CYCLE_KCAL.get(kind, 0)
     carbs = max(0, round(base["carbs"] + adj / 4))
     return {**base, "calories": base["calories"] + adj, "carbs": carbs, "day_type": kind, "adjust_kcal": adj,
-            "base_calories": base["calories"]}
+            "base_calories": base["calories"], "mode": "average", "activity_adjust_kcal": 0}
 
 
 def latest_weight(db: Session, p: Profile) -> float | None:
@@ -213,7 +230,7 @@ def sets_between(db: Session, uid: str, start: dt.date, end: dt.date) -> list[Wo
 HEAT_LEVELS = [
     {"level": 0, "label": "Chưa tập", "min": 0},
     {"level": 1, "label": "Ít", "min": 0.5},
-    {"level": 2, "label": "Vừa", "min": 4},
+    {"level": 2, "label": "Trung bình", "min": 4},
     {"level": 3, "label": "Nhiều", "min": 10},
     {"level": 4, "label": "Rất nhiều", "min": 16},
 ]
@@ -415,6 +432,10 @@ def active_days(db: Session, uid: str, since: dt.date) -> set[dt.date]:
         days.add(local_date(ws.started_at))
     for m in db.scalars(select(Meal).where(Meal.user_id == uid, Meal.date >= since)):
         days.add(m.date)
+    from ..models import Activity  # hoạt động khác (đạp xe, đá bóng...) cũng giữ chuỗi
+
+    for d in db.scalars(select(Activity.date).where(Activity.user_id == uid, Activity.date >= since)):
+        days.add(d)
     return days
 
 
