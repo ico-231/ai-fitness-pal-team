@@ -62,14 +62,24 @@ def init_db() -> None:
 def _lock_supabase_rest() -> None:
     """Supabase mở mọi bảng trong schema public qua REST API công khai (khoá anon) nếu chưa bật RLS.
     FitBro không dùng API đó → bật RLS, không tạo policy nào = chặn hết truy cập qua REST.
-    Backend kết nối bằng tài khoản chủ bảng (postgres) nên vẫn đọc/ghi bình thường. Chạy lại nhiều lần vẫn an toàn."""
+    Backend kết nối bằng tài khoản chủ bảng (postgres) nên vẫn đọc/ghi bình thường. Chạy lại nhiều lần vẫn an toàn.
+
+    CHỈ chạy ALTER với bảng chưa bật RLS: ALTER TABLE khoá độc quyền cả bảng, mà Vercel khởi động nhiều tiến trình
+    cùng lúc → trước đây mỗi tiến trình ALTER mọi bảng mỗi lần khởi động, đụng tiến trình đang tạo dữ liệu demo
+    → deadlock (demo trống). Bình thường mọi bảng đã bật sẵn → không còn lệnh khoá nào."""
     if engine.dialect.name != "postgresql" or "supabase" not in str(engine.url.host or ""):
         return
     from sqlalchemy import text
 
+    names = [t.name for t in Base.metadata.sorted_tables]
     with engine.begin() as conn:
-        for t in Base.metadata.sorted_tables:
-            conn.execute(text(f'ALTER TABLE "{t.name}" ENABLE ROW LEVEL SECURITY'))
+        todo = conn.execute(
+            text("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                 "WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity AND c.relname = ANY(:names)"),
+            {"names": names},
+        ).scalars().all()
+        for name in todo:
+            conn.execute(text(f'ALTER TABLE "{name}" ENABLE ROW LEVEL SECURITY'))
 
 
 # Cột thêm sau khi bảng đã tồn tại (create_all không tự thêm cột vào bảng cũ, kể cả trên Supabase).

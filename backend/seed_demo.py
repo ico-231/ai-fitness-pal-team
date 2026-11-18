@@ -623,6 +623,23 @@ def release_lock(name: str = LOCK) -> None:
         db.close()
 
 
+def _main_with_retry(tries: int = 3) -> None:
+    """Deadlock / xung đột khoá với tiến trình khác (vd. tiến trình mới khởi động đang tạo bảng) → đợi rồi thử lại.
+    main() chạy trọn trong một giao dịch nên lần lỗi không để lại dữ liệu dở dang."""
+    import time
+
+    from sqlalchemy.exc import OperationalError
+
+    for i in range(tries):
+        try:
+            main()
+            return
+        except OperationalError as e:
+            if i == tries - 1 or not any(k in str(e).lower() for k in ("deadlock", "lock timeout", "could not obtain lock")):
+                raise
+            time.sleep(1.5 * (i + 1))
+
+
 def ensure_fresh() -> bool:
     """Tạo lại demo nếu đã cũ → demo luôn "kết thúc ở hôm nay" dù mở app vào ngày nào. Trả về True nếu đã tạo lại.
 
@@ -644,7 +661,7 @@ def ensure_fresh() -> bool:
         finally:
             db.close()
         if stale:
-            main()
+            _main_with_retry()
         return stale
     finally:
         release_lock()
@@ -687,73 +704,84 @@ def main() -> None:
     init_db()
     rng.seed(2026)  # chạy lại trong cùng tiến trình vẫn ra đúng bộ dữ liệu
     db = SessionLocal()
-    old = db.scalars(select(User).where(User.email == EMAIL)).first()
-    old_id = old.id if old else None
-    if old:
-        db.delete(old)
-        db.commit()
-
-    today = stats.today()
-    start = today - dt.timedelta(days=DAYS)
-
-    # Giữ nguyên id cũ → ai đang đăng nhập demo không bị đăng xuất khi demo được làm mới mỗi ngày
-    user = User(email=EMAIL, name=NAME, password_hash=hash_password(PASSWORD), created_at=utc_at(start, 20))
-    if old_id:
-        user.id = old_id
-    db.add(user)
-    db.flush()
-    prof = Profile(
-        user_id=user.id, onboarded=True, age=21, gender="male", height_cm=172, weight_kg=72.0, goal="fat_loss",
-        level="intermediate", activity_level="moderate", training_days=5, equipment="gym",
-        injuries="Từng đau vai trái khi đẩy ngực nặng", settings={},
-    )
-    stats.recompute_targets(prof)
-    db.add(prof)
-    db.add(WeeklySchedule(user_id=user.id, days={str(k): {"plan_id": v, "note": ""} for k, v in SCHEDULE_B.items()},
-                          note="Ngực – Chân – nghỉ – Lưng – Tay – HIIT – Chủ nhật bụng/giãn cơ tuỳ sức", source="ai"))
-    for content, cat, src in [
-        ("Dị ứng hải sản (tôm, cua)", "health", "nutribro"), ("Thường tập lúc 18h sau giờ làm", "schedule", "coachbro"),
-        ("Từng đau vai trái khi đẩy ngực nặng", "health", "coachbro"), ("Ngân sách ăn uống khoảng 100k/ngày", "food", "nutribro"),
-        ("Không thích ăn khoai lang", "food", "nutribro"), ("Có 1 cặp tạ đơn 10kg ở nhà", "preference", "coachbro"),
-        ("Làm văn phòng, ngồi nhiều", "schedule", "headbro"),
-    ]:
-        db.add(Memory(user_id=user.id, content=content, category=cat, source=src, created_at=utc_at(start + dt.timedelta(days=rng.randint(1, 30)), 20)))
-
-    last_weight = seed_body(db, user, today, start)
-    prof.weight_kg = last_weight
-    stats.recompute_targets(prof)
-
-    # Hội thoại tạo ra mục tiêu, buổi tập "bảo vệ vai", bữa ăn đã xác nhận...
-    reserved = {(start + dt.timedelta(days=33), "lunch")}
-    shoulder_plan = seed_chats(db, user, prof, today, start)
-    db.add(Goal(user_id=user.id, title="Đạt 19% mỡ", metric="body_fat_pct", start_value=23.0, target_value=19, deadline=today + dt.timedelta(days=45),
-                plan="- Giữ thâm hụt vừa phải\n- Tập tạ 5 buổi/tuần\n- Ngủ đủ 7 tiếng", source="manual", created_at=utc_at(start + dt.timedelta(days=2), 21)))
-    db.add(Goal(user_id=user.id, title="Tập 5 buổi mỗi tuần", metric="workouts_per_week", target_value=5, source="manual",
-                created_at=utc_at(start + dt.timedelta(days=28), 21)))
-    db.add(Goal(user_id=user.id, title="Đẩy ngực 50kg x 8", metric="custom", target_value=50, status="achieved", source="ai",
-                plan="- Tăng 2,5kg khi làm đủ 8 rep ở mọi hiệp", created_at=utc_at(start + dt.timedelta(days=5), 21)))
-    db.add(Goal(user_id=user.id, title="Chạy 5km dưới 30 phút", metric="custom", target_value=30, status="archived", source="manual",
-                created_at=utc_at(start + dt.timedelta(days=3), 21)))
-
-    seed_days(db, user, today, start, reserved)
-    seed_activities(db, user, prof, today, start)
-    db.flush()
-    # Từ khi có buổi "bảo vệ vai" (ngày 19), các buổi ngực dùng buổi tập này
-    if shoulder_plan:
-        for sess in db.scalars(select(WorkoutSession).where(WorkoutSession.user_id == user.id, WorkoutSession.plan_id == "tpl_chest",
-                                                            WorkoutSession.started_at >= utc_at(start + dt.timedelta(days=20), 0))):
-            d = stats.local_date(sess.started_at)
-            i = (d - start).days
-            db.delete(sess)
+    # Các hàm công cụ AI dùng lại khi tạo hội thoại mẫu tự gọi db.commit() → trong lúc tạo demo, commit chỉ flush;
+    # commit thật đúng 1 lần ở cuối (real_commit). Nhờ vậy cả lần làm mới là một giao dịch.
+    real_commit = db.commit
+    db.commit = db.flush  # type: ignore[method-assign]
+    try:
+        old = db.scalars(select(User).where(User.email == EMAIL)).first()
+        old_id = old.id if old else None
+        # Xoá demo cũ + tạo demo mới trong CÙNG một giao dịch (commit một lần ở cuối): lỗi giữa chừng → rollback,
+        # demo cũ còn nguyên (trước đây xoá rồi commit ngay → lỗi giữa chừng để lại tài khoản demo trống).
+        if old:
+            db.delete(old)
             db.flush()
-            add_session(db, user, d, "custom", i / 7, deload=i in DELOAD, plan=shoulder_plan)
-        ws = db.get(WeeklySchedule, user.id)
-        ws.days = {**ws.days, "0": {"plan_id": shoulder_plan.id, "note": "Bảo vệ vai trái"}}
-    db.flush()
-    seed_chats_late(db, user, prof, today)
-    db.commit()
-    n = {m.__name__: len(list(db.scalars(select(m.id).where(m.user_id == user.id))))
-         for m in (WorkoutSession, WorkoutSet, Meal, DailyLog, BodyMetric, Goal, Memory, Conversation, AgentTrace, Activity)}
+
+        today = stats.today()
+        start = today - dt.timedelta(days=DAYS)
+
+        # Giữ nguyên id cũ → ai đang đăng nhập demo không bị đăng xuất khi demo được làm mới mỗi ngày
+        user = User(email=EMAIL, name=NAME, password_hash=hash_password(PASSWORD), created_at=utc_at(start, 20))
+        if old_id:
+            user.id = old_id
+        db.add(user)
+        db.flush()
+        prof = Profile(
+            user_id=user.id, onboarded=True, age=21, gender="male", height_cm=172, weight_kg=72.0, goal="fat_loss",
+            level="intermediate", activity_level="moderate", training_days=5, equipment="gym",
+            injuries="Từng đau vai trái khi đẩy ngực nặng", settings={},
+        )
+        stats.recompute_targets(prof)
+        db.add(prof)
+        db.add(WeeklySchedule(user_id=user.id, days={str(k): {"plan_id": v, "note": ""} for k, v in SCHEDULE_B.items()},
+                              note="Ngực – Chân – nghỉ – Lưng – Tay – HIIT – Chủ nhật bụng/giãn cơ tuỳ sức", source="ai"))
+        for content, cat, src in [
+            ("Dị ứng hải sản (tôm, cua)", "health", "nutribro"), ("Thường tập lúc 18h sau giờ làm", "schedule", "coachbro"),
+            ("Từng đau vai trái khi đẩy ngực nặng", "health", "coachbro"), ("Ngân sách ăn uống khoảng 100k/ngày", "food", "nutribro"),
+            ("Không thích ăn khoai lang", "food", "nutribro"), ("Có 1 cặp tạ đơn 10kg ở nhà", "preference", "coachbro"),
+            ("Làm văn phòng, ngồi nhiều", "schedule", "headbro"),
+        ]:
+            db.add(Memory(user_id=user.id, content=content, category=cat, source=src, created_at=utc_at(start + dt.timedelta(days=rng.randint(1, 30)), 20)))
+
+        last_weight = seed_body(db, user, today, start)
+        prof.weight_kg = last_weight
+        stats.recompute_targets(prof)
+
+        # Hội thoại tạo ra mục tiêu, buổi tập "bảo vệ vai", bữa ăn đã xác nhận...
+        reserved = {(start + dt.timedelta(days=33), "lunch")}
+        shoulder_plan = seed_chats(db, user, prof, today, start)
+        db.add(Goal(user_id=user.id, title="Đạt 19% mỡ", metric="body_fat_pct", start_value=23.0, target_value=19, deadline=today + dt.timedelta(days=45),
+                    plan="- Giữ thâm hụt vừa phải\n- Tập tạ 5 buổi/tuần\n- Ngủ đủ 7 tiếng", source="manual", created_at=utc_at(start + dt.timedelta(days=2), 21)))
+        db.add(Goal(user_id=user.id, title="Tập 5 buổi mỗi tuần", metric="workouts_per_week", target_value=5, source="manual",
+                    created_at=utc_at(start + dt.timedelta(days=28), 21)))
+        db.add(Goal(user_id=user.id, title="Đẩy ngực 50kg x 8", metric="custom", target_value=50, status="achieved", source="ai",
+                    plan="- Tăng 2,5kg khi làm đủ 8 rep ở mọi hiệp", created_at=utc_at(start + dt.timedelta(days=5), 21)))
+        db.add(Goal(user_id=user.id, title="Chạy 5km dưới 30 phút", metric="custom", target_value=30, status="archived", source="manual",
+                    created_at=utc_at(start + dt.timedelta(days=3), 21)))
+
+        seed_days(db, user, today, start, reserved)
+        seed_activities(db, user, prof, today, start)
+        db.flush()
+        # Từ khi có buổi "bảo vệ vai" (ngày 19), các buổi ngực dùng buổi tập này
+        if shoulder_plan:
+            for sess in db.scalars(select(WorkoutSession).where(WorkoutSession.user_id == user.id, WorkoutSession.plan_id == "tpl_chest",
+                                                                WorkoutSession.started_at >= utc_at(start + dt.timedelta(days=20), 0))):
+                d = stats.local_date(sess.started_at)
+                i = (d - start).days
+                db.delete(sess)
+                db.flush()
+                add_session(db, user, d, "custom", i / 7, deload=i in DELOAD, plan=shoulder_plan)
+            ws = db.get(WeeklySchedule, user.id)
+            ws.days = {**ws.days, "0": {"plan_id": shoulder_plan.id, "note": "Bảo vệ vai trái"}}
+        db.flush()
+        seed_chats_late(db, user, prof, today)
+        real_commit()
+        n = {m.__name__: len(list(db.scalars(select(m.id).where(m.user_id == user.id))))
+             for m in (WorkoutSession, WorkoutSet, Meal, DailyLog, BodyMetric, Goal, Memory, Conversation, AgentTrace, Activity)}
+    except BaseException:
+        db.rollback()  # nhả khoá ngay → lần thử lại / tiến trình khác không bị chặn
+        db.close()
+        raise
     db.close()
     print(f"Đã tạo tài khoản demo: {EMAIL} / {PASSWORD}")
     print("Dữ liệu:", n)
