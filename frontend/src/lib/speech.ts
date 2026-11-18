@@ -9,6 +9,7 @@ const END = "(?![\\p{L}\\p{M}\\d])";
 const u = (src: string) => new RegExp(src, "gu");
 
 const UNITS: [RegExp, string][] = [
+  [u(`(\\d)\\s*km\\s*\\/\\s*h${END}`), "$1 ki-lô-mét mỗi giờ"], // phải đứng trước "km" (hoạt động: đạp xe 30 km/h)
   [u(`(\\d)\\s*k?cal${END}`), "$1 ca-lo"],
   [u(`(\\d)\\s*kg${END}`), "$1 ki-lô-gam"],
   [u(`(\\d)\\s*mg${END}`), "$1 mi-li-gam"],

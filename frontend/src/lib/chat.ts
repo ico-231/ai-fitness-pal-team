@@ -37,6 +37,18 @@ const toLocal = (m: ServerMessage): ChatMessage => ({
   safetyFlags: m.meta?.safety_flags || [],
 });
 
+/** Lịch sử chỉ lưu lý do định tuyến trên từng tin → gom các chuyên gia cùng một lượt (cùng lý do, liền nhau) để dòng "HeadBro đã nhờ A + B" vẫn hiện sau khi tải lại. */
+function groupRoutes(ms: ChatMessage[]): ChatMessage[] {
+  return ms.map((m, i) => {
+    if (!m.route || m.synthesis) return m;
+    const prev = ms[i - 1];
+    if (prev?.route && !prev.synthesis && prev.route.reason === m.route.reason) return { ...m, route: null }; // chỉ tin đầu của lượt mang dòng này
+    const agents = [m.agent || ""];
+    for (let j = i + 1; j < ms.length && ms[j].route && !ms[j].synthesis && ms[j].route!.reason === m.route.reason; j++) agents.push(ms[j].agent || "");
+    return { ...m, route: { ...m.route, agents } };
+  });
+}
+
 let tmp = 0;
 const tmpId = () => `tmp-${Date.now()}-${tmp++}`;
 
@@ -66,7 +78,7 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
     }
     setLoading(true);
     get<{ messages: ServerMessage[] }>(`/api/chat/conversations/${conversationId}`)
-      .then((d) => setMessages(d.messages.map(toLocal)))
+      .then((d) => setMessages(groupRoutes(d.messages.map(toLocal))))
       .catch(() => setMessages([]))
       .finally(() => setLoading(false));
   }, [conversationId]);

@@ -30,6 +30,68 @@ const TINT_ALPHA = 0.82; // độ đậm màu tô (nhân lên ảnh)
 const IDLE_ALPHA = 0.3;
 const HOVER_ALPHA = 0.6;
 
+/**
+ * Lớp nổi bật khi rê chuột / chạm vào một nhóm cơ (dùng chung cho mọi chế độ, kể cả cơ chưa tập → không đổi màu số set):
+ *  - trong vùng cơ: phủ sáng nhẹ (như có đèn chiếu)
+ *  - viền: nét đậm màu chữ, ôm sát vùng tô
+ *  - ngoài viền: quầng sáng màu chủ đạo mờ dần ~4 px → cảm giác cơ "nổi" lên
+ */
+function hoverLayer(map: Uint8ClampedArray, W: number, H: number, id: number): string | null {
+  const inside = new Uint8Array(W * H);
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let i = 0; i < W * H; i++) {
+    if (map[i * 4 + 1] === id && map[i * 4 + 2] >= 110) {
+      inside[i] = 1;
+      const x = i % W, y = (i / W) | 0;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return null;
+  const R = 4; // bán kính quầng sáng
+  x0 = Math.max(0, x0 - R); y0 = Math.max(0, y0 - R); x1 = Math.min(W - 1, x1 + R); y1 = Math.min(H - 1, y1 + R);
+  const line = toRgb("var(--text)") || [20, 20, 20];
+  const glow = toRgb("var(--primary)") || [190, 242, 100];
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext("2d")!;
+  const out = ctx.createImageData(W, H);
+  const px = out.data;
+  // khoảng cách (ô vuông) tới pixel khác loại gần nhất, tối đa R
+  const distTo = (x: number, y: number, want: number) => {
+    for (let r = 1; r <= R; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const xx = x + dx, yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+          if (inside[yy * W + xx] === want) return r;
+        }
+      }
+    }
+    return R + 1;
+  };
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const i = y * W + x, k = i * 4;
+      if (inside[i]) {
+        if (distTo(x, y, 0) <= 2) { // viền 2 px
+          px[k] = line[0]; px[k + 1] = line[1]; px[k + 2] = line[2]; px[k + 3] = 215;
+        } else {
+          px[k] = 255; px[k + 1] = 255; px[k + 2] = 255; px[k + 3] = 46;
+        }
+      } else {
+        const d = distTo(x, y, 1);
+        if (d <= R) {
+          px[k] = glow[0]; px[k + 1] = glow[1]; px[k + 2] = glow[2]; px[k + 3] = Math.round(150 * (1 - (d - 1) / R));
+        }
+      }
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  return c.toDataURL();
+}
+
 // ---- bản đồ nhãn: tải + giải mã 1 lần cho cả app ----
 const mapCache = new Map<View, Promise<Uint8ClampedArray>>();
 function loadMap(view: View): Promise<Uint8ClampedArray> {
@@ -94,7 +156,8 @@ function Figure({ view, data, onSelect, colorOf, big, pins, pinSide }: {
   });
   // độ đậm: có màu riêng (đã tập / đang chọn) = TINT_ALPHA (rê chuột → 1); chỉ gợi ý chỗ bấm = IDLE, rê chuột = HOVER
   const alphas = MUSCLE_ORDER.map((m) => (colorOf(m) ? (hover === m ? 1 : TINT_ALPHA) : hover === m ? HOVER_ALPHA : IDLE_ALPHA));
-  const key = JSON.stringify(colors) + (hover || "");
+  // gồm cả độ đậm: chọn cơ ở Bản đồ cơ chỉ đổi alpha (cùng màu primary) → thiếu thì hình không vẽ lại
+  const key = JSON.stringify(colors) + alphas.join(",") + (hover || "");
 
   useEffect(() => {
     if (!map) return;
@@ -128,6 +191,15 @@ function Figure({ view, data, onSelect, colorOf, big, pins, pinSide }: {
     return () => { alive = false; };
   }, [map, key]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { if (tint) URL.revokeObjectURL(tint); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // lớp nổi bật của cơ đang trỏ (vẽ đồng bộ, ảnh nhỏ → không nháy); nhớ theo id để rê qua lại không vẽ lại
+  const hlCache = useRef(new Map<number, string | null>());
+  const hoverId = hover ? MUSCLE_ORDER.indexOf(hover as (typeof MUSCLE_ORDER)[number]) + 1 : 0;
+  const hl = useMemo(() => {
+    if (!map || !hoverId) return null;
+    if (!hlCache.current.has(hoverId)) hlCache.current.set(hoverId, hoverLayer(map, W, H, hoverId));
+    return hlCache.current.get(hoverId) ?? null;
+  }, [map, hoverId, W, H]);
 
   // điểm chuột → nhóm cơ (theo vùng gốc R, kể cả khe ngăn cách → trỏ vào khe vẫn nhận cơ gần nhất)
   const muscleAt = (e: React.MouseEvent<SVGSVGElement>): string | null => {
@@ -169,7 +241,8 @@ function Figure({ view, data, onSelect, colorOf, big, pins, pinSide }: {
     vb = `${minX} 0 ${maxX - minX} ${H}`;
   }
 
-  const hoverText = hover ? `${MUSCLES[hover]}${data ? ` · ${fmt(data[hover]?.sets ?? 0, 1)} set` : ""}` : "";
+  const hoverSets = hover && data ? data[hover]?.sets ?? 0 : null;
+  const hoverText = hover ? `${MUSCLES[hover]}${hoverSets == null ? "" : hoverSets > 0 ? ` · ${fmt(hoverSets, 1)} set` : " · chưa tập"}` : "";
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center">
       <svg ref={svgRef} viewBox={vb} overflow="visible" role="img" aria-label={LABEL[view]}
@@ -193,6 +266,7 @@ function Figure({ view, data, onSelect, colorOf, big, pins, pinSide }: {
         {big && <ellipse cx={W / 2} cy={H - 4} rx={W * 0.22} ry={8} fill="var(--text)" opacity="0.08" />}
         <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
         {tint && <image href={tint} x={0} y={0} width={W} height={H} preserveAspectRatio="none" style={{ mixBlendMode: "multiply" }} />}
+        {hl && <image href={hl} x={0} y={0} width={W} height={H} preserveAspectRatio="none" className="pointer-events-none" />}
         {pinBoxes.map((b) => (
           <g key={b.m} className="pin-in pointer-events-none">
             <line x1={b.c[0]} y1={b.c[1]} x2={left ? b.x + b.w : b.x} y2={b.y} stroke="var(--text)" strokeWidth={0.6 * S} strokeDasharray={`${2 * S} ${2 * S}`} opacity="0.5" />

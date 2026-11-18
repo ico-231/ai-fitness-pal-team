@@ -22,6 +22,7 @@ export default function Settings() {
   });
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState<UiZoom>(getUiZoom);
+  const [usingPack, setUsingPack] = useState(!!voice.pack); // đang dùng giọng thu sẵn → khỏi cảnh báo giọng trình duyệt
   const [wipe, setWipe] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const s = p.settings;
@@ -148,7 +149,7 @@ export default function Settings() {
           <CardHeader title="Giọng nói PT & buổi tập" icon={<Volume2 size={16} />} />
           <div className="space-y-4 px-5 pb-5">
             <Toggle checked={s.voice_coach} onChange={(v) => { voice.enabled = v; setSetting({ voice_coach: v }); }} label="Bật giọng PT (đếm giờ, nhắc form, báo nghỉ)" />
-            <VoicePackField />
+            <VoicePackField onUsing={setUsingPack} />
             <Field label={`Tốc độ đọc: ${s.voice_rate}x`}>
               <input type="range" min={0.7} max={1.5} step={0.1} value={s.voice_rate} className="w-full accent-[var(--primary)]" onChange={(e) => { voice.rate = +e.target.value; setSetting({ voice_rate: +e.target.value }); }} />
             </Field>
@@ -160,7 +161,7 @@ export default function Settings() {
               <Button size="sm" variant="outline" onClick={() => voice.speak("Xin chào, tôi là huấn luyện viên FitBro. Chuẩn bị, ba, hai, một, bắt đầu!", { force: true })}>Nghe thử giọng</Button>
               <Button size="sm" variant="outline" icon={<Camera size={14} />} onClick={testCamera}>Kiểm tra camera</Button>
             </div>
-            {!voice.hasVietnamese() && <p className="text-xs text-warn-strong">Trình duyệt chưa có giọng tiếng Việt — giọng đọc có thể không chuẩn. Chrome/Edge trên Windows/Android thường có sẵn.</p>}
+            {!usingPack && !voice.hasVietnamese() && <p className="text-xs text-warn-strong">Trình duyệt chưa có giọng tiếng Việt — giọng đọc có thể không chuẩn. Chrome/Edge trên Windows/Android thường có sẵn.</p>}
           </div>
         </Card>
 
@@ -273,7 +274,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
 }
 
 /** Chọn giọng PT thu sẵn (frontend/public/voice/<giọng>/, liệt kê trong packs.json). Không có giọng nào → ẩn. */
-function VoicePackField() {
+function VoicePackField({ onUsing }: { onUsing: (on: boolean) => void }) {
   const [packs, setPacks] = useState<{ id: string; name: string; count: number }[]>([]);
   const [pack, setPack] = useState(voice.pack ?? "browser");
   useEffect(() => {
@@ -285,6 +286,7 @@ function VoicePackField() {
         if (voice.pack && Array.isArray(list) && !list.some((p: { id: string }) => p.id === voice.pack)) {
           voice.setPack(null);
           setPack("browser");
+          onUsing(false);
         }
       })
       .catch(() => setPacks([]));
@@ -297,6 +299,7 @@ function VoicePackField() {
         onChange={(v) => {
           setPack(v);
           voice.setPack(v === "browser" ? null : v);
+          onUsing(v !== "browser");
           voice.speak("Xin chào, tôi là huấn luyện viên FitBro.", { force: true });
         }}
         options={[{ value: "browser", label: "Trình duyệt" }, ...packs.map((p) => ({ value: p.id, label: p.name }))]}
