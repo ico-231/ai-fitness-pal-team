@@ -250,9 +250,9 @@ function AddMeal({ open, onClose, date }: { open: boolean; onClose: () => void; 
           {res && (
             <div className="space-y-4">
               <div className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
-                <AgentAvatar agent="nutribro" size={30} />
+                <AgentAvatar agent="headbro" size={30} />
                 <div className="flex-1 text-sm">
-                  <p className="font-semibold">Phân tích của NutriBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
+                  <p className="font-semibold">Phân tích của HeadBro <Badge>độ tin cậy: {res.confidence === "high" ? "cao" : res.confidence === "low" ? "thấp" : "vừa"}</Badge></p>
                   <p className="mt-1 text-muted">{res.analysis}</p>
                 </div>
               </div>
@@ -291,7 +291,7 @@ function MealDetail({ meal, onClose }: { meal: Meal | null; onClose: () => void 
   const save = useAction((m: Meal) => put(`/api/nutrition/meals/${m.id}`, { ...m, ...edit, image: m.image }), { success: "Đã cập nhật", onSuccess: () => { setEdit(null); onClose(); } });
   const remove = useAction((id: string) => del(`/api/nutrition/meals/${id}`), { success: "Đã xoá bữa ăn", onSuccess: onClose });
   if (!meal) return null;
-  // món thư viện lưu "nhận xét + Mẹo: ..." → tách giống chi tiết món; bữa AI phân tích → nhận xét của NutriBro
+  // món thư viện lưu "nhận xét + Mẹo: ..." → tách giống chi tiết món; bữa AI phân tích → nhận xét của HeadBro
   const { comment, tip } = splitAnalysis(meal.analysis);
   const fromLibrary = meal.source === "library";
   const isFav = !!fav.findMeal(meal);
@@ -335,7 +335,7 @@ function MealDetail({ meal, onClose }: { meal: Meal | null; onClose: () => void 
         macros={meal}
         items={meal.items?.map((it) => ({ name: it.name, calories: it.calories }))}
         comment={comment || (meal.analysis ? "" : "Bữa ăn này chưa có phân tích AI.")}
-        commentTitle={fromLibrary ? "Nhận xét" : <span className="flex items-center gap-1.5"><AgentAvatar agent="nutribro" size={20} /> Phân tích của NutriBro</span>}
+        commentTitle={fromLibrary ? "Nhận xét" : <span className="flex items-center gap-1.5"><AgentAvatar agent="headbro" size={20} /> Phân tích của HeadBro</span>}
         tip={tip}
       >
         {edit ? (
