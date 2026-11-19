@@ -94,7 +94,7 @@ async def analyze_meal(db: Session, user: User, *, image: str | None, text: str 
     prof = stats.get_profile(db, user)
     t = stats.today()
     nut = stats.day_nutrition(db, user.id, t)
-    tg = stats.targets(prof)
+    tg = stats.day_targets(db, user, t)
     lib = _library_refs(text) if text else []
     ctx = {
         "muc_tieu_nguoi_dung": prof.goal,

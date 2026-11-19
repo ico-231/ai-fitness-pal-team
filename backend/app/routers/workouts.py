@@ -22,7 +22,7 @@ def exercises_meta():
         "muscles": exsvc.MUSCLES,
         "focus": {k: v["label"] for k, v in exsvc.FOCUS.items()},
         "body_parts": exsvc.BODY_PARTS,
-        "equipment": {k: v for k, v in exsvc.EQUIPMENT.items() if any(e["equipment"] == k for e in exsvc.all_exercises())},
+        "equipment": {k: v for k, v in exsvc.EQUIPMENT.items() if k not in exsvc.EQUIPMENT_ALIAS and any(exsvc.EQUIPMENT_ALIAS.get(e["equipment"], e["equipment"]) == k for e in exsvc.all_exercises())},
         "total": len(exsvc.all_exercises()),
     }
 

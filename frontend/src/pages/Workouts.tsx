@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bike, CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
 import { del, get, post } from "../lib/api";
-import { useAction, useApi } from "../lib/hooks";
+import { useAction, useApi, useInvalidateAll } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
 import { dayLabel, exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR, WorkoutSession } from "../lib/types";
@@ -124,7 +124,6 @@ function BodyMapTab() {
   const [loading, setLoading] = useState(false);
   const [exId, setExId] = useState<string | null>(null);
   const nav = useNavigate();
-  const { data: heat } = useApi<{ muscles: Record<string, { sets: number }> }>(["heatmap", 7], "/api/dashboard/heatmap?days=7");
 
   const pick = async (m: string) => {
     setMuscle(m);
@@ -164,7 +163,6 @@ function BodyMapTab() {
           {Object.entries(MUSCLES).map(([k, v]) => (
             <button key={k} onClick={() => pick(k)} className={clsx("rounded-full border px-2.5 py-1 text-xs", muscle === k ? "border-primary bg-primary-soft" : "border-border hover:border-primary/50")}>
               {v}
-              {heat?.muscles[k]?.sets ? <span className="ml-1 text-muted">· {heat.muscles[k].sets}</span> : null}
             </button>
           ))}
         </div>
@@ -432,6 +430,24 @@ export default function Workouts() {
   useEffect(() => {
     get<WorkoutSession | null>("/api/workouts/active").then(setActive).catch(() => {});
   }, []);
+  // Rời màn tập giữa chừng (không bấm Kết thúc) → buổi vẫn "đang dở", chưa vào Lịch sử / thống kê.
+  // Cho kết thúc ngay tại đây: các set đã ghi được lưu, không mất bài đã tập.
+  const invalidate = useInvalidateAll();
+  const [closing, setClosing] = useState(false);
+  const finishActive = async () => {
+    if (!active) return;
+    setClosing(true);
+    try {
+      await post(`/api/workouts/sessions/${active.id}/finish`, {});
+      toast(`Đã lưu ${active.sets.length} set của buổi ${active.name} vào Lịch sử`);
+      setActive(null);
+      invalidate();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setClosing(false);
+    }
+  };
 
   return (
     <div>
@@ -442,6 +458,7 @@ export default function Workouts() {
           <p className="flex-1 text-sm">
             Bạn có buổi <b>{active.name}</b> đang tập dở ({active.sets.length} set).
           </p>
+          <Button size="sm" variant="outline" loading={closing} onClick={finishActive}>Kết thúc & lưu</Button>
           <Button size="sm" onClick={() => nav("/workouts/session?resume=1")}>Tiếp tục</Button>
         </Card>
       )}

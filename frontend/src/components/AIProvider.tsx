@@ -139,7 +139,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
                 pageContext={context}
                 initial={initial}
                 onInitialSent={() => setInitial(null)}
-                emptyState={<DrawerEmpty page={page} onPick={(t, a) => setInitial({ text: t, agent: a, autoSend: true })} />}
+                emptyState={<DrawerEmpty page={page} onPick={(t) => setInitial({ text: t, autoSend: true })} />}
               />
               </Suspense>
             </div>
@@ -164,7 +164,7 @@ function DrawerEmpty({ page, onPick }: { page: string; onPick: (t: string, a: Ag
   return (
     <div className="py-6 text-center">
       <p className="text-lg font-semibold tracking-[-0.02em]">Hỏi HeadBro bất cứ điều gì</p>
-      <p className="mt-1 text-xs text-muted">HeadBro tự điều phối chuyên gia tập luyện hoặc dinh dưỡng phía sau.</p>
+      <p className="mt-1 text-xs text-muted">Tập luyện, ăn uống, cơ thể — hỏi gì cũng được, ở trang nào cũng được.</p>
       <div className="mt-4 space-y-2 text-left">
         {list.map(([t, a, Icon]) => (
           <button key={t} onClick={() => onPick(t, a)} className="flex w-full items-center gap-2.5 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm transition hover:bg-surface-3">

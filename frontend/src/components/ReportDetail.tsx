@@ -11,7 +11,7 @@ export interface Report {
   bucket_days: number;
   summary: {
     sessions: number; total_volume: number; total_minutes: number; avg_form_score: number | null; pr_count: number;
-    avg_calories: number | null; avg_protein: number | null; meal_logged_days: number; weight_change: number | null; avg_readiness: number | null;
+    avg_calories: number | null; avg_protein: number | null; meal_logged_days: number; weight_change: number | null; avg_readiness: number | null; avg_target_calories?: number;
   };
   series: { date: string; volume: number; sessions: number; minutes: number; calories: number; protein: number }[];
   sessions: { id: string; name: string; date: string; minutes: number; volume: number; sets: number; form: number | null }[];
@@ -85,7 +85,7 @@ export default function ReportDetail({ kind, report, onClose, targets }: { kind:
         )
       ) : kind === "nutrition" ? (
         <>
-          <BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={report.bucket_days === 1 ? targets?.calories : undefined} />
+          <BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={report.bucket_days === 1 ? (report.summary.avg_target_calories ?? targets?.calories) : undefined} />
           <BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color="var(--primary)" target={report.bucket_days === 1 ? targets?.protein : undefined} height={180} />
           <p className="text-xs text-muted">Có ghi bữa ăn {report.summary.meal_logged_days} ngày{unitDays}.</p>
         </>

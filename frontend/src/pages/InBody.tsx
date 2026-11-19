@@ -8,7 +8,7 @@ import type { Goal } from "../lib/types";
 import { LineSeries } from "../components/Charts";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, CardHeader, Empty, Field, Modal, PageHeader, Progress, Segmented, Spinner, toast, confirmDialog, DecimalInput } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Empty, Field, Modal, PageHeader, Progress, Segmented, Spinner, toast, confirmDialog, DecimalInput, DateInput } from "../components/ui";
 
 interface Metric { id: string; date: string; [k: string]: number | string | null | Record<string, number> }
 interface Summary {
@@ -85,7 +85,7 @@ function MetricModal({ open, onClose, editing }: { open: boolean; onClose: () =>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const x = e.target.files?.[0]; if (x) scan(x); e.target.value = ""; }} />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Field label="Ngày đo"><input className="input" type="date" max={todayISO()} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
+        <Field label="Ngày đo"><DateInput className="input" max={todayISO()} value={f.date} onChange={(v) => setF({ ...f, date: v })} /></Field>
         {FIELDS.map(([k, label]) => (
           <Field key={k} label={label}><DecimalInput className="input" value={f[k] || ""} onValue={(n) => setF({ ...f, [k]: n == null ? "" : String(n) })} /></Field>
         ))}
@@ -122,7 +122,7 @@ function GoalModal({ open, onClose, goal }: { open: boolean; onClose: () => void
           <Field label="Theo dõi bằng chỉ số"><select className="input" value={f.metric} onChange={(e) => setF({ ...f, metric: e.target.value })}>{Object.entries(METRIC_GOALS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
           <Field label="Giá trị mục tiêu"><DecimalInput className="input" value={f.target_value} onValue={(n) => setF({ ...f, target_value: n == null ? "" : String(n) })} /></Field>
         </div>
-        <Field label="Hạn chót"><input className="input" type="date" value={f.deadline} onChange={(e) => setF({ ...f, deadline: e.target.value })} /></Field>
+        <Field label="Hạn chót"><DateInput className="input" value={f.deadline} onChange={(v) => setF({ ...f, deadline: v })} /></Field>
         <Field label="Kế hoạch hành động"><textarea className="input" rows={3} value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value })} placeholder="- Tập 4 buổi/tuần&#10;- Ăn đủ 130g đạm" /></Field>
       </div>
     </Modal>
@@ -181,7 +181,7 @@ export default function InBody() {
                 </p>
                 <p className="mt-2 text-xs text-muted">
                   {ch != null && ch !== 0 && (
-                    <span className={`mr-1 inline-flex rounded-full px-1.5 py-px font-semibold ${good ? "bg-primary-soft text-primary-strong" : "bg-danger/10 text-danger"}`}>{ch > 0 ? "+" : ""}{ch}</span>
+                    <span className={`mr-1 inline-flex rounded-full px-1.5 py-px font-semibold ${good ? "bg-primary-soft text-primary-strong" : "bg-danger/10 text-danger"}`}>{ch > 0 ? "+" : ""}{fmt(ch, 1)}</span>
                   )}
                   {ch != null ? "so với lần đầu · " : ""}{dayLabel(v.date)}
                 </p>

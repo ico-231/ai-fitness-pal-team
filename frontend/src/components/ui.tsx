@@ -590,3 +590,23 @@ export function DecimalInput({ value, onValue, className, ...rest }: {
     />
   );
 }
+
+/**
+ * Ô chọn ngày luôn hiện dạng ngày/tháng/năm (11/18/2026 trên trình duyệt tiếng Anh sẽ gây nhầm với người dùng Việt).
+ * Giá trị vẫn là "YYYY-MM-DD"; ô <input type="date"> thật nằm trong suốt phía trên để dùng bộ chọn ngày của trình duyệt.
+ */
+export function DateInput({ value, onChange, min, max, className, ariaLabel, placeholder = "dd/mm/yyyy" }: {
+  value: string; onChange: (v: string) => void; min?: string; max?: string; className?: string; ariaLabel?: string; placeholder?: string;
+}) {
+  const shown = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-").reverse().join("/") : "";
+  return (
+    <span className={clsx("relative inline-flex items-center gap-2", className)}>
+      <span className={clsx("pointer-events-none whitespace-nowrap", !shown && "text-muted")}>{shown || placeholder}</span>
+      <span aria-hidden className="pointer-events-none text-muted">▾</span>
+      <input type="date" aria-label={ariaLabel} value={value} min={min} max={max}
+        onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* một số trình duyệt chặn showPicker */ } }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+    </span>
+  );
+}

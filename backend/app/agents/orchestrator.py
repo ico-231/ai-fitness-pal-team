@@ -163,13 +163,13 @@ def build_system(agent: str, ctx: ToolContext, *, page: str | None, page_context
         parts.append("Tin nhắn nằm ngoài chủ đề sức khỏe/thể hình. Từ chối lịch sự trong 1-2 câu và gợi ý những gì bạn có thể giúp.")
     if upcoming:
         names = ", ".join(f"{AGENTS[u]['name']} ({AGENTS[u]['domain']})" for u in upcoming)
-        parts.append(f"LÀM VIỆC NHÓM: ngay sau bạn, {names} sẽ trả lời phần chuyên môn của họ. "
-                     f"Chỉ trả lời phần thuộc chuyên môn của {a['name']}, KHÔNG nói về lĩnh vực của đồng đội.")
+        parts.append(f"BẢN NHÁP NỘI BỘ: bạn đang soạn phần thuộc mảng của {a['name']}; phần {names} soạn riêng, "
+                     "sau đó HeadBro gộp tất cả thành một câu trả lời. Chỉ viết phần thuộc mảng của bạn, đầy đủ số liệu.")
     if teammates:
         team = "\n\n".join(f"{AGENTS[t['agent']]['name']} đã trả lời:\n{t['content']}" for t in teammates)
         parts.append(
-            "BẠN ĐANG LÀM VIỆC NHÓM. Đồng đội đã trả lời phần chuyên môn của họ ở trên giao diện:\n" + team +
-            f"\n\nChỉ bổ sung phần thuộc chuyên môn của {a['name']}, không lặp lại nội dung của đồng đội."
+            "BẢN NHÁP NỘI BỘ (người dùng không thấy). Phần mảng khác đã soạn:\n" + team +
+            f"\n\nChỉ viết phần thuộc mảng của {a['name']}, không lặp lại nội dung đã có. HeadBro sẽ gộp thành một câu trả lời."
         )
     return "\n\n".join(parts)
 
@@ -465,58 +465,82 @@ async def _handle(
     await emit({"type": "route", **decision})
 
     # [3] Agents chuyên môn
+    # Người dùng chỉ thấy MỘT trợ lý (HeadBro). 1 chuyên gia → stream thẳng câu trả lời của chuyên gia đó (giao diện
+    # hiển thị là HeadBro). ≥ 2 chuyên gia → các chuyên gia chạy NGẦM (không hiện tin riêng, chỉ hiện các bước dùng
+    # công cụ và thẻ), rồi HeadBro viết MỘT câu trả lời gộp hoàn chỉnh — lưu đúng 1 tin nhắn.
+    agents = decision["agents"]
+    multi = len(agents) > 1
     outputs: list[dict] = []
     last_msg: Message | None = None
-    for idx, agent in enumerate(decision["agents"]):
+
+    async def quiet(ev: dict) -> None:
+        if ev.get("type") in ("agent_start", "token", "agent_message"):
+            return
+        await emit({**ev, "agent": "headbro"})
+
+    if multi:
+        await emit({"type": "agent_start", "agent": "headbro"})
+    for idx, agent in enumerate(agents):
         ctx = ToolContext(db=db, user=user, profile=prof, agent=agent, conversation_id=conv.id, question=text or "")
         with tracing.stage(agent), tracing.span("agent", agent):
             out = await run_agent(
                 agent, ctx, history=history, text=text, image=image, page=page, page_context=page_context,
-                notes=g.get("notes") or [], teammates=outputs, offtopic=decision.get("offtopic", False), emit=emit,
-                upcoming=decision["agents"][idx + 1:],
+                notes=g.get("notes") or [], teammates=outputs, offtopic=decision.get("offtopic", False),
+                emit=quiet if multi else emit, upcoming=agents[idx + 1:],
             )
+        if out["error"] and tr:
+            tr.status, tr.error = "error", out["error"][:300]
+        outputs.append(out)
+        if multi:
+            continue
         meta = {"cards": out["cards"], "trace": out["trace"], "route": decision.get("reason")}
         if out["error"]:
             meta["error"] = out["error"]
-            if tr:
-                tr.status, tr.error = "error", out["error"][:300]
         if out.get("flags"):
             meta["safety_flags"] = [f["kind"] for f in out["flags"]]
         m = save(agent, out["content"], meta)
         last_msg = m
         state["last_msg"] = m
         await emit({"type": "agent_message", "id": m.id, "agent": agent, "content": out["content"], "cards": out["cards"], "trace": out["trace"]})
-        outputs.append(out)
 
-    # [4] Tổng kết khi nhiều agent cùng tham gia
-    if len(outputs) > 1 and not any(o["error"] for o in outputs):
-        await emit({"type": "agent_start", "agent": "headbro", "synthesis": True})
-        body = "\n\n".join(f"{AGENTS[o['agent']]['name']}:\n{o['content']}" for o in outputs)
-        msgs = [
-            {"role": "system", "content": SYNTH_PROMPT + "\n\n" + STYLE_RULES.format(name="HeadBro")},
-            {"role": "user", "content": f"Câu hỏi của người dùng: {text}\n\n{body}"},
-        ]
+    # [4] Nhiều chuyên gia → HeadBro viết một câu trả lời gộp
+    if multi:
+        drafts = "\n\n".join(f"Bản nháp mảng {AGENTS[o['agent']]['domain'].split(',')[0].lower()}:\n{o['content']}"
+                              for o in outputs if not o["error"])
         final = ""
-        try:
-            with tracing.stage("synthesis"):
-                async for kind, payload in llm.stream(msgs):
-                    if kind == "text":
-                        await emit({"type": "token", "agent": "headbro", "delta": payload})
-                    else:
-                        final = payload.text
-        except llm.LLMError as e:
-            log.warning("Synthesis failed: %s", e)
-        if final.strip():
-            content = sanitize(final)
-            sflags = guard.check_output(content, prof.gender, prof.weight_kg) if s.guard_output else []
-            if sflags:
-                content = guard.apply_output_guard(content, sflags)
-                if tr:
-                    tr.output_flags += [{**f, "agent": "synthesis"} for f in sflags]
-            m = save("headbro", content, {"synthesis": True, "cards": [], "trace": []})
-            last_msg = m
-            state["last_msg"] = m
-            await emit({"type": "agent_message", "id": m.id, "agent": "headbro", "content": content, "cards": [], "trace": [], "synthesis": True})
+        if drafts:
+            msgs = [
+                {"role": "system", "content": SYNTH_PROMPT + "\n\n" + STYLE_RULES.format(name="HeadBro")},
+                {"role": "user", "content": f"Câu hỏi của người dùng: {text}\n\n{drafts}"},
+            ]
+            try:
+                with tracing.stage("synthesis"):
+                    async for kind, payload in llm.stream(msgs):
+                        if kind == "text":
+                            _first_token()
+                            await emit({"type": "token", "agent": "headbro", "delta": payload})
+                        else:
+                            final = payload.text
+            except llm.LLMError as e:
+                log.warning("Synthesis failed: %s", e)
+        # gộp lỗi → ghép thẳng các bản nháp (vẫn là một tin), không để người dùng mất câu trả lời
+        content = sanitize(final) if final.strip() else "\n\n".join(o["content"] for o in outputs if o["content"])
+        sflags = guard.check_output(content, prof.gender, prof.weight_kg) if s.guard_output else []
+        if sflags:
+            content = guard.apply_output_guard(content, sflags)
+            if tr:
+                tr.output_flags += [{**f, "agent": "synthesis"} for f in sflags]
+        cards = tidy_cards([c for o in outputs for c in o["cards"]])
+        trace = [t for o in outputs for t in o["trace"]]
+        meta = {"cards": cards, "trace": trace, "route": decision.get("reason"),
+                "experts": [{"agent": o["agent"], "content": o["content"], "error": o["error"]} for o in outputs]}
+        errs = [o["error"] for o in outputs if o["error"]]
+        if errs and len(errs) == len(outputs):
+            meta["error"] = errs[0]
+        m = save("headbro", content, meta)
+        last_msg = m
+        state["last_msg"] = m
+        await emit({"type": "agent_message", "id": m.id, "agent": "headbro", "content": content, "cards": cards, "trace": trace})
 
     # [5] Gợi ý câu hỏi tiếp theo (model nhanh, không chặn nếu lỗi)
     if last_msg is not None and not any(o["error"] for o in outputs):

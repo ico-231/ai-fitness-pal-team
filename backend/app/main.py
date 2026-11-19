@@ -1,5 +1,6 @@
 """Điểm khởi động FastAPI: gắn các router /api/* và phục vụ giao diện React đã build (1 server duy nhất)."""
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -56,7 +57,11 @@ def refresh_demo_if_stale() -> None:
         log.exception("Không làm mới được tài khoản demo")
 
 
-app = FastAPI(title="FitBro AI API", version="3.0.0", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
+# Swagger/OpenAPI liệt kê toàn bộ endpoint → KHÔNG mở công khai khi chạy production (Vercel). Chạy local vẫn mở để dev/chấm bài.
+# Bật/tắt thủ công bằng biến môi trường API_DOCS=true|false.
+_docs_on = os.environ.get("API_DOCS", "false" if os.environ.get("VERCEL") else "true").lower() == "true"
+app = FastAPI(title="FitBro AI API", version="3.0.0", lifespan=lifespan,
+              docs_url="/api/docs" if _docs_on else None, redoc_url=None, openapi_url="/api/openapi.json" if _docs_on else None)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 

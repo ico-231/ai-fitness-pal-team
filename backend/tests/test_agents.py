@@ -16,7 +16,7 @@ def sse_events(resp) -> list[dict]:
 
 def which_agent(messages) -> str:
     sys = messages[0]["content"]
-    if "TỔNG KẾT" in sys:
+    if "TỔNG KẾT" in sys or "soạn sẵn các bản nháp" in sys:  # bước HeadBro gộp các bản nháp (SYNTH_PROMPT)
         return "synth"
     for name in ("HeadBro", "CoachBro", "NutriBro"):
         if sys.startswith(f"Bạn là {name}"):
@@ -137,10 +137,29 @@ def test_two_agents_collaborate_then_synthesis(client, auth, fake):
         "synth": [("text", "Tóm lại: tập đều và ăn đủ đạm.")],
     })
     ev = sse_events(client.post("/api/chat/send", headers=auth, json={"text": "muốn tăng cơ thì tập và ăn thế nào"}))
+    # Người dùng chỉ thấy MỘT câu trả lời của HeadBro: hai chuyên gia chạy ngầm, không có tin / chữ stream riêng
     msgs = [e for e in ev if e["type"] == "agent_message"]
-    assert [m["agent"] for m in msgs] == ["coachbro", "nutribro", "headbro"]
-    assert msgs[2].get("synthesis") is True
+    assert [m["agent"] for m in msgs] == ["headbro"]
+    assert msgs[0]["content"] == "Tóm lại: tập đều và ăn đủ đạm."
+    assert {e["agent"] for e in ev if e["type"] in ("agent_start", "token")} == {"headbro"}
     assert f.calls == ["router", "coachbro", "nutribro", "synth", "followups"]
+    # lưu đúng 1 tin trả lời; bản nháp của từng chuyên gia giữ trong meta để xem ở Nhật ký AI
+    conv = client.get(f"/api/chat/conversations/{ev[0]['id']}", headers=auth).json()
+    assistant = [m for m in conv["messages"] if m["role"] == "assistant"]
+    assert len(assistant) == 1 and [x["agent"] for x in assistant[0]["meta"]["experts"]] == ["coachbro", "nutribro"]
+
+
+def test_two_agents_synthesis_failure_still_one_reply(client, auth, fake):
+    # bước gộp trả về rỗng → ghép thẳng các bản nháp, vẫn chỉ 1 tin
+    fake(["coachbro", "nutribro"], {
+        "coachbro": [("text", "Tập compound 4 buổi/tuần.")],
+        "nutribro": [("text", "Ăn đủ 124g đạm mỗi ngày.")],
+        "synth": [("text", "")],
+    })
+    ev = sse_events(client.post("/api/chat/send", headers=auth, json={"text": "muốn tăng cơ thì tập và ăn thế nào"}))
+    msgs = [e for e in ev if e["type"] == "agent_message"]
+    assert len(msgs) == 1 and msgs[0]["agent"] == "headbro"
+    assert "compound" in msgs[0]["content"] and "124g đạm" in msgs[0]["content"]
 
 
 def test_guard_blocks_before_llm(client, auth, fake):

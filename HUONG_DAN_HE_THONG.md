@@ -532,7 +532,7 @@ npm install
 npm run dev                        # http://localhost:5173 (tự chuyển /api sang :8000)
 ```
 
-Tài liệu API tự động: http://localhost:8000/api/docs
+Tài liệu API tự động: http://localhost:8000/api/docs (chỉ khi chạy local; trên Vercel tự tắt, muốn bật đặt biến môi trường `API_DOCS=true`)
 
 ### 11.2. Cấu hình model AI (khi có link API)
 

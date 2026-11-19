@@ -165,7 +165,7 @@ def build(db: Session, user: User) -> list[dict]:
     if prs:
         names = list(dict.fromkeys(x["exercise_name"] for x in prs))
         text = ", ".join(names[:3]) + (f" và {len(names) - 3} bài khác" if len(names) > 3 else "")
-        add("good", f"{len(prs)} kỷ lục mới tuần này", text, action={"label": "Xem PR", "to": "/workouts?tab=history"}, priority=6)
+        add("good", f"{len(names)} bài có kỷ lục mới tuần này", text, action={"label": "Xem PR", "to": "/workouts?tab=history"}, priority=6)
 
     out.sort(key=lambda x: x["priority"])
     return out[:5]

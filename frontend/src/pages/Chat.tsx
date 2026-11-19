@@ -34,7 +34,7 @@ function Welcome({ composer, onPick }: { composer: ReactNode; onPick: (t: string
         </span>
       </h1>
       <p className="mt-2 max-w-lg text-center text-sm text-muted">
-        HeadBro tự gọi chuyên gia tập luyện hoặc dinh dưỡng và trả lời theo dữ liệu thật của bạn.
+        Hỏi gì về tập luyện, ăn uống hay cơ thể cũng được — HeadBro trả lời theo dữ liệu thật của bạn.
       </p>
       <div className="mt-7 w-full">{composer}</div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">

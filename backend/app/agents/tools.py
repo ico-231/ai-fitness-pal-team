@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from ..models import BodyMetric, Goal, Memory, PendingAction, Profile, User, WorkoutPlan
 from ..services import activities as actsvc
+from ..services import allergy
 from ..services import exercises as exsvc
 from ..services import foods as foodsvc
 from ..services import formulas, stats
@@ -482,10 +483,20 @@ def search_food_library(ctx: ToolContext, query="", clean_only=False, category=N
         items = foodsvc.search_foods(query or "", clean_only=bool(clean_only), limit=lim)
     if not items and query and len(query.split()) > 1:  # thử từ khoá chính (vd "ức gà áp chảo" → "ức gà")
         items = foodsvc.search_foods(" ".join(query.split()[:2]), limit=lim)
+    # Dị ứng (từ Trí nhớ AI): món có thể chứa chất người dùng dị ứng KHÔNG được đưa vào gợi ý — kiểm bằng code, không nhờ AI tự nhớ
+    allergens = allergy.user_allergens(ctx.db, ctx.user.id)
+    flagged = allergy.flag_foods(allergens, items) if allergens else {}
+    excluded = [{"name": f["name"], "ly_do": flagged[f["id"]]} for f in items if f["id"] in flagged]
+    items = [f for f in items if f["id"] not in flagged]
     if items:
         ctx.card({"kind": "foods", "items": items})
-    return {"foods": [{k: f[k] for k in ("id", "name", "serving", "calories", "protein", "carbs", "fat", "clean", "tip")} for f in items]
-            or "Không có trong thư viện — hãy tự ước tính và nói rõ là ước tính."}
+    res: dict = {"foods": [{k: f[k] for k in ("id", "name", "serving", "calories", "protein", "carbs", "fat", "clean", "tip")} for f in items]
+                 or ("Các món tìm được đều có thể chứa chất người dùng dị ứng — hãy gợi ý món khác."
+                     if excluded else "Không có trong thư viện — hãy tự ước tính và nói rõ là ước tính.")}
+    if excluded:
+        res["da_loai_vi_di_ung"] = excluded
+        res["luu_y"] = "Tuyệt đối không gợi ý các món đã loại; nếu cần có thể nói rõ vì sao đã bỏ qua."
+    return res
 
 
 @tool(
@@ -769,9 +780,15 @@ def create_meal_plan(ctx: ToolContext, title: str, meals: list) -> dict:
             skipped.append(m.get("food_id"))
     if not items:
         return {"error": "Không có món hợp lệ — gọi search_food_library để lấy food_id."}
+    allergens = allergy.user_allergens(ctx.db, ctx.user.id)
+    bad = [f'{i["name"]}: {allergy.warning(allergens, i["name"] + ". " + (foodsvc.get_food(i["food_id"] or "") or {}).get("summary", ""))}'
+           for i in items if allergens and allergy.matches(allergens, i["name"] + ". " + (foodsvc.get_food(i["food_id"] or "") or {}).get("summary", ""))]
+    if bad:  # không hiện thẻ thực đơn có món người dùng dị ứng
+        return {"error": "Thực đơn có món người dùng dị ứng nên CHƯA được hiển thị — thay các món này rồi gọi lại: " + " | ".join(bad)}
     tot = {k: round(sum(i[k] for i in items), 1) for k in ("calories", "protein", "carbs", "fat")}
-    ctx.card({"kind": "mealplan", "title": str(title)[:120], "items": items, "totals": tot, "targets": stats.targets(ctx.profile)})
-    return {"shown": True, "totals": tot, "targets": stats.targets(ctx.profile), "invalid_food_ids": skipped}
+    day_tg = stats.day_targets(ctx.db, ctx.user, stats.today())  # mục tiêu CỦA HÔM NAY (ngày tập/nghỉ), khớp trang Dinh dưỡng
+    ctx.card({"kind": "mealplan", "title": str(title)[:120], "items": items, "totals": tot, "targets": day_tg})
+    return {"shown": True, "totals": tot, "targets": day_tg, "invalid_food_ids": skipped}
 
 
 @tool(

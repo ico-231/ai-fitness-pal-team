@@ -43,9 +43,19 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     }
 
 
+def _avg_target_calories(db: Session, user: User, rep: dict) -> int:
+    """Mục tiêu calo trung bình của các ngày trong kỳ (mỗi ngày có thể là ngày tập / ngày nghỉ / theo vận động thực tế)."""
+    start, end = stats.dt.date.fromisoformat(rep["start"]), min(stats.dt.date.fromisoformat(rep["end"]), stats.today())
+    n = max(1, (end - start).days + 1)
+    vals = [stats.day_targets(db, user, start + stats.dt.timedelta(days=i))["calories"] for i in range(min(n, 31))]
+    return round(sum(vals) / len(vals))
+
+
 @router.get("/report")
 def report(period: str = "week", user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return stats.period_report(db, user.id, period)
+    rep = stats.period_report(db, user.id, period)
+    rep["summary"]["avg_target_calories"] = _avg_target_calories(db, user, rep)
+    return rep
 
 
 GOAL_VI = {"muscle": "Tăng cơ", "fat_loss": "Giảm mỡ", "maintain": "Giữ dáng", "endurance": "Sức bền", "health": "Sức khoẻ"}
@@ -66,10 +76,12 @@ def report_notes(s: dict, tg: dict, p, days: int, water_avg: int | None, who_per
     else:
         notes.append(f"Trung bình {pw} buổi/tuần, thấp hơn mục tiêu {want} buổi/tuần — thêm 1 buổi ngắn 30 phút là đủ bù.")
     if who_per_week is not None and who_per_week > 0:
+        # kỳ báo cáo là N ngày gần nhất (không phải tuần T2–CN như tab Hoạt động khác) → nói rõ để hai con số không bị nhầm
+        span = "trong 7 ngày gần nhất" if days == 7 else f"mỗi tuần (trung bình {days} ngày gần nhất)"
         if who_per_week >= 150:
-            notes.append(f"Vận động aerobic ≈ {round(who_per_week)} phút/tuần — đạt khuyến nghị WHO (150–300 phút).")
+            notes.append(f"Vận động aerobic ≈ {round(who_per_week)} phút {span} — đạt khuyến nghị WHO (150–300 phút/tuần).")
         else:
-            notes.append(f"Vận động aerobic ≈ {round(who_per_week)} phút/tuần, chưa tới 150 phút WHO khuyến nghị — thêm đi bộ nhanh / đạp xe.")
+            notes.append(f"Vận động aerobic ≈ {round(who_per_week)} phút {span}, chưa tới 150 phút/tuần WHO khuyến nghị — thêm đi bộ nhanh / đạp xe.")
     if s["avg_calories"] is not None:
         diff = s["avg_calories"] - tg["calories"]
         if abs(diff) <= tg["calories"] * 0.1:
@@ -97,8 +109,8 @@ def print_report(period: str = "week", user: User = Depends(get_current_user), d
     """Toàn bộ dữ liệu cho trang báo cáo in/lưu PDF (khổ A4)."""
     period = period if period in ("week", "month") else "week"
     p = stats.get_profile(db, user)
-    tg = stats.targets(p)
     rep = stats.period_report(db, user.id, period)
+    tg = {**stats.targets(p), "calories": _avg_target_calories(db, user, rep)}  # trung bình mục tiêu từng ngày → khớp trang Dinh dưỡng
     start, end = stats.dt.date.fromisoformat(rep["start"]), stats.dt.date.fromisoformat(rep["end"])
     logs = list(db.scalars(select(DailyLog).where(DailyLog.user_id == user.id, DailyLog.date >= start, DailyLog.date <= end)))
     water = [x.water_ml for x in logs if x.water_ml]
@@ -110,7 +122,11 @@ def print_report(period: str = "week", user: User = Depends(get_current_user), d
     from ..services import activities as actsvc
 
     acts = actsvc.list_range(db, user.id, start, end)
-    who_week = sum(a.who_minutes for a in acts) / max(1, days / 7) if acts else None
+    # cùng cách tính với tab Hoạt động khác: hoạt động khác + buổi gym cardio/HIIT (tập tạ không tính vào aerobic)
+    b = actsvc.body_info(db, user)
+    gym_who = sum(actsvc.gym_energy(s, b)["who_minutes"] for s in stats.completed_sessions(db, user.id, start, end))
+    aerobic = sum(a.who_minutes for a in acts) + gym_who
+    who_week = aerobic / max(1, days / 7) if aerobic else None
     return {
         "user": {"name": user.name},
         "profile": {"goal": p.goal, "goal_vi": GOAL_VI.get(p.goal, p.goal), "age": p.age, "height_cm": p.height_cm,
@@ -121,7 +137,7 @@ def print_report(period: str = "week", user: User = Depends(get_current_user), d
         "goals": goals,
         "activities": [actsvc.out(a) for a in acts],
         "activity_summary": {"count": len(acts), "minutes": round(sum(a.duration_min for a in acts)),
-                             "kcal_gross": round(sum(a.kcal_gross for a in acts)), "who_per_week": round(who_week) if who_week else 0},
+                             "kcal_gross": round(sum(a.kcal_gross for a in acts)), "who_per_week": round(who_week) if who_week else 0, "who_total": round(aerobic)},
         "notes": report_notes(rep["summary"], tg, p, days, water_avg, who_week),
         "generated_at": stats.now_local().isoformat(timespec="minutes"),
     }

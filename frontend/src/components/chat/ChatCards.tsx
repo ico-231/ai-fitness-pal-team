@@ -1,15 +1,16 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, BookOpen, Brain, Check, CheckCircle2, Leaf, ListPlus, Plus, Star, X, XCircle, Utensils } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookOpen, Brain, Check, CheckCircle2, Leaf, ListPlus, Plus, Star, X, XCircle, Utensils } from "lucide-react";
 import { post } from "../../lib/api";
 import { useInvalidateAll } from "../../lib/hooks";
 import { MEAL_TYPES } from "../../lib/constants";
 import type { Card as CardT, Food, MealPlanItem } from "../../lib/types";
 import { dayLabel, fmt } from "../../lib/format";
 import { useFavorites, type Favorite } from "../../lib/favorites";
+import { useAllergy } from "../../lib/allergy";
 import { Progress } from "../ui";
 import { ExerciseCard, ExerciseModal, PlanCard } from "../Exercise";
-import { Badge, Button, Modal, toast } from "../ui";
+import { Badge, Button, Modal, confirmDialog, toast } from "../ui";
 
 export function FavStar({ on, onClick, label = true, size = "sm" }: { on: boolean; onClick: () => void; label?: boolean; size?: "sm" | "md" }) {
   return (
@@ -35,8 +36,9 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
   const [err, setErr] = useState(false);
   const [open, setOpen] = useState(false);
   const fav = useFavorites();
+  const warn = useAllergy().warnOf(f.id);
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
+    <div className={`relative flex flex-col overflow-hidden rounded-xl border bg-surface ${warn ? "border-danger/50" : "border-border"}`}>
       <button type="button" onClick={() => setOpen(true)} className="group flex flex-1 flex-col text-left" aria-label={`Xem chi tiết ${f.name}`}>
         <div className="relative">
           {f.image && !err ? (
@@ -44,7 +46,11 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
           ) : (
             <div className="grid h-28 w-full place-items-center bg-surface-2 text-3xl" aria-hidden>{f.emoji || <Utensils size={28} />}</div>
           )}
-          {f.clean && (
+          {warn ? (
+            <Badge color="var(--danger)" className="absolute left-2 top-2 bg-surface/90">
+              <AlertTriangle size={10} /> Có thể gây dị ứng
+            </Badge>
+          ) : f.clean && (
             <Badge color="var(--primary-strong)" className="absolute left-2 top-2 bg-surface/90">
               <Leaf size={10} /> Clean
             </Badge>
@@ -56,6 +62,7 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
           <p className="mt-1 text-[13px]">
             <b>{fmt(f.calories, 1)}</b> kcal · {fmt(f.protein, 1)}g đạm · {fmt(f.carbs, 1)}g carb · {fmt(f.fat, 1)}g béo
           </p>
+          {warn && <p className="mt-1 text-xs font-medium text-danger">{warn.split(" — ")[0]}</p>}
           <p className="mt-1 line-clamp-2 text-xs text-muted">{f.summary}</p>
           <span className="mt-1 flex items-center gap-1 text-xs font-medium text-primary-strong">Xem chi tiết <ArrowRight size={12} /></span>
         </div>
@@ -63,7 +70,10 @@ export function FoodTile({ f, onAdd }: { f: Food; onAdd?: () => void }) {
       <StarCorner on={!!fav.findFood(f)} onClick={() => fav.toggleFood(f)} name={f.name} />
       {onAdd && (
         <div className="px-3 pb-2.5">
-          <button type="button" onClick={onAdd} className="flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-xs font-medium text-muted transition hover:border-primary/60 hover:text-primary-strong">
+          <button type="button" onClick={async () => {
+            if (warn && !(await confirmDialog({ title: "Món này có thể gây dị ứng", text: `${f.name}: ${warn} Vẫn ghi vào nhật ký?`, confirmLabel: "Vẫn ghi", danger: true }))) return;
+            onAdd();
+          }} className="flex w-full items-center justify-center gap-1 rounded-lg border border-border py-1 text-xs font-medium text-muted transition hover:border-primary/60 hover:text-primary-strong">
             <Plus size={12} /> Ghi nhanh
           </button>
         </div>
@@ -107,7 +117,7 @@ export function FavoriteTile({ x, onLog, onOpen, onRemove }: { x: Favorite; onLo
  * Khung chi tiết món DÙNG CHUNG cho: món thư viện, bữa đã ăn, món yêu thích.
  * Trước đây mỗi nơi một kiểu (nhóm báo "món ở Hôm nay đã ăn và Thư viện khác nhau") → gom về một chỗ.
  */
-export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTitle = "Nhận xét", tip, items, children }: {
+export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTitle = "Nhận xét", tip, items, warning, children }: {
   name: string;
   image?: string | null;
   emoji?: string;
@@ -119,6 +129,8 @@ export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTi
   tip?: string;
   /** các thành phần / món trong bữa */
   items?: { name: string; calories?: number }[];
+  /** cảnh báo dị ứng (từ Trí nhớ AI) */
+  warning?: string;
   /** phần điều khiển riêng (khẩu phần, bữa, nút...) */
   children?: ReactNode;
 }) {
@@ -133,6 +145,11 @@ export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTi
       ) : emoji ? (
         <div className="grid h-32 w-full place-items-center rounded-xl bg-surface-2 text-5xl" aria-hidden>{emoji}</div>
       ) : null}
+      {warning && (
+        <div role="alert" className="flex items-start gap-2 rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" /> <span><b>Cảnh báo dị ứng.</b> {warning}</span>
+        </div>
+      )}
       {tags && <div className="flex flex-wrap items-center gap-2 text-sm">{tags}</div>}
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
@@ -191,6 +208,7 @@ export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClo
   const [busy, setBusy] = useState(false);
   const invalidate = useInvalidateAll();
   const fav = useFavorites(open);
+  const warn = useAllergy().warnOf(f.id);
   const s = servings;
   const log = async () => {
     setBusy(true);
@@ -211,7 +229,7 @@ export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClo
         <FavStar size="md" on={!!fav.findFood(f)} onClick={() => fav.toggleFood(f)} />
         <Button icon={<Plus size={15} />} loading={busy} onClick={log} autoFocus>Ghi vào nhật ký · {fmt(f.calories * s)} kcal</Button>
       </div>}>
-      <FoodSheet name={f.name} image={f.image} emoji={f.emoji}
+      <FoodSheet name={f.name} image={f.image} emoji={f.emoji} warning={warn}
         tags={<>
           <Badge color="var(--info)">{f.category_vi}</Badge>
           {f.clean && <Badge color="var(--primary-strong)"><Leaf size={10} /> Clean eating</Badge>}

@@ -159,10 +159,19 @@ function WaterCustom({ busy, onAdd, max }: { busy: boolean; onAdd: (ml: number) 
   );
 }
 
+// Ngày nghỉ theo lịch: lời khuyên theo điểm sẵn sàng KHÔNG được bảo "tập nặng / tập bình thường" (mâu thuẫn với lịch)
+const REST_ADVICE: Record<string, string> = {
+  high: "Cơ thể hồi phục tốt. Hôm nay là ngày nghỉ theo lịch: nghỉ ngơi hoặc vận động nhẹ, để dành sức cho buổi tập tới.",
+  good: "Hôm nay là ngày nghỉ theo lịch: nghỉ ngơi, ăn đủ đạm. Muốn vận động thì đi bộ hoặc giãn cơ nhẹ.",
+  moderate: "Hôm nay là ngày nghỉ theo lịch, rất hợp lý: ưu tiên ngủ đủ, giãn cơ nhẹ nếu muốn vận động.",
+};
+
 export default function Daily() {
   const { data, isLoading } = useApi<DailyData>(["daily"], "/api/daily/today");
   const { data: cal } = useApi<{ days: CalendarDay[] }>(["calendar"], "/api/daily/calendar?days=35");
   const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
+  const { data: sch } = useApi<{ today: ScheduleDay; has_schedule: boolean }>(["schedule"], "/api/schedule");
+  const restDay = !!sch?.has_schedule && !sch.today.plan; // cùng nguồn với thẻ "Lịch tập hôm nay"
   const [editing, setEditing] = useState(false);
   const [showFormula, setShowFormula] = useState(false);
   const nav = useNavigate();
@@ -233,7 +242,7 @@ export default function Daily() {
                   <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `color-mix(in srgb, ${BAND_COLOR[r.band]} 18%, transparent)`, color: `color-mix(in srgb, ${BAND_COLOR[r.band]} 70%, var(--text))` }}>
                     {r.label}
                   </span>
-                  <p className="mt-3 text-[17px] font-medium leading-snug tracking-[-0.01em]">{r.advice}</p>
+                  <p className="mt-3 text-[17px] font-medium leading-snug tracking-[-0.01em]">{restDay && r.band !== "low" ? REST_ADVICE[r.band] ?? r.advice : r.advice}</p>
                   {(r.band === "low" || r.band === "moderate") && (
                     <Button size="sm" variant="secondary" className="mt-3" onClick={() => nav("/workouts/session?plan=tpl_recovery")}>Chuyển sang bài phục hồi</Button>
                   )}

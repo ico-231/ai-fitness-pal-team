@@ -144,6 +144,17 @@ function BigTimer({ seconds, total, label, color }: { seconds: number; total: nu
   );
 }
 
+/** Cùng công thức với backend (services/templates.estimate_minutes): tiêu đề cập nhật theo số bài đang chọn. */
+function estMinutes(items: PlanItem[]): number {
+  if (!items.length) return 0;
+  let total = 5 * 60;
+  for (const it of items) {
+    const work = it.duration_sec || Math.max(1, it.reps || 10) * 4;
+    total += 10 + (it.duration_sec ? 60 : 120) + (it.sets ?? 3) * (work + (it.rest_sec ?? 60));
+  }
+  return Math.max(5, Math.round(total / 60));
+}
+
 export default function Session() {
   const [sp] = useSearchParams();
   const nav = useNavigate();
@@ -648,7 +659,7 @@ export default function Session() {
           <BodyMap highlight={highlight} />
           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
             {Object.entries(summary.muscles).map(([k, v]) => (
-              <Badge key={k}>{MUSCLES[k] || v.label}: {v.sets} set</Badge>
+              <Badge key={k}>{MUSCLES[k] || v.label}: {fmt(v.sets, 1)} set</Badge>
             ))}
           </div>
         </Card>
@@ -684,8 +695,8 @@ export default function Session() {
         </h1>
         <p className="on-bg mt-2 text-sm text-muted">{plan.description}</p>
         <div className="mb-6 mt-3 flex flex-wrap gap-2 text-sm">
-          <span className="glass flex items-center gap-1.5 rounded-full px-3.5 py-1.5"><Clock size={14} /> khoảng <b className="num">{plan.est_minutes}</b> phút</span>
-          <span className="glass rounded-full px-3.5 py-1.5"><b className="num">{plan.items.length}</b> bài</span>
+          <span className="glass flex items-center gap-1.5 rounded-full px-3.5 py-1.5"><Clock size={14} /> khoảng <b className="num">{queue.length === plan.items.length && !useLight ? plan.est_minutes : estMinutes(queue)}</b> phút</span>
+          <span className="glass rounded-full px-3.5 py-1.5"><b className="num">{queue.length}</b> bài{queue.length < plan.items.length && <span className="text-muted"> / {plan.items.length}</span>}</span>
         </div>
         <Card className="p-5 sm:p-6">
           <p className="rounded-2xl bg-[var(--glass-fill)] px-4 py-2.5 text-sm text-muted">

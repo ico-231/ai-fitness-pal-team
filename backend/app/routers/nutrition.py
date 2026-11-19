@@ -12,7 +12,7 @@ from ..db import get_db
 from ..models import Meal, User
 from ..security import get_current_user
 from ..services import foods as foodsvc
-from ..services import quota, stats
+from ..services import allergy, quota, stats
 from ..utils import prepare_image, thumbnail
 
 router = APIRouter(prefix="/api", tags=["nutrition"])
@@ -93,7 +93,14 @@ def history(days: int = 30, user: User = Depends(get_current_user), db: Session 
         a["fat"] += m.fat
         a["meals"] += 1
     rows = [{k: (round(v, 1) if isinstance(v, float) else v) for k, v in a.items()} for a in acc.values()]
-    return {"days": rows, "targets": stats.targets(stats.get_profile(db, user))}
+    # Mục tiêu calo THEO TỪNG NGÀY (ngày tập / ngày nghỉ / hoạt động thực tế) — cùng nguồn với trang Dinh dưỡng, để đường "Mục tiêu"
+    # không lệch số hôm nay. Chỉ tính cho khoảng ngắn (mỗi ngày vài truy vấn).
+    by_day = {}
+    if days <= 31:
+        for i in range(days):
+            d = start + dt.timedelta(days=i)
+            by_day[d.isoformat()] = stats.day_targets(db, user, d)["calories"]
+    return {"days": rows, "targets": stats.targets(stats.get_profile(db, user)), "target_by_day": by_day}
 
 
 @router.post("/nutrition/meals")
@@ -268,6 +275,14 @@ async def analyze(body: AnalyzeIn, user: User = Depends(get_current_user), db: S
     quota.consume(db, user.id, "meal")
     res["image_thumb"] = thumbnail(body.image) if body.image else None
     return res
+
+
+@router.get("/nutrition/allergy")
+def allergy_check(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Dị ứng của người dùng (từ Trí nhớ AI) + món trong thư viện có thể chứa chất đó → giao diện hiện cảnh báo."""
+    al = allergy.user_allergens(db, user.id)
+    return {"allergens": [{"note": a["note"], "labels": a["labels"]} for a in al],
+            "flagged": allergy.flag_foods(al, foodsvc.all_foods()) if al else {}}
 
 
 @router.get("/foods")

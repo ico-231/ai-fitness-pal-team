@@ -632,6 +632,19 @@ body {
 .pin-in {
   animation: fadeIn 0.5s var(--spring) both 0.35s;
 }
+/* Bản đồ cơ: cơ đang trỏ "nổi" lên — phóng nhẹ quanh tâm + đổ bóng */
+.muscle-pop {
+  transform-box: view-box;
+  animation: muscle-pop 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.28));
+}
+@keyframes muscle-pop {
+  from { opacity: 0; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .muscle-pop { animation: fade-only 0.15s ease both; transform: none; }
+}
 
 /* ---------- Liquid Glass (kính lỏng kiểu macOS 26) cho thanh điều hướng ----------
    Lớp nền: mờ + tăng bão hoà + sáng nhẹ; viền bắt sáng chạy quanh mép (mask gradient);

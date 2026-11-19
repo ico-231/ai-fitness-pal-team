@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, CartesianGrid, Cell, ComposedChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { shortDate } from "../lib/format";
 
 const axis = { stroke: "var(--muted)", fontSize: 11, tickLine: false, axisLine: false } as const;
@@ -17,8 +17,10 @@ const tooltipStyle = {
   labelStyle: { color: "var(--muted)" },
 };
 
-export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", height = 220, target, label, selected, onSelect }: {
+export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", height = 220, target, targetKey, label, selected, onSelect }: {
   data: Record<string, unknown>[]; dataKey: string; color?: string; unit?: string; height?: number; target?: number; label?: string;
+  /** mục tiêu thay đổi theo ngày (ngày tập / ngày nghỉ): khoá chứa mục tiêu từng cột → vẽ đường bậc thang thay cho một đường ngang */
+  targetKey?: string;
   /** ngày (giá trị "date") đang chọn → cột đó tô đậm thay cho cột cuối */
   selected?: string;
   /** bấm vào một cột (cả khoảng cột, không cần trúng thanh) → trả về "date" của cột đó */
@@ -28,7 +30,7 @@ export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", 
   return (
     <ResponsiveContainer width="100%" height={height}>
       {/* lề phải chừa chỗ cho chữ "Mục tiêu" nằm NGOÀI vùng cột (trước đây đè lên cột cuối) */}
-      <BarChart data={data} margin={{ top: 8, right: target ? 58 : 8, left: 0, bottom: 0 }} style={onSelect ? { cursor: "pointer" } : undefined}
+      <ComposedChart data={data} margin={{ top: 8, right: target || targetKey ? 58 : 8, left: 0, bottom: 0 }} style={onSelect ? { cursor: "pointer" } : undefined}
         onClick={onSelect ? (st) => {
           // recharts 3: activeTooltipIndex có thể là null/chuỗi → không dùng Number(null) (= 0, nhảy nhầm về cột đầu)
           const raw = st?.activeTooltipIndex;
@@ -39,8 +41,9 @@ export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", 
         <CartesianGrid strokeDasharray="2 6" stroke={grid} vertical={false} />
         {/* nhãn ngày cách đều (không ẩn lác đác 13/11, 15/11 như trước) */}
         <XAxis dataKey="date" tickFormatter={(d) => shortDate(String(d))} {...axis} interval="equidistantPreserveStart" minTickGap={6} />
-        <YAxis {...axis} width={yWidth(data.map((x) => x[dataKey]), target)} tickFormatter={yFmt} />
+        <YAxis {...axis} width={yWidth([...data.map((x) => x[dataKey]), ...(targetKey ? data.map((x) => x[targetKey]) : [])], target)} tickFormatter={yFmt} />
         <Tooltip {...tooltipStyle} cursor={{ fill: grid, radius: 8 }} labelFormatter={(d) => shortDate(String(d))} formatter={(v) => [`${Number(v).toLocaleString("vi-VN")} ${unit}`, label || dataKey]} />
+        {targetKey ? <Line type="stepAfter" dataKey={targetKey} stroke="var(--text)" strokeOpacity={0.45} strokeDasharray="4 4" strokeWidth={1.5} dot={false} activeDot={false} isAnimationActive={false} legendType="none" tooltipType="none" connectNulls /> : null}
         {target ? <ReferenceLine y={target} stroke="var(--text)" strokeOpacity={0.45} strokeDasharray="4 4" label={{ value: "Mục tiêu", fill: "var(--muted)", fontSize: 11, position: "right" }} /> : null}
         {/* cột đang chọn (mặc định: gần nhất) tô đậm, các cột khác nhạt hơn */}
         <Bar dataKey={dataKey} fill={color} radius={[8, 8, 8, 8]} maxBarSize={30}>
@@ -48,7 +51,7 @@ export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", 
             <Cell key={i} fill={i === hi ? color : `color-mix(in srgb, ${color} 45%, transparent)`} />
           ))}
         </Bar>
-      </BarChart>
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

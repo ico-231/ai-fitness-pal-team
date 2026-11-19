@@ -62,9 +62,9 @@ EQUIPMENT = {
     "smith machine": "Máy Smith", "kettlebell": "Tạ ấm", "weighted": "Tạ đeo", "stability ball": "Bóng tập",
     "ez barbell": "Tạ EZ", "assisted": "Hỗ trợ", "medicine ball": "Bóng tạ", "rope": "Dây",
     "roller": "Con lăn", "trap bar": "Tạ trap", "olympic barbell": "Tạ đòn Olympic",
-    "sled machine": "Xe đẩy", "bosu ball": "Bóng Bosu", "tire": "Lốp xe", "upper body ergometer": "Máy đạp tay",
+    "sled machine": "Máy sled (đạp đùi, hack)", "bosu ball": "Bóng Bosu", "tire": "Lốp xe", "upper body ergometer": "Máy đạp tay",
     "elliptical machine": "Máy elip", "stationary bike": "Xe đạp tập", "skierg machine": "Máy SkiErg",
-    "stepmill machine": "Máy leo bậc", "hammer": "Búa", "wheel roller": "Con lăn bụng",
+    "stepmill machine": "Máy leo bậc", "hammer": "Máy Hammer", "wheel roller": "Con lăn bụng",
 }
 
 # Nhóm "focus" để lọc nhanh (UI + agent)
@@ -78,6 +78,9 @@ FOCUS = {
     "cardio": {"label": "Cardio", "muscles": []},
     "mobility": {"label": "Giãn cơ & Phục hồi", "muscles": []},
 }
+
+# Hai nhãn gốc cùng nghĩa → gộp thành MỘT chip lọc (bộ lọc "band" khớp cả "resistance band")
+EQUIPMENT_ALIAS = {"resistance band": "band"}
 
 HOME_EQUIPMENT = {"body weight", "dumbbell", "band", "resistance band", "kettlebell", "stability ball", "rope", "roller"}
 
@@ -229,7 +232,7 @@ def search_exercises(
             return False
         if body_part and e["body_part"] != body_part:
             return False
-        if equipment and e["equipment"] != equipment:
+        if equipment and EQUIPMENT_ALIAS.get(e["equipment"], e["equipment"]) != EQUIPMENT_ALIAS.get(equipment, equipment):
             return False
         if kind and e["kind"] != kind:
             return False

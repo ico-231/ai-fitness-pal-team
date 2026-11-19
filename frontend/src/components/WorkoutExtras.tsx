@@ -176,6 +176,21 @@ export function ScheduleTab() {
   const options = [...(mine || []).map((p) => ({ id: p.id, name: `${p.name} (của tôi)` })), ...tpls.map((p) => ({ id: p.id, name: p.name }))];
   const maxOffset = w.max_weeks_ahead;
   const weekLabel = offset === 0 ? "Tuần này" : offset === 1 ? "Tuần sau" : offset === -1 ? "Tuần trước" : offset > 0 ? `${offset} tuần nữa` : `${-offset} tuần trước`;
+  // Ngày của tuần lấy từ `start` (biết ngay khi bấm ‹ ›), không chờ dữ liệu tuần mới về → nhãn và ngày luôn khớp nhau
+  const fresh = w.start === start;
+  // Tóm tắt tính từ từng ngày: tách buổi theo lịch / buổi ngoài lịch / bỏ lỡ / thay bằng hoạt động khác
+  const plannedDays = w.days.filter((d) => d.plan);
+  const doneOnPlan = plannedDays.filter((d) => d.status === "done").length;
+  const extraDone = w.days.filter((d) => !d.plan && d.status === "done").length;
+  const missed = plannedDays.filter((d) => d.status === "missed").length;
+  const replaced = plannedDays.filter((d) => d.status === "replaced").length;
+  const left = plannedDays.filter((d) => d.status === "planned").length;
+  const restDays = w.days.length - plannedDays.length;
+  const ownDays = w.days.filter((d) => d.overridden).length;
+  const SEG: Record<string, { c: string; t: string }> = {
+    done: { c: "var(--primary)", t: "đã tập" }, missed: { c: "var(--danger)", t: "bỏ lỡ" },
+    replaced: { c: "var(--info)", t: "thay bằng hoạt động khác" }, planned: { c: "var(--surface-3)", t: "chưa tập" },
+  };
 
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true);
@@ -210,23 +225,61 @@ export function ScheduleTab() {
   return (
     <div className="space-y-4">
       {/* Chọn tuần */}
-      <Card className="flex flex-wrap items-center gap-3 p-3 sm:p-4">
+      <Card className="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:p-4">
         <div className="flex items-center gap-1">
           <button type="button" aria-label="Tuần trước" disabled={offset <= MIN_OFFSET} onClick={() => setOffset(offset - 1)}
             className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronLeft size={18} /></button>
-          <div className="min-w-[150px] text-center">
+          <div className="min-w-[132px] text-center" aria-live="polite">
             <p className="font-semibold leading-tight">{weekLabel}</p>
-            <p className="num text-xs text-muted">{dm(w.start)} – {dm(w.end)}</p>
+            <p className="num text-xs text-muted">{dm(start)} – {dm(addDays(start, 6))}</p>
           </div>
           <button type="button" aria-label="Tuần sau" disabled={offset >= maxOffset} onClick={() => setOffset(offset + 1)}
             className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronRight size={18} /></button>
         </div>
-        {offset !== 0 && <Button size="sm" variant="ghost" onClick={() => setOffset(0)}>Về tuần này</Button>}
-        <p className="flex-1 text-right text-sm text-muted">
-          {offset < 0
-            ? <>Đã tập <b className="num text-text">{w.summary.done}</b> buổi gym{w.summary.active > 0 && <> · <b className="num text-text">{w.summary.active}</b> ngày hoạt động khác</>}</>
-            : <><b className="num text-text">{w.summary.planned}</b> buổi tập · {7 - w.summary.planned} ngày nghỉ{offset === 0 && w.summary.done > 0 && <> · đã tập <b className="num text-text">{w.summary.done}</b></>}</>}
-        </p>
+        {offset !== 0 && <Button size="sm" variant="ghost" icon={<RotateCcw size={13} />} onClick={() => setOffset(0)}>Về tuần này</Button>}
+
+        <div className="w-full text-sm text-muted sm:ml-auto sm:w-auto sm:min-w-[260px] sm:max-w-md sm:flex-1">
+          {!fresh ? (
+            <p className="animate-pulse sm:text-right">Đang tải…</p>
+          ) : offset < 0 ? (
+            <p className="sm:text-right">
+              {w.summary.done || w.summary.active
+                ? <>Đã tập <b className="num text-text">{w.summary.done}</b> buổi gym{w.summary.active > 0 && <> · <b className="num text-text">{w.summary.active}</b> ngày hoạt động khác</>}</>
+                : "Tuần đó chưa ghi buổi tập nào."}
+            </p>
+          ) : offset > 0 ? (
+            <p className="sm:text-right">
+              {plannedDays.length
+                ? <><b className="num text-text">{plannedDays.length}</b> buổi tập · {restDays} ngày nghỉ{ownDays > 0 && <> · <span className="text-info">{ownDays} ngày xếp riêng</span></>}</>
+                : "Chưa xếp buổi nào cho tuần này."}
+            </p>
+          ) : plannedDays.length ? (
+            <>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <p>Đã tập <b className="num text-base text-text">{doneOnPlan}</b><span className="num">/{plannedDays.length}</span> buổi theo lịch</p>
+                <p className="text-xs">
+                  {missed > 0 && <span className="font-medium text-danger">Bỏ lỡ {missed} · </span>}
+                  {replaced > 0 && <span className="text-info">{replaced} thay bằng hoạt động khác · </span>}
+                  {left > 0 ? `còn ${left}` : "đã xong lịch"} · {restDays} ngày nghỉ
+                  {extraDone > 0 && <span className="text-primary-strong"> · +{extraDone} ngoài lịch</span>}
+                </p>
+              </div>
+              {/* mỗi đoạn = một buổi theo lịch, theo thứ tự trong tuần */}
+              <div className="mt-2 flex gap-1" role="img"
+                aria-label={plannedDays.map((d) => `${d.label}: ${SEG[d.status]?.t || "chưa tập"}`).join(", ")}>
+                {plannedDays.map((d) => (
+                  <span key={d.date} title={`${d.label} ${dm(d.date)} · ${d.plan!.name}: ${SEG[d.status]?.t || "chưa tập"}`}
+                    className={clsx("h-1.5 flex-1 rounded-full", d.is_today && d.status === "planned" && "ring-1 ring-primary ring-offset-1 ring-offset-surface")}
+                    style={{ background: (SEG[d.status] || SEG.planned).c }} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="sm:text-right">
+              Chưa có lịch tuần này{extraDone > 0 && <> · đã tập <b className="num text-text">{extraDone}</b> buổi</>}
+            </p>
+          )}
+        </div>
       </Card>
 
       {offset >= 0 && !w.has_template && (

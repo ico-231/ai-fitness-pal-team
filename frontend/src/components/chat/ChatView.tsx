@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
-import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Pencil, RotateCcw, Route, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
+import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Pencil, RotateCcw, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useChat } from "../../lib/chat";
-import { AGENTS, TOOL_LABELS } from "../../lib/constants";
+import { TOOL_LABELS } from "../../lib/constants";
 import { createRecognizer, fileToDataUrl, voice } from "../../lib/media";
 import type { AgentKey, ChatMessage } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
-import { AgentAvatar, AgentName, EXPERT } from "../AgentAvatar";
+import { AgentAvatar, AgentName } from "../AgentAvatar";
 import { Markdown } from "../Markdown";
 import { toast } from "../ui";
 import { ChatCards } from "./ChatCards";
@@ -127,13 +127,6 @@ function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: 
             </span>
           )}
         </div>
-        {/* 1 chuyên gia: nhãn cạnh tên đã đủ. ≥ 2 chuyên gia: ghi rõ HeadBro đã nhờ ai. Lý do định tuyến (thuật ngữ nội bộ)
-            chỉ xem trong Nhật ký AI. */}
-        {(m.route?.agents?.length ?? 0) > 1 && !compact && (
-          <p className="mb-1 flex items-center gap-1 text-[11px] text-muted">
-            <Route size={11} /> HeadBro đã nhờ {m.route!.agents.map((a) => EXPERT[a as AgentKey] || "tự trả lời").join(" + ")}
-          </p>
-        )}
         <Trace m={m} />
         <div className={clsx("rounded-[22px] rounded-tl-md px-4 py-2.5", agent === "guard" ? "border border-warn/40 bg-warn/10" : "bg-surface-2", m.error && "border border-danger/40")}>
           {showTyping ? (
@@ -166,18 +159,6 @@ function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: 
   );
 }
 
-export function RouteChip({ info }: { info: { agents: string[]; reason: string; method?: string } | null }) {
-  if (!info) return null;
-  return (
-    <div className="fade-in mx-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted">
-      <Route size={12} />
-      <span className="truncate">
-        {info.method === "guard" ? "Safety Guard" : "HeadBro"} →{" "}
-        {info.agents.map((a) => EXPERT[a as AgentKey] || (a === "headbro" ? "tự trả lời" : AGENTS[a as AgentKey]?.name || a)).join(" + ")}
-      </span>
-    </div>
-  );
-}
 
 export interface ChatViewProps {
   conversationId: string | null;
@@ -201,7 +182,6 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   const { config } = useAuth();
   const [text, setText] = useState("");
   const touch = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
-  const [agent, setAgent] = useState<string>("auto");
   const [image, setImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -217,7 +197,8 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
     const key = `${initial.text}|${initial.agent}`;
     if (sentInitial.current === key) return;
     sentInitial.current = key;
-    if (initial.agent) setAgent(initial.agent);
+    // Nút "Hỏi AI" của một trang có thể gợi ý chuyên gia cho RIÊNG câu đầu; các câu sau luôn tự định tuyến theo nội dung
+    // (trước đây chuyên gia bị giữ cho cả cuộc trò chuyện → hỏi sang chủ đề khác bị trả lời sai / từ chối).
     if (initial.autoSend && initial.text) send({ text: initial.text, agent: initial.agent, page, pageContext });
     else setText(initial.text);
     onInitialSent?.();
@@ -232,7 +213,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
 
   const submit = () => {
     if (!text.trim() && !image) return;
-    send({ text, image, agent, page, pageContext });
+    send({ text, image, page, pageContext });
     setText("");
     setImage(null);
   };
@@ -256,7 +237,6 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
     r.start();
   };
 
-  const lastUserIdx = messages.map((m) => m.role).lastIndexOf("user");
   const isPage = !!hero && !compact;
   const showHero = isPage && !loading && messages.length === 0;
 
@@ -362,7 +342,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
                 m={m}
                 onCardStatus={updateCard}
                 compact={compact}
-                onFollowup={i === messages.length - 1 && !sending ? (q) => send({ text: q, agent, page, pageContext }) : undefined}
+                onFollowup={i === messages.length - 1 && !sending ? (q) => send({ text: q, page, pageContext }) : undefined}
                 onEdit={m.role === "user" && !sending && !m.id.startsWith("tmp-") && conversationId
                   ? (t) => send({ text: t, page, pageContext, replaceFrom: m.id }) : undefined}
                 onRegenerate={(() => {
@@ -373,7 +353,6 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
                   return () => send({ text: q.content, image: q.image, page, pageContext, replaceFrom: q.id });
                 })()}
               />
-              {i === lastUserIdx && sending && !messages.slice(i + 1).some((x) => x.role === "assistant") && <RouteChip info={routeInfo} />}
             </div>
           ))}
         </div>

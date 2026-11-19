@@ -19,20 +19,23 @@ import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 
-from openai import (
-    APIConnectionError,
-    APIError,
-    APIStatusError,
-    APITimeoutError,
-    AsyncOpenAI,
-    BadRequestError,
-    RateLimitError,
-)
+from typing import TYPE_CHECKING
 
 from ..config import get_settings
 from . import tracing
 
+if TYPE_CHECKING:
+    from openai import AsyncOpenAI
+
 log = logging.getLogger("fitbro.llm")
+
+
+def _oa():
+    """Nạp thư viện openai khi thật sự cần (gọi AI hoặc so khớp lỗi của nó).
+    Nạp sẵn lúc khởi động tốn ~2 giây → mỗi lần Vercel khởi động lạnh đều chậm theo, kể cả request không dùng AI."""
+    import openai
+
+    return openai
 
 
 class LLMError(Exception):
@@ -112,7 +115,7 @@ def client(key: str | None = None, base_url: str | None = None) -> AsyncOpenAI:
         loop_id = 0
     ck = (b, k, loop_id)
     if ck not in _clients:
-        _clients[ck] = AsyncOpenAI(api_key=k, base_url=b, timeout=s.llm_timeout, max_retries=1)
+        _clients[ck] = _oa().AsyncOpenAI(api_key=k, base_url=b, timeout=s.llm_timeout, max_retries=1)
     return _clients[ck]
 
 
@@ -183,9 +186,9 @@ def _rest(ep: Endpoint, e: Exception) -> None:
 
 
 def _should_fallback(e: Exception) -> bool:
-    if isinstance(e, (RateLimitError, APIConnectionError, APITimeoutError)):
+    if isinstance(e, (_oa().RateLimitError, _oa().APIConnectionError, _oa().APITimeoutError)):
         return True
-    if isinstance(e, APIStatusError):
+    if isinstance(e, _oa().APIStatusError):
         return e.status_code in (401, 402, 403, 404) or e.status_code >= 500
     return False
 
@@ -215,7 +218,7 @@ async def _create(kwargs: dict, vision: bool = False):
                 try:
                     resp = await cl.chat.completions.create(**kw)
                     break
-                except BadRequestError as e:
+                except _oa().BadRequestError as e:
                     m = str(e).lower()
                     if "stream_options" in kw and ("stream_options" in m or "include_usage" in m):
                         _no_usage[ep.base_url] = True
@@ -230,7 +233,7 @@ async def _create(kwargs: dict, vision: bool = False):
             if fails:
                 log.info("Đã chuyển sang %s / %s", ep.tag, ep.model)
             return resp, ep, fails
-        except BadRequestError as e:
+        except _oa().BadRequestError as e:
             # Bộ lọc của nhà cung cấp chính từ chối → thử nhà cung cấp KHÁC (bỏ qua key/model cùng nơi)
             if _is_refusal(e):
                 log.warning("%s / %s từ chối nội dung → thử nhà cung cấp khác", ep.tag, ep.model)
@@ -287,7 +290,7 @@ async def complete(
     try:
         try:
             r, ep, fails = await _create(kwargs, vision)
-        except BadRequestError as e:
+        except _oa().BadRequestError as e:
             if json_mode and "response_format" in str(e).lower():
                 kwargs.pop("response_format", None)
                 try:
@@ -412,12 +415,12 @@ async def stream(
                     p["name"] += tc.function.name
                 if tc.function and tc.function.arguments:
                     p["args"] += tc.function.arguments
-    except BadRequestError as e:
+    except _oa().BadRequestError as e:
         err = str(e)[:200]
         if tools and _looks_like_tools_unsupported(e):
             raise ToolsNotSupported(str(e)) from e
         raise _friendly(e) from e
-    except APIError as e:
+    except _oa().APIError as e:
         err = str(e)[:200]
         raise _friendly(e) from e
     except LLMError as e:

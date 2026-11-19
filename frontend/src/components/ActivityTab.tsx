@@ -11,7 +11,7 @@ import { ApiError, del, post, put } from "../lib/api";
 import { useApi, useInvalidateAll } from "../lib/hooks";
 import { addDays, dayLabel, fmt, todayISO } from "../lib/format";
 import { activityIcon, FORMULA_VI, type ActivityRow, type ActivitySummary, type Catalog, type CatalogItem, type Estimate, type Intensity } from "../lib/activities";
-import { Badge, Button, Card, DecimalInput, Pager, Spinner, confirmDialog, toast, usePaged } from "./ui";
+import { Badge, Button, Card, DateInput, DecimalInput, Pager, Spinner, confirmDialog, toast, usePaged } from "./ui";
 
 const DURATIONS = [15, 30, 45, 60, 90];
 
@@ -238,8 +238,8 @@ function LogForm({ cat, sum, form, setForm, editing, onDone, onCancelEdit }: {
                 {dayLabel(d)}
               </button>
             ))}
-            <input type="date" className="input h-9 w-auto rounded-full py-0 text-sm" aria-label="Chọn ngày khác" value={form.date}
-              min={addDays(todayISO(), -7)} max={todayISO()} onChange={(e) => e.target.value && set({ date: e.target.value })} />
+            <DateInput className="input h-9 w-auto rounded-full py-0 text-sm" ariaLabel="Chọn ngày khác" value={form.date}
+              min={addDays(todayISO(), -7)} max={todayISO()} onChange={(v) => v && set({ date: v })} />
           </div>
 
           {/* Chi tiết thêm */}

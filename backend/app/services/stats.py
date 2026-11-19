@@ -566,7 +566,7 @@ def period_report(db: Session, uid: str, period: str) -> dict:
             "total_volume": total_volume,
             "total_minutes": round(sum(s.duration_sec for s in sessions) / 60),
             "avg_form_score": round(sum(form_scores) / len(form_scores)) if form_scores else None,
-            "pr_count": len(prs),
+            "pr_count": len({x["exercise_id"] for x in prs}),  # số BÀI có kỷ lục (một bài phá nhiều lần chỉ tính 1) — khớp danh sách "Kỷ lục mới (N bài)"
             "avg_calories": round(sum(v["calories"] for v in meal_days.values()) / logged_days) if logged_days else None,
             "avg_protein": round(sum(v["protein"] for v in meal_days.values()) / logged_days) if logged_days else None,
             "meal_logged_days": logged_days,

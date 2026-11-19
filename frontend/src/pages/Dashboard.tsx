@@ -173,7 +173,7 @@ function AskBar({ insights }: { insights: Insight[] }) {
   ];
   const send = (text: string) => text.trim() && ai.open({ text: text.trim(), full: true });
   return (
-    <div className="glass no-print mx-auto w-full max-w-3xl rounded-[26px] p-2 shadow-[var(--shadow-lg)]">
+    <div className="glass no-print @container mx-auto w-full max-w-3xl rounded-[26px] p-2 shadow-[var(--shadow-lg)]">
       <div className="flex gap-1.5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:none]">
         {chips.map((c) => (
           <button key={c.label} type="button" onClick={() => send(c.text)}
@@ -186,7 +186,7 @@ function AskBar({ insights }: { insights: Insight[] }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Hỏi HeadBro"
           placeholder="Hỏi HeadBro về tập luyện, ăn uống, tiến độ..." className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-muted" />
         <button type="submit" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-on-ink transition hover:opacity-90">
-          <span className="hidden sm:inline">Hỏi HeadBro</span> <Sparkles size={15} />
+          <span className="hidden @md:inline">Hỏi HeadBro</span> <Sparkles size={15} />
         </button>
       </form>
     </div>
@@ -408,7 +408,8 @@ export default function Dashboard() {
   ];
 
   const name = user?.name || "bạn";
-  const pins = heat ? Object.entries(heat.muscles).filter(([, v]) => v.sets > 0).sort((x, y) => y[1].sets - x[1].sets).slice(0, 5).map(([k]) => k) : [];
+  // Ghim nhãn chỉ cho nhóm cơ mức Nhiều (cam) / Rất nhiều (đỏ) — chỗ cần chú ý; mức thấp hơn xem bằng màu là đủ
+  const pins = heat ? Object.entries(heat.muscles).filter(([, v]) => v.level >= 3).sort((x, y) => y[1].sets - x[1].sets).map(([k]) => k) : [];
   return (
     <>
     {ov.has_any_data && <MobileHome ov={ov} />}
@@ -470,6 +471,8 @@ export default function Dashboard() {
               ) : (
                 <Spinner />
               )}
+              {/* Máy tính: ô hỏi nằm ngay dưới bản đồ cơ (trước đây rơi xuống đáy cột trái cao nhất → bị "thụt" xa khỏi hình) */}
+              <div className="mt-5 hidden w-full lg:block"><AskBar insights={ov.insights || []} /></div>
             </div>
 
             {/* Cột phải */}
@@ -479,7 +482,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rise mt-10" style={{ animationDelay: "360ms" }}>
+          <div className="rise mt-10 lg:hidden" style={{ animationDelay: "360ms" }}>
             <AskBar insights={ov.insights || []} />
           </div>
         </div>

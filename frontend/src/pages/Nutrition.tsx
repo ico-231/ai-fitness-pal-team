@@ -13,7 +13,7 @@ import { FavStar, FavoriteTile, FoodSheet, FoodTile, guessMealType, quickLogFood
 import { splitAnalysis, useFavorites, type Favorite } from "../lib/favorites";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Progress, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput } from "../components/ui";
+import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Progress, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput, DateInput } from "../components/ui";
 
 interface Day { date: string; meals: Meal[]; totals: { calories: number; protein: number; carbs: number; fat: number; meals_count: number }; targets: Targets }
 interface Analysis { name: string; items: Meal["items"]; calories: number; protein: number; carbs: number; fat: number; confidence: string; analysis: string; image_thumb: string | null }
@@ -497,7 +497,7 @@ export default function Nutrition() {
   const ai = useAI();
   const invalidate = useInvalidateAll();
   const { data, isLoading } = useApi<Day>(["nutrition", date], `/api/nutrition/day?date=${date}`);
-  const { data: hist } = useApi<{ days: { date: string; calories: number; protein: number }[]; targets: Targets }>(["nutrition-history"], "/api/nutrition/history?days=14");
+  const { data: hist } = useApi<{ days: { date: string; calories: number; protein: number }[]; targets: Targets; target_by_day?: Record<string, number> }>(["nutrition-history"], "/api/nutrition/history?days=14");
   const [cat, setCat] = useState("");
   const { data: foods } = useApi<{ items: Food[]; categories: Record<string, string> }>(["foods", lib, cleanOnly, cat],
     `/api/foods?q=${encodeURIComponent(lib)}&clean=${cleanOnly}&category=${cat}`, { keepPrevious: true });
@@ -507,7 +507,7 @@ export default function Nutrition() {
   const series = Array.from({ length: 14 }, (_, i) => {
     const d = addDays(todayISO(), i - 13);
     const row = hist?.days.find((x) => x.date === d);
-    return { date: d, calories: row?.calories || 0, protein: row?.protein || 0 };
+    return { date: d, calories: row?.calories || 0, protein: row?.protein || 0, target: hist?.target_by_day?.[d] ?? hist?.targets.calories };
   });
 
   const askMenu = () => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." });
@@ -527,10 +527,10 @@ export default function Nutrition() {
         actions={<>
           <div className="glass flex h-11 items-center gap-1 rounded-full p-1">
             <button type="button" aria-label="Ngày trước" onClick={() => setDate(addDays(date, -1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--glass-fill)]"><ChevronLeft size={17} /></button>
-            <input type="date" aria-label="Chọn ngày" className="h-9 rounded-full bg-transparent px-2 text-sm font-medium outline-none" value={date} max={todayISO()} onChange={(e) => e.target.value && setDate(e.target.value)} />
+            <DateInput ariaLabel="Chọn ngày" className="h-9 rounded-full px-2 text-sm font-medium" value={date} max={todayISO()} onChange={(v) => v && setDate(v)} />
             <button type="button" aria-label="Ngày sau" disabled={date >= todayISO()} onClick={() => setDate(addDays(date, 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--glass-fill)] disabled:opacity-30"><ChevronRight size={17} /></button>
           </div>
-          <Button variant="secondary" className="max-lg:hidden" icon={<Sparkles size={16} />} onClick={askMenu}>Gợi ý thực đơn</Button>
+          {date === todayISO() && <Button variant="secondary" className="max-lg:hidden" icon={<Sparkles size={16} />} onClick={askMenu}>Gợi ý thực đơn</Button>}
           <Button className="max-lg:hidden" icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
         </>}
       />
@@ -541,7 +541,7 @@ export default function Nutrition() {
           <MobileCalories day={data} />
           <MobileMeals day={data} isToday={date === todayISO()} onOpen={setDetail} onAdd={() => setAdding(true)} />
           {date === todayISO() && <MobileWater />}
-          <button type="button" onClick={askMenu} className="card flex w-full items-center gap-3 p-4 text-left">
+          {date === todayISO() && <button type="button" onClick={askMenu} className="card flex w-full items-center gap-3 p-4 text-left">
             <AgentAvatar agent="nutribro" size={36} />
             <span className="min-w-0 flex-1 text-sm">
               <b className="font-semibold text-nutri">NutriBro: </b>
@@ -550,7 +550,7 @@ export default function Nutrition() {
                 : "đạm hôm nay đã đủ. Bấm để được gợi ý thực đơn cho bữa còn lại."}
             </span>
             <ChevronRight size={18} className="shrink-0 text-muted" />
-          </button>
+          </button>}
         </div>
       )}
       {/* Nút nổi ghi bữa: luôn trong tầm ngón cái, ngay trên thanh tab */}
@@ -618,8 +618,8 @@ export default function Nutrition() {
         </Card>
         <Card className="p-6 lg:col-span-5">
           <p className="eyebrow">Lịch sử 14 ngày</p>
-          <p className="mb-2 mt-1 text-sm text-muted">Bấm một cột hoặc một ngày bên dưới để xem lại</p>
-          <BarSeries data={series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={hist?.targets.calories} height={170}
+          <p className="mb-2 mt-1 text-sm text-muted">Bấm một cột hoặc một ngày bên dưới để xem lại. Đường nét đứt là mục tiêu của từng ngày.</p>
+          <BarSeries data={series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" targetKey="target" height={170}
             selected={date} onSelect={setDate} />
           <div className="mt-2 flex flex-wrap gap-1.5">
             {series.slice().reverse().filter((x) => x.calories > 0).slice(0, 8).map((x) => (
