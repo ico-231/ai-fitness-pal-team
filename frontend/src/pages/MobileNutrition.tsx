@@ -101,6 +101,9 @@ export function MobileNutrition() {
   const due: Partial<Record<MT, number>> = { breakfast: 9, lunch: 13, dinner: 18 };
   const missing = data && isToday ? (["breakfast", "lunch", "dinner"] as MT[]).filter((k) => hour >= (due[k] ?? 99) && !data.meals.some((m) => m.meal_type === k)) : [];
   const meals = data ? [...data.meals].sort((a, b) => ORDER.indexOf(a.meal_type) - ORDER.indexOf(b.meal_type)) : [];
+  // một danh sách theo giờ trong ngày (Sáng → Trưa → Xế → Tối): bữa đã ghi và ô "chưa ghi" nằm đúng chỗ
+  const rows: { meal?: Meal; missing?: MT }[] = [...meals.map((meal): { meal?: Meal; missing?: MT } => ({ meal })), ...missing.map((k): { meal?: Meal; missing?: MT } => ({ missing: k }))]
+    .sort((a, b) => ORDER.indexOf(a.meal?.meal_type ?? a.missing!) - ORDER.indexOf(b.meal?.meal_type ?? b.missing!));
 
   const askMenu = () => ai.open({ text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." });
   const favList = fav.favs.filter((x) => !lib.trim() || x.name.toLowerCase().includes(lib.trim().toLowerCase()));
@@ -169,18 +172,17 @@ export function MobileNutrition() {
         </div>
       ) : (
         <div className="g list nt-meals" style={{ marginTop: -6 }}>
-          {meals.map((m) => (
-            <button key={m.id} type="button" className="li" onClick={() => setDetail(m)}>
-              {m.image ? <img src={m.image} alt="" className="li-ic" style={{ objectFit: "cover", padding: 0 }} /> : <span className="li-ic"><Utensils className="ic" /></span>}
-              <span className="li-main"><b>{slotOf(m.meal_type).label} · {m.name}</b><small>{fmt(m.calories)} kcal · {fmt(m.protein, 1)} g đạm</small></span>
+          {rows.map((r) => r.meal ? (
+            <button key={r.meal.id} type="button" className="li" onClick={() => setDetail(r.meal!)}>
+              {r.meal.image ? <img src={r.meal.image} alt="" className="li-ic" style={{ objectFit: "cover", padding: 0 }} /> : <span className="li-ic"><Utensils className="ic" /></span>}
+              <span className="li-main"><b>{slotOf(r.meal.meal_type).label} · {r.meal.name}</b><small>{fmt(r.meal.calories)} kcal · {fmt(r.meal.protein, 1)} g đạm</small></span>
               <span className="li-end"><ChevronRight className="ic" /></span>
             </button>
-          ))}
-          {missing.map((k) => (
-            <div key={k} className="li nt-empty">
+          ) : (
+            <div key={r.missing} className="li nt-empty">
               <span className="li-ic"><Utensils className="ic" /></span>
-              <span className="li-main"><b>{slotOf(k).label} · Chưa ghi</b></span>
-              <button type="button" className="btn btn-glass btn-sm" onClick={() => setLogSlot(k)}>+ Ghi bữa {slotOf(k).label.toLowerCase()}</button>
+              <span className="li-main"><b>{slotOf(r.missing!).label} · Chưa ghi</b></span>
+              <button type="button" className="btn btn-glass btn-sm" aria-label={`Ghi ${slotOf(r.missing!).full.toLowerCase()}`} onClick={() => setLogSlot(r.missing!)}>+ Ghi</button>
             </div>
           ))}
         </div>
@@ -221,6 +223,7 @@ export function MobileNutrition() {
           const serving = (it.kind === "food" ? it.f.serving : it.x.serving || "").replace(/ \(~.*\)$/, "");
           return (
             <div className="nt-f" key={id}>
+              <FoodThumb src={x.image} name={name} />
               <div className="nt-fh">
                 <button type="button" className="nt-fo" onClick={() => setFoodItem(it)} aria-label={`Xem chi tiết ${name}`}>
                   <b>{name}</b>
@@ -248,6 +251,16 @@ export function MobileNutrition() {
       <FoodDetail item={foodItem} onClose={() => setFoodItem(null)} />
       <HistorySheet open={histOpen} onClose={() => setHistOpen(false)} series={series} current={date} onPick={(d) => { setDate(d); setHistOpen(false); }} />
     </div>
+  );
+}
+
+/** Ảnh món (tỉ lệ cố định 4:3 để không nhảy bố cục; tải lười; lỗi ảnh → icon). */
+function FoodThumb({ src, name }: { src: string | null; name: string }) {
+  const [err, setErr] = useState(false);
+  return (
+    <span className="nt-th" aria-hidden={!src || err}>
+      {src && !err ? <img src={src} alt="" loading="lazy" onError={() => setErr(true)} /> : <Utensils className="ic" aria-label={name} />}
+    </span>
   );
 }
 
@@ -406,8 +419,8 @@ function LogSheet({ open, onClose, date, slot0 }: { open: boolean; onClose: () =
 
         {mode === "manual" && (
           <div className="stack-in">
-            <MacroFields withName={false} value={form} onChange={setForm} />
             <div className="field"><label htmlFor="mn-name2">Tên bữa / món</label><input id="mn-name2" className="input" value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Vd: Cơm gà + canh" /></div>
+            <MacroFields withName={false} value={form} onChange={setForm} />
             <button type="button" className="btn btn-primary btn-block" disabled={busy} onClick={save}>Lưu bữa ăn</button>
           </div>
         )}

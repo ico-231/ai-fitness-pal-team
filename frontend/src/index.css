@@ -1498,6 +1498,10 @@ html[data-theme="light"] .v1 .vessel{box-shadow:inset 0 0 0 1.5px var(--g-rim),i
   .v1 .tile2 { grid-template-columns: minmax(0, 1fr); }
   .v1 .tile2 .tl { flex-wrap: wrap; gap: 0 8px; }
   .v1 .sum b.txt { font-size: 15px; line-height: 1.25; letter-spacing: -0.01em; }
+  @media (prefers-reduced-motion: reduce) { .v1 .sheet, .v1 .scrim, .v1 .dialog { transition: none !important; } }
+  .v1 .nt-th { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: var(--faint); display: grid; place-items: center; color: var(--mute); }
+  .v1 .nt-th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .v1 .nt-f { align-content: start; }
   .v1 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .v1 .grid2 .btn { padding: 0 10px; font-size: 13px; }
   .v1 .chat { overflow: hidden; }
