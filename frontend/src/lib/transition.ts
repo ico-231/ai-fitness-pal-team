@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom";
 
-type VTDocument = Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; skipTransition?: () => void } };
+type VTDocument = Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; ready?: Promise<void>; updateCallbackDone?: Promise<void>; skipTransition?: () => void } };
 
 /**
  * Chuyển cảnh kiểu macOS bằng View Transitions API: trình duyệt chụp màn hình cũ, chạy `update`
@@ -23,6 +23,8 @@ export function withTransition(update: () => void) {
     flushSync(update);
   };
   const t = doc.startViewTransition(run);
+  // bỏ chuyển cảnh (skipTransition) làm các promise này bị từ chối → bắt lại để console không báo lỗi
+  for (const p of [t.finished, t.ready, t.updateCallbackDone]) p?.catch(() => {});
   window.setTimeout(() => {
     if (done) return;
     run();

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { ChevronLeft, Dumbbell, House, Mic, TrendingUp, Utensils } from "lucide-react";
+import { ChevronLeft, Dumbbell, House, TrendingUp, Utensils } from "lucide-react";
 import { useAI } from "./AIProvider";
 import { MobileMenuButton } from "./MobileMenu";
 
@@ -12,21 +12,28 @@ import { MobileMenuButton } from "./MobileMenu";
  * Cả hai chỉ hiện dưới 1024px (lg:hidden) nên giao diện máy tính không đổi.
  */
 
-/** Dấu HeadBro: hai cặp tạ, nhịp tim có đỉnh chạm ngôi sao 4 cánh, thêm sao nhỏ (vẽ theo ai-avatar.png). */
+/** Nét vẽ dấu HeadBro: hai cặp tạ, nhịp tim có đỉnh chạm ngôi sao 4 cánh, thêm sao nhỏ (vẽ theo ai-avatar.png). */
+export function HeadBroSvg({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <g fill="currentColor" stroke="none">
+        <rect x="2.4" y="14" width="2.8" height="8" rx="1.4" />
+        <rect x="6.2" y="11.2" width="3.2" height="13.6" rx="1.6" />
+        <rect x="22.6" y="11.2" width="3.2" height="13.6" rx="1.6" />
+        <rect x="26.8" y="14" width="2.8" height="8" rx="1.4" />
+        <path d="M16.2 .8C16.6 3.8 17.4 4.6 20.6 5.1 17.4 5.6 16.6 6.4 16.2 9.4 15.8 6.4 15 5.6 11.8 5.1 15 4.6 15.8 3.8 16.2.8Z" />
+        <path d="M23.4 1.4C23.6 2.7 23.9 3 25.2 3.2 23.9 3.4 23.6 3.7 23.4 5 23.2 3.7 22.9 3.4 21.6 3.2 22.9 3 23.2 2.7 23.4 1.4Z" />
+      </g>
+      <path d="M9.4 18h3l1.5-2.6 2.3-5.6 1.9 11.4 1.5-4.6.9 1.4h2.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Dấu HeadBro trên đĩa tối (nút ở thanh dưới). */
 export function HeadBroMark({ size = "md" }: { size?: "sm" | "md" }) {
   return (
     <span className={clsx("aimark", size === "sm" && "sm")} aria-hidden="true">
-      <svg viewBox="0 0 32 32">
-        <g fill="currentColor" stroke="none">
-          <rect x="2.4" y="14" width="2.8" height="8" rx="1.4" />
-          <rect x="6.2" y="11.2" width="3.2" height="13.6" rx="1.6" />
-          <rect x="22.6" y="11.2" width="3.2" height="13.6" rx="1.6" />
-          <rect x="26.8" y="14" width="2.8" height="8" rx="1.4" />
-          <path d="M16.2 .8C16.6 3.8 17.4 4.6 20.6 5.1 17.4 5.6 16.6 6.4 16.2 9.4 15.8 6.4 15 5.6 11.8 5.1 15 4.6 15.8 3.8 16.2.8Z" />
-          <path d="M23.4 1.4C23.6 2.7 23.9 3 25.2 3.2 23.9 3.4 23.6 3.7 23.4 5 23.2 3.7 22.9 3.4 21.6 3.2 22.9 3 23.2 2.7 23.4 1.4Z" />
-        </g>
-        <path d="M9.4 18h3l1.5-2.6 2.3-5.6 1.9 11.4 1.5-4.6.9 1.4h2.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <HeadBroSvg />
     </span>
   );
 }
@@ -89,7 +96,6 @@ function useScrollCollapse(resetKey: string) {
 
 export function MobileDock() {
   const loc = useLocation();
-  const nav = useNavigate();
   const ai = useAI();
   const idx = tabIndex(loc.pathname);
   useScrollCollapse(loc.pathname);
@@ -113,19 +119,15 @@ export function MobileDock() {
           </Link>
         ))}
       </div>
-      {/* Nút HeadBro: thu gọn → vào trang chat; khi đã bung thành ô "Hỏi HeadBro…" → mở khung hỏi nhanh theo ngữ cảnh trang */}
+      {/* Nút HeadBro: luôn mở khung hỏi nhanh theo ngữ cảnh trang (khung đó có nút phóng to sang trang chat) */}
       <button
         type="button"
         className="mg fb-ai"
         aria-label="Hỏi HeadBro"
-        onClick={() => {
-          if (document.documentElement.classList.contains("scrolled-down")) ai.open();
-          else nav("/chat");
-        }}
+        onClick={() => ai.open()}
       >
         <HeadBroMark />
         <span className="tx">Hỏi HeadBro…</span>
-        <span className="mic" aria-hidden="true"><Mic strokeWidth={1.8} /></span>
       </button>
     </nav>
   );

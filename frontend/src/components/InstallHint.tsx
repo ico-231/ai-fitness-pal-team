@@ -56,7 +56,7 @@ export function InstallHint() {
   };
 
   return (
-    <div className="card no-print flex items-start gap-3 p-4 lg:hidden" role="note" aria-label="Cài FitBro ra Màn hình chính">
+    <div className="mg no-print flex items-start gap-3 rounded-[24px] p-4 lg:hidden" role="note" aria-label="Cài FitBro ra Màn hình chính">
       <LogoMark size={44} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">Dùng FitBro như một app</p>
