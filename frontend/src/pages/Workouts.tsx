@@ -12,6 +12,7 @@ import { ActivityTab } from "../components/ActivityTab";
 import { BodyMap } from "../components/BodyMap";
 import { ExerciseCard, ExerciseImage, ExerciseModal, PlanCard } from "../components/Exercise";
 import { useAI } from "../components/AIProvider";
+import { MobileWorkouts } from "./MobileWorkouts";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { AddToDraftButton, BuilderModal, DraftPill, ScheduleTab, TodayAdviceCard, useDraft } from "../components/WorkoutExtras";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Pager, Spinner, Tabs, toast, confirmDialog, usePaged } from "../components/ui";
@@ -450,7 +451,9 @@ export default function Workouts() {
   };
 
   return (
-    <div>
+    <>
+    <MobileWorkouts />
+    <div className="max-lg:hidden">
       <PageHeader lead="Tập luyện," help="tap-luyen" title="hôm nay tập gì?" subtitle="Chương trình có sẵn, buổi Custom của bạn, bản đồ cơ có AI gợi ý và thư viện 1.324 bài có ảnh minh hoạ." />
       {active && active.sets.length > 0 && (
         <Card className="mb-6 flex flex-wrap items-center gap-3 p-4">
@@ -488,5 +491,6 @@ export default function Workouts() {
       {tab === "library" && <Library />}
       {tab === "history" && <HistoryTab />}
     </div>
+    </>
   );
 }
