@@ -7,6 +7,7 @@ import { put } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { voice } from "../lib/media";
 import { Spinner } from "./ui";
+import { MobileDock, MobileTopBar } from "./MobileShell";
 
 const PageSpinner = () => <div className="grid min-h-[50vh] place-items-center"><Spinner /></div>;
 
@@ -20,8 +21,6 @@ const NAV = [
   { to: "/guide", label: "Hướng dẫn", icon: BookOpen },
   { to: "/settings", label: "Cài đặt", icon: Settings },
 ];
-// Thanh tab điện thoại: xếp theo tần suất dùng (Tổng quan · Tập · Ăn uống · Hôm nay · Trợ lý)
-const MOBILE = [NAV[0], NAV[2], NAV[4], NAV[3], NAV[1]];
 const MAIN_NAV = NAV.slice(0, 6);
 
 /**
@@ -210,9 +209,10 @@ export function Layout() {
   const fullBleed = loc.pathname.startsWith("/chat");
   // Buổi tập là việc phải làm cho xong (có nút chính dính đáy) → ẩn thanh tab trên điện thoại
   const focusTask = loc.pathname.startsWith("/workouts/session") || loc.pathname.startsWith("/workouts/camera");
+  // Thanh trên điện thoại: mọi trang trừ Chat (có phần đầu riêng) và buổi tập / camera
+  const topBar = !fullBleed && !focusTask;
   const railTop = useRef<HTMLElement>(null); // khối điều hướng trên của thanh bên
   const railBottom = useRef<HTMLElement>(null);
-  const bottomBar = useRef<HTMLElement>(null);
   // Giao diện "immersive": nền ảnh/aurora + mọi card thành kính mờ (áp cho toàn app)
   const immersive = true;
 
@@ -288,10 +288,11 @@ export function Layout() {
         </nav>
       </aside>
 
-      {/* Điện thoại: không thanh trên. Trang dùng tiêu đề lớn + avatar (bung menu nhỏ); dải nền che vùng tai thỏ khi cuộn. */}
-      <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl lg:hidden" />
+      {/* Điện thoại: thanh trên cố định (công tắc Tổng quan | Hôm nay hoặc tiêu đề + avatar) — chỉ ở các trang có thanh trên.
+          Trang Chat và buổi tập tự lo phần đầu trang; dải nền che vùng tai thỏ khi cuộn. */}
+      {topBar ? <MobileTopBar /> : <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl lg:hidden" />}
 
-      <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "pt-[env(safe-area-inset-top)] lg:pt-0" : focusTask ? "pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+7.5rem)] lg:pb-24 lg:pt-0" : "pt-[env(safe-area-inset-top)] pb-[calc(var(--bottombar-h)+1.5rem)] lg:pb-24 lg:pt-0")}>
+      <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "pt-[env(safe-area-inset-top)] lg:pt-0" : focusTask ? "pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+7.5rem)] lg:pb-24 lg:pt-0" : "pt-[calc(env(safe-area-inset-top)+56px)] pb-[calc(var(--bottombar-h)+1.5rem)] lg:pb-24 lg:pt-0")}>
         {/* Suspense riêng cho nội dung trang: khi đang tải code trang mới, thanh điều hướng vẫn hiện (không nháy trắng cả màn) */}
         {fullBleed ? (
           <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
@@ -302,28 +303,8 @@ export function Layout() {
         )}
       </main>
 
-      {/* Bottom nav mobile */}
-      {/* Thanh tab điện thoại kiểu nổi (J2 "float"): viên 64px cách mép 16px; mục đang chọn tô viên volt sau icon. */}
-      {!focusTask && (
-        <nav ref={bottomBar} aria-label="Điều hướng chính" data-tab-style="float"
-          className="no-print fixed inset-x-4 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full border border-[var(--card-border)] bg-surface/90 px-2 shadow-[0_8px_30px_-10px_rgb(16_24_40/0.25)] backdrop-blur-xl lg:hidden">
-          {MOBILE.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.end}
-              className={({ isActive }) =>
-                clsx("group flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[11px] font-medium leading-tight transition", isActive ? "text-text" : "text-muted")
-              }
-            >
-              <span className="grid h-7 w-11 place-items-center rounded-full transition group-aria-[current=page]:bg-volt group-aria-[current=page]:text-on-volt">
-                <n.icon size={22} />
-              </span>
-              {"short" in n ? n.short : n.label}
-            </NavLink>
-          ))}
-        </nav>
-      )}
+      {/* Thanh dưới điện thoại + nút HeadBro (ẩn khi đang trong buổi tập) */}
+      {!focusTask && <MobileDock />}
     </div>
   );
 }

@@ -2,19 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 import clsx from "clsx";
-import { BookOpen, LogOut, Moon, Scale, Settings, Sun } from "lucide-react";
+import { BarChart3, BookOpen, LogOut, Moon, ScrollText, Settings, Sun } from "lucide-react";
 import { put } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 
 /**
  * Điện thoại không có thanh trên: avatar 44px ở góc phải tiêu đề mỗi trang. Bấm vào thì bung một menu nhỏ ngay
- * dưới avatar (InBody, Hướng dẫn, Cài đặt, giao diện sáng/tối, đăng xuất) — không mở ngăn trượt cả màn.
+ * dưới avatar (Hướng dẫn, Cài đặt, Nhật ký AI, Báo cáo, giao diện sáng/tối, đăng xuất) — không mở ngăn trượt cả màn.
  * Bấm ra ngoài, Esc hoặc chuyển trang thì đóng.
  */
 const LINKS = [
-  { to: "/inbody", label: "InBody & Mục tiêu", icon: Scale },
   { to: "/guide", label: "Hướng dẫn", icon: BookOpen },
   { to: "/settings", label: "Cài đặt", icon: Settings },
+  { to: "/ai-log", label: "Nhật ký AI", icon: ScrollText },
+  { to: "/report", label: "Báo cáo", icon: BarChart3 },
 ];
 
 export function MobileMenuButton({ className }: { className?: string }) {
@@ -55,7 +56,7 @@ export function MobileMenuButton({ className }: { className?: string }) {
     }
   };
 
-  const item = "flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium transition hover:bg-surface-2";
+  const item = "flex h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-[15px] font-medium transition hover:bg-[var(--faint)]";
   return (
     <div ref={box} className={clsx("no-print relative shrink-0 lg:hidden", className)}>
       <button type="button" onClick={(e) => {
@@ -64,30 +65,30 @@ export function MobileMenuButton({ className }: { className?: string }) {
           setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) });
           setOpen(!open);
         }} aria-label="Tài khoản và cài đặt" aria-haspopup="menu" aria-expanded={open}
-        className={clsx("grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-surface-3 text-sm font-semibold text-text transition", open && "ring-2 ring-text ring-offset-2 ring-offset-bg")}>
+        className="mg fb-av">
         {user?.avatar_url
           ? <img src={user.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           : user?.name?.[0]?.toUpperCase() || "?"}
       </button>
       {open && createPortal(
         <div ref={menu} role="menu" aria-label="Tài khoản và cài đặt" style={{ top: pos.top, right: pos.right }}
-          className="pop-in no-print fixed z-[70] w-60 origin-top-right rounded-2xl border border-[var(--card-border)] bg-surface p-1.5 shadow-[var(--shadow-lg)]">
+          className="mg fb-menu pop-in no-print fixed z-[70] w-64 origin-top-right rounded-[26px] p-2">
           <div className="px-3 pb-2 pt-1.5">
             <p className="truncate text-sm font-semibold">{user?.name}</p>
             <p className="truncate text-xs text-muted">{user?.email}</p>
           </div>
-          <div className="mb-1 h-px bg-border" />
+          <div className="mb-1 h-px bg-[var(--faint)]" />
           {LINKS.map((l) => (
-            <NavLink key={l.to} to={l.to} role="menuitem" className={({ isActive }) => clsx(item, isActive && "bg-surface-2")}>
-              <l.icon size={18} className="text-muted" /> {l.label}
+            <NavLink key={l.to} to={l.to} role="menuitem" className={({ isActive }) => clsx(item, isActive && "bg-[var(--faint)]")}>
+              <l.icon size={19} strokeWidth={1.8} className="text-muted" /> {l.label}
             </NavLink>
           ))}
           <button type="button" role="menuitem" onClick={toggleTheme} className={item}>
-            {dark ? <Sun size={18} className="text-muted" /> : <Moon size={18} className="text-muted" />} {dark ? "Giao diện sáng" : "Giao diện tối"}
+            {dark ? <Sun size={19} strokeWidth={1.8} className="text-muted" /> : <Moon size={19} strokeWidth={1.8} className="text-muted" />} {dark ? "Giao diện sáng" : "Giao diện tối"}
           </button>
-          <div className="my-1 h-px bg-border" />
+          <div className="my-1 h-px bg-[var(--faint)]" />
           <button type="button" role="menuitem" onClick={signOut} className={clsx(item, "text-danger")}>
-            <LogOut size={18} /> Đăng xuất
+            <LogOut size={19} strokeWidth={1.8} /> Đăng xuất
           </button>
         </div>,
         document.body,

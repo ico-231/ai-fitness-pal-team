@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CircleHelp, Loader2, X } from "lucide-react";
 import { withTransition } from "../lib/transition";
-import { MobileMenuButton } from "./MobileMenu";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
 export function clickable(onClick?: () => void) {
@@ -338,14 +337,15 @@ export function PageHeader({ title, subtitle, actions, lead, help }: { title: Re
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
       <div className="flex min-w-0 flex-1 items-start justify-between gap-3 max-lg:basis-full">
         <div className="min-w-0 flex-1">
-          <h1 className="on-bg text-[32px] leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
+          {/* Điện thoại: tiêu đề nằm ở thanh trên cố định (MobileTopBar) → ở đây chỉ giữ cho trình đọc màn hình */}
+          <h1 className="on-bg text-[32px] leading-[1.05] tracking-[-0.035em] max-lg:sr-only sm:text-[44px]">
             {lead && <span className="font-light text-muted">{lead} </span>}
             <span className="font-bold">{title}</span>
-            {help && <HelpButton to={help} className="ml-3 -translate-y-1.5 align-middle" />}
+            {help && <HelpButton to={help} className="ml-3 -translate-y-1.5 align-middle max-lg:hidden" />}
           </h1>
-          {subtitle && <p className="on-bg mt-2 max-w-2xl text-sm text-muted">{subtitle}</p>}
+          {subtitle && <p className="on-bg mt-2 max-w-2xl text-sm text-muted max-lg:hidden">{subtitle}</p>}
         </div>
-        <MobileMenuButton />
+        {help && <HelpButton to={help} className="lg:hidden !h-11 !w-11" />}
       </div>
       {actions && <div className="no-print flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

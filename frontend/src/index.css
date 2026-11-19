@@ -816,3 +816,248 @@ body {
    Bỏ khung khi bấm chuột, vẫn giữ viền rõ khi người dùng di chuyển bằng bàn phím (Tab). */
 .recharts-wrapper:focus, .recharts-surface:focus, .recharts-wrapper *:focus { outline: none; }
 .recharts-wrapper:focus-visible, .recharts-surface:focus-visible { outline: 2px solid var(--volt); outline-offset: 4px; border-radius: 12px; }
+
+/* ===================================================================
+   ĐIỆN THOẠI (< 1024px) — V1 "Kính lỏng"
+   Toàn bộ token và thành phần V1 nằm trong media query này: từ 1024px trở lên giao diện máy tính giữ nguyên.
+   Nguồn: design-lab/huashu-test/full-ui/v1/kit.css (token sáng/tối, kính .g → .mg, thanh dưới co giãn, subtab thấu kính).
+   =================================================================== */
+@media (max-width: 1023px) {
+  :root {
+    --disp: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+    --ez: cubic-bezier(0.32, 0.72, 0, 1);
+    --spring-s: cubic-bezier(0.3, 1.4, 0.4, 1);
+    --maxw: 520px;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    /* kính */
+    --faint: rgb(11 22 17 / 0.07);
+    --line: rgb(11 22 17 / 0.16);
+    --g-fill: rgb(255 255 255 / 0.62);
+    --g-fill-2: rgb(255 255 255 / 0.6);
+    --g-rim: rgb(255 255 255 / 0.72);
+    --g-hi: rgb(255 255 255 / 0.95);
+    --g-lo: rgb(255 255 255 / 0.28);
+    --g-shadow: rgb(16 38 28 / 0.32);
+    --g-sheen: rgb(255 255 255 / 0.55);
+    /* nền sạch chuyển sắc rất nhẹ */
+    --bg: #f2f4f3;
+    --bg-top: #f6f8f7;
+    --bgg: linear-gradient(180deg, #f6f8f7 0%, #eceff0 100%);
+    --scrim: rgb(8 12 10 / 0.28);
+    /* màu chỉ số — giống bản máy tính (calo cam, đạm hồng đỏ, tinh bột xanh trời, chất béo vàng, nước xanh ngọc, cân xanh dương, mục tiêu tím) */
+    --m-calories: #f97316;
+    --m-protein: #e11d48;
+    --m-carbs: #0ea5e9;
+    --m-fat: #eab308;
+    --m-water: #0891b2;
+    --m-weight: #2563eb;
+    --m-goal: #7c3aed;
+    /* chữ tô màu đủ tương phản (≥ 4.5:1) */
+    --m-calories-t: #9a3412;
+    --m-protein-t: #be123c;
+    --m-carbs-t: #075985;
+    --m-fat-t: #854d0e;
+    --m-water-t: #0e7490;
+    --m-weight-t: #1d4ed8;
+    --m-goal-t: #6d28d9;
+    --lime-t: #3f6212;
+  }
+  [data-theme="dark"] {
+    --faint: rgb(255 255 255 / 0.07);
+    --line: rgb(255 255 255 / 0.18);
+    --g-fill: rgb(30 33 35 / 0.62);
+    --g-fill-2: rgb(255 255 255 / 0.1);
+    --g-rim: rgb(255 255 255 / 0.16);
+    --g-hi: rgb(255 255 255 / 0.38);
+    --g-lo: rgb(255 255 255 / 0.06);
+    --g-shadow: rgb(0 0 0 / 0.6);
+    --g-sheen: rgb(255 255 255 / 0.16);
+    --bg: #08090a;
+    --bg-top: #101213;
+    --bgg: linear-gradient(180deg, #101213 0%, #07080a 100%);
+    --scrim: rgb(0 0 0 / 0.55);
+    --m-calories: #fb923c;
+    --m-protein: #fb7185;
+    --m-carbs: #38bdf8;
+    --m-fat: #facc15;
+    --m-water: #22d3ee;
+    --m-weight: #60a5fa;
+    --m-goal: #a78bfa;
+    --m-calories-t: #fdba74;
+    --m-protein-t: #fda4af;
+    --m-carbs-t: #7dd3fc;
+    --m-fat-t: #fde047;
+    --m-water-t: #67e8f9;
+    --m-weight-t: #93c5fd;
+    --m-goal-t: #c4b5fd;
+    --lime-t: #d9f99d;
+  }
+  /* nền sạch: bỏ lớp nền phẳng của .aurora để lộ chuyển sắc nhẹ của body (mảng màu/hạt nhiễu đã ẩn sẵn) */
+  html, body { background: var(--bg); }
+  body { background: var(--bgg) fixed var(--bg); }
+  .aurora { background: none; }
+  /* số: Bricolage Grotesque (tiêu đề + số chỉ có trên điện thoại) */
+  .num, .font-disp { font-family: var(--disp); }
+
+  /* ---- Vật liệu kính: .mg (thẻ kính). Nằm trong @layer components để class Tailwind (fixed, rounded-*) vẫn ghi đè được ---- */
+  @layer components {
+    .mg {
+      position: relative;
+      border-radius: 28px;
+      background: var(--g-fill);
+      -webkit-backdrop-filter: blur(26px) saturate(185%);
+      backdrop-filter: blur(26px) saturate(185%);
+      box-shadow: inset 1.5px 1.5px 0 -0.5px var(--g-hi), inset -1px -1px 0 -0.5px var(--g-lo), 0 1px 1px rgb(0 0 0 / 0.04), 0 26px 50px -28px var(--g-shadow);
+    }
+    .mg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      pointer-events: none;
+      background: linear-gradient(150deg, var(--g-hi), var(--g-lo) 38%, transparent 55%, var(--g-rim) 90%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    .mg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(240px 180px at 18% 0%, var(--g-sheen), transparent 70%);
+      mix-blend-mode: soft-light;
+    }
+  }
+
+  /* ---- Thanh trên: tiêu đề / công tắc Tổng quan | Hôm nay + avatar ---- */
+  .fb-top-fade {
+    position: fixed; z-index: 29; left: 0; right: 0; top: 0;
+    height: calc(78px + var(--safe-t));
+    pointer-events: none;
+    background: linear-gradient(180deg, var(--bg-top) 0%, color-mix(in srgb, var(--bg-top) 82%, transparent) 55%, transparent 100%);
+  }
+  .fb-top {
+    position: fixed; z-index: 30;
+    left: max(12px, calc(50% - var(--maxw) / 2 + 4px));
+    right: max(12px, calc(50% - var(--maxw) / 2 + 4px));
+    top: calc(8px + var(--safe-t));
+    height: 52px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .fb-top .fb-title {
+    flex: 1; min-width: 0;
+    font-family: var(--disp); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px;
+  }
+  .fb-top .fb-back + .fb-title { text-align: center; font-size: 18px; padding-left: 0; }
+  .fb-back { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: var(--text); }
+  .fb-av {
+    flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+    font-family: var(--disp); font-weight: 700; font-size: 16px; color: var(--text);
+  }
+  .fb-av img { width: 100%; height: 100%; object-fit: cover; }
+  .fb-av[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--text); }
+  .subtabs {
+    position: relative; height: 52px; width: 220px; flex: none; border-radius: 99px;
+    display: grid; grid-template-columns: 1fr 1fr; padding: 4px; --i: 0;
+  }
+  .subtabs .lz {
+    position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 99px;
+    background: var(--g-fill-2);
+    box-shadow: inset 0 0 0 1px var(--g-rim), inset 1px 1px 0 var(--g-hi), 0 6px 14px -8px var(--g-shadow);
+    transform: translateX(calc(var(--i) * 100%));
+    transition: transform 0.45s var(--spring-s);
+  }
+  [data-theme="dark"] .subtabs .lz { background: rgb(255 255 255 / 0.14); }
+  .subtabs a {
+    position: relative; z-index: 1; border-radius: 99px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: var(--muted); text-align: center; transition: color 0.2s;
+  }
+  .subtabs a[aria-selected="true"] { color: var(--text); }
+  .subtabs .dotn { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--m-calories); margin-left: 5px; }
+
+  /* ---- Thanh dưới + nút HeadBro / ô "Hỏi HeadBro…" ---- */
+  .fb-dock {
+    position: fixed; z-index: 40;
+    left: max(14px, calc(50% - var(--maxw) / 2 + 6px));
+    right: max(14px, calc(50% - var(--maxw) / 2 + 6px));
+    bottom: calc(12px + var(--safe-b));
+    display: flex; gap: 10px; align-items: flex-end;
+    --dur: 0.9s; --ez-s: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .fb-tabs {
+    position: relative; flex: none; width: calc(100% - 74px); height: 64px; border-radius: 99px;
+    display: flex; align-items: center; padding: 0 var(--pad); overflow: hidden; --pad: 6px;
+    transition: width var(--dur) var(--ez-s);
+  }
+  .fb-tabs .lensdot {
+    position: absolute; top: 6px; bottom: 6px; left: var(--pad); width: calc((100% - 2 * var(--pad)) / 4); border-radius: 99px;
+    background: var(--g-fill-2);
+    box-shadow: inset 0 0 0 1px var(--g-rim), inset 1px 1px 0 var(--g-hi), 0 6px 14px -8px var(--g-shadow);
+    transform: translateX(calc(var(--i, 0) * 100%));
+    transition: transform 0.45s var(--spring-s), opacity 0.25s;
+  }
+  [data-theme="dark"] .fb-tabs .lensdot { background: rgb(255 255 255 / 0.12); }
+  .fb-tabs.none .lensdot { opacity: 0; }
+  .fb-tabs a {
+    position: relative; z-index: 1; flex: 1 1 0; min-width: 0; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-height: 52px; font-size: 12px; font-weight: 600; letter-spacing: -0.01em; color: var(--muted);
+    text-align: center; white-space: nowrap;
+    transition: flex var(--dur) var(--ez-s), opacity 0.4s ease, color 0.2s;
+  }
+  .fb-tabs a svg { width: 21px; height: 21px; flex: none; }
+  .fb-tabs a span { max-height: 16px; line-height: 16px; transition: opacity 0.3s ease, max-height var(--dur) var(--ez-s); }
+  .fb-tabs a.on { color: var(--text); }
+  .fb-ai {
+    flex: none; width: 64px; min-width: 64px; height: 64px; border-radius: 99px;
+    display: flex; align-items: center; gap: 10px; padding: 0 8px; overflow: hidden;
+    font-size: 15px; color: var(--muted); text-align: left;
+    transition: width var(--dur) var(--ez-s);
+  }
+  .fb-ai .tx { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; opacity: 0; transform: translateX(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
+  .fb-ai .mic { width: 0; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; opacity: 0; transition: opacity 0.25s ease; }
+  .fb-ai .mic svg { width: 20px; height: 20px; }
+  /* dấu HeadBro: đĩa tối, xanh chanh */
+  .aimark {
+    flex: none; width: 48px; height: 48px; min-width: 48px; aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #1f2a24, #0b1611 70%);
+    color: #c6f432;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -6px 12px rgb(0 0 0 / 0.4), 0 6px 14px -6px rgb(0 0 0 / 0.35);
+  }
+  .aimark svg { width: 33px; height: 33px; fill: currentColor; }
+  .aimark.sm { width: 32px; height: 32px; min-width: 32px; }
+  .aimark.sm svg { width: 21px; height: 21px; }
+  /* cuộn xuống → thu thanh tab thành một nút, bung ô hỏi */
+  .scrolled-down .fb-tabs { width: 64px; }
+  .scrolled-down .fb-tabs .lensdot { opacity: 0; }
+  .scrolled-down .fb-tabs a:not(.on) { flex: 0 0 0; opacity: 0; pointer-events: none; }
+  .scrolled-down .fb-tabs.none a:first-of-type { flex: 1 1 0; opacity: 1; pointer-events: auto; }
+  .scrolled-down .fb-tabs a span { opacity: 0; max-height: 0; }
+  .scrolled-down .fb-ai { width: calc(100% - 74px); }
+  .scrolled-down .fb-ai .tx { opacity: 1; transform: none; transition: opacity 0.45s ease 0.4s, transform 0.6s var(--ez) 0.35s; }
+  .scrolled-down .fb-ai .mic { width: 44px; opacity: 1; transition: opacity 0.45s ease 0.5s; }
+  /* màn hẹp (360px): thu lề và khoảng cách để nhãn "Dinh dưỡng" không bị cắt */
+  @media (max-width: 380px) {
+    .fb-dock { left: 10px; right: 10px; gap: 8px; }
+    .fb-tabs { width: calc(100% - 72px); --pad: 3px; }
+    .fb-tabs a { letter-spacing: -0.03em; }
+    .scrolled-down .fb-ai { width: calc(100% - 72px); }
+  }
+  /* bấm: không thu nhỏ cả cụm (tránh lệch khi đang co giãn) */
+  .fb-tabs a:active, .fb-ai:active, .fb-av:active { scale: 1; }
+
+  /* menu avatar (portal) — kính đặc hơn để dễ đọc */
+  .fb-menu { --g-fill: rgb(255 255 255 / 0.9); }
+  [data-theme="dark"] .fb-menu { --g-fill: rgb(30 33 35 / 0.92); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fb-tabs, .fb-tabs a, .fb-tabs a span, .fb-ai, .fb-ai .tx, .fb-ai .mic, .subtabs .lz, .fb-tabs .lensdot { transition: none !important; }
+  }
+}

@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { Activity, ArrowRight, Bike, Check, CheckCircle2, ChevronRight, Circle, Dumbbell, Flame, Moon, Pause, Play, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight } from "lucide-react";
-import { MobileMenuButton } from "../components/MobileMenu";
 import { useTodayAdvice } from "../components/WorkoutExtras";
 import type { ScheduleDay } from "../lib/types";
 import { todayISO } from "../lib/format";
@@ -287,7 +286,6 @@ function MobileHome({ ov }: { ov: Overview }) {
           <p className="text-sm text-muted first-letter:uppercase">{new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" })}</p>
           <h1 className="truncate text-[32px] font-semibold leading-[38px] tracking-tight">Chào {user?.name?.split(" ").pop() || "bạn"}</h1>
         </div>
-        <MobileMenuButton />
       </header>
       <InstallHint />
       <MobileTodayCard readiness={t.readiness} />
