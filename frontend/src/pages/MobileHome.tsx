@@ -10,7 +10,7 @@ import type { Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
 import { useTodayAdvice } from "../components/WorkoutExtras";
 import { InstallHint } from "../components/InstallHint";
-import { Modal } from "../components/ui";
+import { ReadinessSheet, WaterTile } from "../components/mobile/Shared";
 import type { Overview } from "../components/Widgets";
 import { HeadBroSvg } from "../components/MobileShell";
 import { Rings, vars } from "../components/mobile/V1";
@@ -22,6 +22,15 @@ import { Rings, vars } from "../components/mobile/V1";
  * → HeadBro nhắn → tuần này → làm nhanh. Không hình người, không khối cầu; điểm sẵn sàng luôn nhỏ.
  */
 const WEEK_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+/** Bỏ phần số bài / phút / điểm sẵn sàng mà thẻ đã hiện ở chỗ khác, chỉ giữ lời khuyên. */
+function trimReason(s: string) {
+  const t = s
+    .replace(/\d+ bài · khoảng \d+ phút\.?\s*/, "")
+    .replace(/Sẵn sàng \d+\/100 \([^)]*\)/, "")
+    .replace(/^[\s:.,]+/, "")
+    .trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+}
 const pct = (v: number, max: number) => (max > 0 ? Math.max(0, v / max) : 0);
 
 export function MobileHomeSkeleton() {
@@ -117,11 +126,11 @@ export function MobileHome({ ov }: { ov: Overview }) {
               <p className="k"><span className="dot" />HeadBro xếp cho hôm nay</p>
               <h2 style={plan ? { fontSize: plan.name.length > 12 ? 30 : plan.name.length > 7 ? 40 : 52 } : { fontSize: 36 }}>{plan ? plan.name : sch.today.rest ? "Ngày nghỉ" : "Hôm nay"}</h2>
               <p className="m">{plan ? smallPlan(plan) : advice.headline}</p>
-              <p className="why">{advice.reason}</p>
+              {trimReason(advice.reason) && <p className="why">{trimReason(advice.reason)}</p>}
               {advice.action && (
                 <Link className="btn-start" to={advice.action.to} style={{ marginTop: 16 }}>
                   {startLabel}
-                  <span className="pill">{isStart && plan ? <><Play />{plan.name.length > 10 ? "Bắt đầu" : plan.name}</> : <ArrowRight />}</span>
+                  <span className="pill">{isStart && plan ? <><Play />{plan.name.length > 10 ? null : plan.name}</> : <ArrowRight />}</span>
                 </Link>
               )}
               {advice.secondary ? (
@@ -151,15 +160,8 @@ export function MobileHome({ ov }: { ov: Overview }) {
           </div>
         </section>
 
-        {/* Điểm sẵn sàng — nhỏ */}
-        <section className="g wd rdyw" aria-label="Điểm sẵn sàng">
-          <div className="h" style={{ width: "100%" }}><b>Điểm sẵn sàng</b></div>
-          <button type="button" className="big" onClick={() => setSheet(true)} aria-label={r ? `Điểm sẵn sàng ${r.score} trên 100, xem chi tiết` : "Chưa check-in"}>
-            <Rings size={44} sw={6} gap={0} rings={[{ value: pct(r?.score ?? 0, 100), color: "lime" }]} />
-            <b className="n">{r ? r.score : "—"}</b>
-          </button>
-          <span className="sm">{r ? r.label : "Chưa check-in sáng nay"}</span>
-        </section>
+        {/* Nước (thay ô Điểm sẵn sàng thứ hai: điểm đã có chip ở đầu trang) */}
+        <WaterTile />
 
         {/* Mục tiêu / cân nặng */}
         <Link to="/inbody" className="g wd goalw" aria-label="Mục tiêu cân nặng, mở Tiến độ">
@@ -219,6 +221,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
                     <button key={d.weekday} type="button" aria-pressed={on} onClick={() => setSel(i)}
                       aria-label={`${WEEK_SHORT[d.weekday]}: ${d.done ? "đã tập" : d.rest ? "nghỉ" : d.is_today ? "hôm nay" : missed ? "bỏ lỡ" : "có lịch"}${d.plan ? `, ${d.plan.name}` : ""}`}>
                       <span className={clsx("vessel tube", d.rest && "rest", !d.rest && !d.done && !d.is_today && !missed && "plan2")}>
+                        {/* API chỉ cho biết đã tập hay chưa (chưa có khối lượng theo ngày) → ống đã tập đầy cố định 90% */}
                         {d.done && <span className="liq" style={vars({ "--v": 0.9 })} />}
                         {d.rest && <Moon className="ic ic-sm" />}
                       </span>
@@ -252,30 +255,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
         <Link className="chip" to="/report"><BarChart3 className="ic" />Báo cáo</Link>
       </div>
 
-      <Modal open={sheet} onClose={() => setSheet(false)} title={r ? `Điểm sẵn sàng ${r.score} / 100` : "Điểm sẵn sàng"}>
-        <div className="v1">
-          {r ? (
-            <>
-              <p className="sheet-s" style={{ marginTop: 0 }}><span className={clsx("tag", r.band === "low" || r.band === "moderate" ? "orange" : "lime")}>{r.label}</span> &nbsp;{r.advice}</p>
-              <div className="bars" style={{ marginTop: 16 }}>
-                {r.components.map((c) => (
-                  <div className="bar" key={c.key}>
-                    <span className="t"><span>{c.label}</span><b style={{ fontSize: 14 }}>{Math.round(c.score)}/100</b></span>
-                    <span className="track"><i style={vars({ "--v": c.score / 100 })} /></span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: "14px 2px 0", marginTop: 14, borderTop: "1px solid var(--faint)" }}>
-                <p className="t-label" style={{ fontWeight: 700, color: "var(--fg)" }}>Điểm được tính thế nào?</p>
-                <p className="t-small" style={{ marginTop: 2 }}>Mỗi yếu tố đổi ra thang 0–100, điểm cuối là tổng có trọng số. 80 trở lên tập nặng · 60–79 bình thường · 40–59 giảm 20–30% khối lượng · dưới 40 nghỉ hoặc phục hồi.</p>
-              </div>
-            </>
-          ) : (
-            <p className="t-body">Chưa check-in sáng nay. Trả lời 5 câu hỏi nhanh về giấc ngủ, năng lượng, đau cơ để có điểm sẵn sàng.</p>
-          )}
-          <button type="button" className="btn btn-primary btn-block" style={{ marginTop: 16 }} onClick={() => { setSheet(false); nav("/daily"); }}>{r ? "Sửa check-in" : "Check-in ngay"}</button>
-        </div>
-      </Modal>
+      <ReadinessSheet open={sheet} onClose={() => setSheet(false)} r={r} onCheckin={() => { setSheet(false); nav("/daily"); }} />
     </div>
   );
 }

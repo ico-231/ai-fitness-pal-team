@@ -7,6 +7,7 @@ import { useAction, useApi } from "../lib/hooks";
 import { exName, shortDate, fmt } from "../lib/format";
 import type { Plan, Readiness } from "../lib/types";
 import { useAI } from "../components/AIProvider";
+import { MobileDaily, MobileDailySkeleton } from "./MobileDaily";
 import { Button, Card, Field, PageHeader, Progress, Ring, ScalePicker, Spinner, DecimalInput, parseDecimal } from "../components/ui";
 
 interface DailyData {
@@ -184,7 +185,7 @@ export default function Daily() {
     if (data && !data.checked_in) setEditing(true);
   }, [data?.checked_in]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (isLoading || !data) return <Spinner />;
+  if (isLoading || !data) return <><MobileDailySkeleton /><div className="hidden lg:block"><Spinner /></div></>;
   const r = data.readiness;
   const weakestScore = r?.components.find((c) => c.key === r.weakest)?.score;
   const weakestUnique = !!r && r.components.filter((c) => c.score === weakestScore).length === 1;
@@ -205,7 +206,9 @@ export default function Daily() {
   ];
 
   return (
-    <div className="space-y-8">
+    <>
+    <MobileDaily data={data} />
+    <div className="space-y-8 max-lg:hidden">
       <PageHeader
         help="hom-nay"
         lead="Hôm nay,"
@@ -378,6 +381,7 @@ export default function Daily() {
         </div>
       </section>
     </div>
+    </>
   );
 }
 
