@@ -12,8 +12,9 @@ import { BODYMAP_VIEWS, MUSCLE_ORDER } from "./bodymapData";
  * - public/bodymap/{front,back}-map.png   : R = nhóm cơ để bấm/rê chuột (vùng gốc, không khe)
  *                                           G = nhóm cơ để tô (0 ở khe ngăn cách giữa các cơ)
  *                                           B = độ đậm tô (mép mượt)
- * Lớp màu được vẽ ra canvas rồi nhân (multiply) lên ảnh → vẫn thấy thớ cơ và khối sáng tối.
- * Màu nhạt dần ở mép mỗi cơ (theo khoảng cách tới mép) → "ửng dưới da" chứ không như lớp sơn.
+ * Lớp màu được vẽ ra canvas rồi nhân (multiply) lên ảnh, phủ lại ảnh bằng soft-light → giữ thớ cơ, khối sáng tối.
+ * Đường bao từng cơ được dò thành đường VECTOR (marching squares + làm mượt) → viền và khe vẽ bằng nét SVG,
+ * mượt ở mọi cỡ, không răng cưa như vẽ theo pixel.
  * Rê chuột / chạm: cơ đó "nổi" lên (phóng nhẹ + đổ bóng + viền), có chip tên theo con trỏ.
  * Sinh lại tài nguyên: design-lab/bodymap-photo/build_app_assets.py.
  *
@@ -30,24 +31,25 @@ const LABEL: Record<View, string> = { front: "Mặt trước", back: "Mặt sau"
 const HEAT_ALPHA = [0, 0.78, 0.86, 0.93, 1];
 const SELECT_ALPHA = 0.9; // cơ đang chọn ở Bản đồ cơ
 const HOVER_TINT = 0.5; // phủ chanh cho cơ đang trỏ (chế độ bấm chọn)
-const EDGE_FADE = 3; // px: độ rộng vùng dịu ở mép cơ
-const EDGE_MIN = 0.85; // mép chỉ dịu nhẹ — màu vẫn đầy tới sát viền
-const RIM = 0.4; // viền cơ đã tô = chính màu đó sẫm lại còn 50% → vùng màu sắc nét
-const MAX_DIST = 8;
+const RIM = 0.4; // viền cơ đã tô = chính màu đó sẫm lại còn 40% → vùng màu sắc nét
+/** Khe sáng giữa các cơ: ăn vào trong mỗi cơ GAP đơn vị ảnh → các cơ tách hẳn nhau. */
+const GAP = 2;
+/** Viền dày về phía trong, ngay sau khe. */
+const LINE = 3;
 // Hình người luôn sáng (cả ở giao diện tối) → viền dùng màu mực cố định, không theo biến giao diện.
-const INK: [number, number, number] = [17, 18, 20];
-const SELECT_LINE: [number, number, number] = [63, 98, 18]; // #3f6212 — chanh đậm, đủ tương phản trên nền trắng xám
+const INK = "rgb(17 18 20)";
+const SELECT_LINE = "#3f6212"; // chanh đậm, đủ tương phản trên nền trắng xám
+const GAP_RGB: [number, number, number] = [240, 240, 238]; // màu khe ≈ tông da sáng của ảnh
+const GAP_CSS = `rgb(${GAP_RGB.join(" ")})`;
 
 type Paint = { color: string; alpha: number };
+/** Đường bao vector của một nhóm cơ (có thể nhiều vòng: 2 bên trái/phải, lỗ) + tâm khung bao. */
+type Outline = { d: string; cx: number; cy: number };
 type MapData = {
   px: Uint8ClampedArray;
-  /** khoảng cách (px) tới mép nhóm cơ chứa pixel đó (theo kênh G); 0 = ngoài cơ / khe */
-  dist: Uint8Array;
-  /** viền mảnh của mọi nhóm cơ (hiện sẵn ở mọi chế độ) */
-  edges: string;
+  outlines: Map<number, Outline>;
 };
 
-const blobUrl = (c: HTMLCanvasElement) => c.toDataURL();
 function canvas(W: number, H: number) {
   const c = document.createElement("canvas");
   c.width = W;
@@ -55,51 +57,113 @@ function canvas(W: number, H: number) {
   return c;
 }
 
-/** Khoảng cách tới mép cơ: chamfer 2 lượt (8 hướng), cắt ở MAX_DIST. */
-function distanceField(px: Uint8ClampedArray, W: number, H: number): Uint8Array {
-  const d = new Uint8Array(W * H);
-  const g = (i: number) => px[i * 4 + 1];
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x, id = g(i);
-      if (!id) continue;
-      const border = x === 0 || y === 0 || x === W - 1 || y === H - 1 ||
-        g(i - 1) !== id || g(i + 1) !== id || g(i - W) !== id || g(i + W) !== id;
-      d[i] = border ? 1 : MAX_DIST;
+// ---- dò đường bao: marching squares trên trường "độ thuộc cơ id" (B nếu G==id, ngược lại 0), ngưỡng 0.5 ----
+type Pt = [number, number];
+function traceOutline(px: Uint8ClampedArray, W: number, H: number, id: number, box: [number, number, number, number]): Outline | null {
+  const [bx0, by0, bx1, by1] = box;
+  const val = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return 0;
+    const k = (y * W + x) * 4;
+    return px[k + 1] === id ? px[k + 2] / 255 : 0;
+  };
+  const T = 0.5;
+  // điểm cắt trên cạnh giữa 2 tâm pixel (tâm pixel x,y nằm ở x+0.5, y+0.5)
+  const lerp = (a: number, b: number) => (a === b ? 0.5 : (T - a) / (b - a));
+  const pts = new Map<string, Pt>();
+  const adj = new Map<string, string[]>();
+  const link = (a: string, b: string) => {
+    (adj.get(a) || adj.set(a, []).get(a)!).push(b);
+    (adj.get(b) || adj.set(b, []).get(b)!).push(a);
+  };
+  for (let y = by0 - 1; y <= by1; y++) {
+    for (let x = bx0 - 1; x <= bx1; x++) {
+      const tl = val(x, y), tr = val(x + 1, y), br = val(x + 1, y + 1), bl = val(x, y + 1);
+      const idx = (tl >= T ? 8 : 0) | (tr >= T ? 4 : 0) | (br >= T ? 2 : 0) | (bl >= T ? 1 : 0);
+      if (idx === 0 || idx === 15) continue;
+      const E = {
+        t: () => { const k = `h${x},${y}`; if (!pts.has(k)) pts.set(k, [x + 0.5 + lerp(tl, tr), y + 0.5]); return k; },
+        r: () => { const k = `v${x + 1},${y}`; if (!pts.has(k)) pts.set(k, [x + 1.5, y + 0.5 + lerp(tr, br)]); return k; },
+        b: () => { const k = `h${x},${y + 1}`; if (!pts.has(k)) pts.set(k, [x + 0.5 + lerp(bl, br), y + 1.5]); return k; },
+        l: () => { const k = `v${x},${y}`; if (!pts.has(k)) pts.set(k, [x + 0.5, y + 0.5 + lerp(tl, bl)]); return k; },
+      };
+      const seg = (a: keyof typeof E, b: keyof typeof E) => link(E[a](), E[b]());
+      const center = (tl + tr + br + bl) / 4 >= T;
+      switch (idx) {
+        case 1: case 14: seg("l", "b"); break;
+        case 2: case 13: seg("b", "r"); break;
+        case 3: case 12: seg("l", "r"); break;
+        case 4: case 11: seg("t", "r"); break;
+        case 6: case 9: seg("t", "b"); break;
+        case 7: case 8: seg("l", "t"); break;
+        case 5: if (center) { seg("l", "t"); seg("b", "r"); } else { seg("t", "r"); seg("l", "b"); } break;
+        case 10: if (center) { seg("t", "r"); seg("l", "b"); } else { seg("l", "t"); seg("b", "r"); } break;
+      }
     }
   }
-  for (let y = 1; y < H; y++) {
-    for (let x = 1; x < W - 1; x++) {
-      const i = y * W + x;
-      if (d[i] <= 1) continue;
-      d[i] = Math.min(d[i], d[i - 1] + 1, d[i - W] + 1, d[i - W - 1] + 1, d[i - W + 1] + 1);
+  // nối các đoạn thành vòng kín
+  const seen = new Set<string>();
+  const loops: Pt[][] = [];
+  for (const start of adj.keys()) {
+    if (seen.has(start)) continue;
+    const loop: Pt[] = [];
+    let prev = "", cur = start;
+    while (cur && !seen.has(cur)) {
+      seen.add(cur);
+      loop.push(pts.get(cur)!);
+      const nb = adj.get(cur)!;
+      const next = nb[0] !== prev ? nb[0] : nb[1];
+      prev = cur;
+      cur = next;
     }
+    if (loop.length >= 12) loops.push(loop); // bỏ đốm nhiễu
   }
-  for (let y = H - 2; y >= 0; y--) {
-    for (let x = W - 2; x >= 1; x--) {
-      const i = y * W + x;
-      if (d[i] <= 1) continue;
-      d[i] = Math.min(d[i], d[i + 1] + 1, d[i + W] + 1, d[i + W + 1] + 1, d[i + W - 1] + 1);
+  if (!loops.length) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const parts = loops.map((raw) => {
+    // làm mượt Laplace 4 lượt (khép kín) → hết bậc thang theo pixel, giữ dáng cơ
+    let p = raw;
+    for (let it = 0; it < 4; it++) {
+      const n = p.length;
+      p = p.map((q, i) => {
+        const a = p[(i - 1 + n) % n], b = p[(i + 1) % n];
+        return [(a[0] + 2 * q[0] + b[0]) / 4, (a[1] + 2 * q[1] + b[1]) / 4] as Pt;
+      });
     }
-  }
-  return d;
+    // thưa điểm (mỗi ~1.5 đơn vị) cho path nhẹ
+    const out: Pt[] = [p[0]];
+    for (const q of p) {
+      const l = out[out.length - 1];
+      if (Math.hypot(q[0] - l[0], q[1] - l[1]) >= 1.5) out.push(q);
+    }
+    for (const [x, y] of out) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    return "M" + out.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L") + "Z";
+  });
+  return { d: parts.join(""), cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
 }
 
-function edgesLayer(px: Uint8ClampedArray, dist: Uint8Array, W: number, H: number): string {
-  const c = canvas(W, H);
-  const ctx = c.getContext("2d")!;
-  const out = ctx.createImageData(W, H);
-  const o = out.data;
+function traceAll(px: Uint8ClampedArray, W: number, H: number): Map<number, Outline> {
+  const boxes = new Map<number, [number, number, number, number]>();
   for (let i = 0; i < W * H; i++) {
-    if (dist[i] > 3 || px[i * 4 + 2] < 90) continue;
-    const k = i * 4;
-    o[k] = INK[0]; o[k + 1] = INK[1]; o[k + 2] = INK[2]; o[k + 3] = dist[i] === 1 ? 235 : dist[i] === 2 ? 190 : 80;
+    const id = px[i * 4 + 1];
+    if (!id) continue;
+    const x = i % W, y = (i / W) | 0;
+    const b = boxes.get(id);
+    if (!b) boxes.set(id, [x, y, x, y]);
+    else {
+      if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y;
+    }
   }
-  ctx.putImageData(out, 0, 0);
-  return blobUrl(c);
+  const out = new Map<number, Outline>();
+  for (const [id, box] of boxes) {
+    const o = traceOutline(px, W, H, id, box);
+    if (o) out.set(id, o);
+  }
+  return out;
 }
 
-// ---- bản đồ nhãn: tải + giải mã 1 lần cho cả app ----
+// ---- bản đồ nhãn: tải + giải mã + dò đường bao 1 lần cho cả app ----
 const mapCache = new Map<View, Promise<MapData>>();
 function loadMap(view: View): Promise<MapData> {
   let p = mapCache.get(view);
@@ -112,8 +176,7 @@ function loadMap(view: View): Promise<MapData> {
         const ctx = c.getContext("2d", { willReadFrequently: true })!;
         ctx.drawImage(img, 0, 0);
         const px = ctx.getImageData(0, 0, w, h).data;
-        const dist = distanceField(px, w, h);
-        resolve({ px, dist, edges: edgesLayer(px, dist, w, h) });
+        resolve({ px, outlines: traceAll(px, w, h) });
       };
       img.onerror = reject;
       img.src = SRC[view].map;
@@ -121,45 +184,6 @@ function loadMap(view: View): Promise<MapData> {
     mapCache.set(view, p);
   }
   return p;
-}
-
-/** Mặt nạ + viền của một nhóm cơ, cùng tâm khung bao (để phóng to quanh đúng chỗ). Nhớ theo view+id. */
-type Pop = { mask: string; line: string; selLine: string; cx: number; cy: number };
-const popCache = new Map<string, Pop | null>();
-function popOf(view: View, m: MapData, W: number, H: number, id: number): Pop | null {
-  const key = `${view}:${id}`;
-  if (popCache.has(key)) return popCache.get(key)!;
-  const { px, dist } = m;
-  let x0 = W, y0 = H, x1 = -1, y1 = -1;
-  const mc = canvas(W, H), lc = canvas(W, H), sc = canvas(W, H);
-  const mctx = mc.getContext("2d")!, lctx = lc.getContext("2d")!, sctx = sc.getContext("2d")!;
-  const mo = mctx.createImageData(W, H), lo = lctx.createImageData(W, H), so = sctx.createImageData(W, H);
-  for (let i = 0; i < W * H; i++) {
-    const k = i * 4;
-    if (px[k + 1] !== id) continue;
-    const a = px[k + 2];
-    if (a < 30) continue;
-    const x = i % W, y = (i / W) | 0;
-    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-    mo.data[k] = mo.data[k + 1] = mo.data[k + 2] = 255;
-    mo.data[k + 3] = a;
-    const d = dist[i];
-    if (d <= 4 && a >= 90) {
-      const la = d <= 2 ? 255 : d === 3 ? 220 : 100;
-      lo.data[k] = INK[0]; lo.data[k + 1] = INK[1]; lo.data[k + 2] = INK[2]; lo.data[k + 3] = la;
-      so.data[k] = SELECT_LINE[0]; so.data[k + 1] = SELECT_LINE[1]; so.data[k + 2] = SELECT_LINE[2]; so.data[k + 3] = la;
-    }
-  }
-  if (x1 < 0) {
-    popCache.set(key, null);
-    return null;
-  }
-  mctx.putImageData(mo, 0, 0);
-  lctx.putImageData(lo, 0, 0);
-  sctx.putImageData(so, 0, 0);
-  const pop = { mask: blobUrl(mc), line: blobUrl(lc), selLine: blobUrl(sc), cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
-  popCache.set(key, pop);
-  return pop;
 }
 
 /** "var(--x)" / "#rrggbb" / "#rgb" / "rgb(r,g,b)" → [r,g,b] (đọc biến CSS theo giao diện sáng/tối hiện tại). */
@@ -176,12 +200,15 @@ function toRgb(css: string): [number, number, number] | null {
   return r ? [+r[1], +r[2], +r[3]] : null;
 }
 
-const smooth = (t: number) => {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-};
-// hệ số mép theo khoảng cách 0..MAX_DIST (tính sẵn)
-const EDGE_K = Array.from({ length: MAX_DIST + 1 }, (_, d) => EDGE_MIN + (1 - EDGE_MIN) * smooth((d - 1) / EDGE_FADE));
+/** Viền dày về phía trong + khe sáng của một cơ (cắt theo chính đường bao của nó). */
+function Rim({ o, clip, color, extra = 0 }: { o: Outline; clip: string; color: string; extra?: number }) {
+  return (
+    <>
+      <path d={o.d} clipPath={`url(#${clip})`} fill="none" stroke={color} strokeWidth={2 * (GAP + LINE + extra)} strokeLinejoin="round" />
+      <path d={o.d} fill="none" stroke={GAP_CSS} strokeWidth={2 * GAP} strokeLinejoin="round" />
+    </>
+  );
+}
 
 function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }: {
   view: View; data?: MuscleVolume["muscles"]; onSelect?: (m: string) => void;
@@ -195,6 +222,7 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
   const [hover, setHover] = useState<string | null>(null);
   const [cursor, setCursor] = useState<[number, number] | null>(null);
   const [tint, setTint] = useState<string | null>(null);
+  const [gaps, setGaps] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -209,52 +237,70 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
   });
   const key = JSON.stringify(paints);
 
+  const toUrl = (cv: HTMLCanvasElement, alive: () => boolean, set: React.Dispatch<React.SetStateAction<string | null>>) =>
+    cv.toBlob((b) => {
+      if (!alive() || !b) return;
+      const url = URL.createObjectURL(b);
+      set((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return url;
+      });
+    });
+
+  // khe sẵn có của ảnh (giữa các cơ, trong thân người) → tô sáng cho đồng màu với khe nới thêm; vẽ 1 lần
   useEffect(() => {
     if (!map) return;
     let alive = true;
     const c = canvas(W, H);
     const ctx = c.getContext("2d")!;
     const out = ctx.createImageData(W, H);
-    const o = out.data;
-    const { px, dist } = map;
+    const o = out.data, { px } = map;
+    for (let i = 0; i < W * H; i++) {
+      const k = i * 4;
+      if (px[k + 1] || !px[k]) continue;
+      o[k] = GAP_RGB[0]; o[k + 1] = GAP_RGB[1]; o[k + 2] = GAP_RGB[2]; o[k + 3] = 255;
+    }
+    ctx.putImageData(out, 0, 0);
+    toUrl(c, () => alive, setGaps);
+    return () => { alive = false; };
+  }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!map) return;
+    let alive = true;
+    const c = canvas(W, H);
+    const ctx = c.getContext("2d")!;
+    const out = ctx.createImageData(W, H);
+    const o = out.data, { px } = map;
     for (let i = 0; i < W * H; i++) {
       const k = i * 4;
       const id = px[k + 1];
       if (!id) continue;
       const p = paints[id - 1];
       if (!p || !p.rgb) continue;
-      const d = dist[i];
-      if (d <= 3 && px[k + 2] >= 90) {
-        // viền cùng màu nhưng sẫm → mỗi cơ có đường bao rõ ràng
-        o[k] = p.rgb[0] * RIM;
-        o[k + 1] = p.rgb[1] * RIM;
-        o[k + 2] = p.rgb[2] * RIM;
-        o[k + 3] = d <= 2 ? 255 : 160;
-        continue;
-      }
-      o[k] = p.rgb[0];
-      o[k + 1] = p.rgb[1];
-      o[k + 2] = p.rgb[2];
-      o[k + 3] = Math.min(255, px[k + 2] * p.alpha * EDGE_K[d]);
+      o[k] = p.rgb[0]; o[k + 1] = p.rgb[1]; o[k + 2] = p.rgb[2];
+      o[k + 3] = Math.min(255, px[k + 2] * p.alpha);
     }
     ctx.putImageData(out, 0, 0);
-    c.toBlob((b) => {
-      if (!alive || !b) return;
-      const url = URL.createObjectURL(b);
-      setTint((old) => {
-        if (old) URL.revokeObjectURL(old);
-        return url;
-      });
-    });
+    toUrl(c, () => alive, setTint);
     return () => { alive = false; };
   }, [map, key]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => { if (tint) URL.revokeObjectURL(tint); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    if (tint) URL.revokeObjectURL(tint);
+    if (gaps) URL.revokeObjectURL(gaps);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const idOf = (m: string | null | undefined) => (m ? MUSCLE_ORDER.indexOf(m as (typeof MUSCLE_ORDER)[number]) + 1 : 0);
   const hoverId = idOf(hover);
   const selId = selected && (meta.muscles as readonly string[]).includes(selected) ? idOf(selected) : 0;
-  const hoverPop = useMemo(() => (map && hoverId ? popOf(view, map, W, H, hoverId) : null), [map, hoverId, view, W, H]);
-  const selPop = useMemo(() => (map && selId ? popOf(view, map, W, H, selId) : null), [map, selId, view, W, H]);
+  const clipOf = (id: number) => `bm-${uid}-${view}-${id}`;
+  const outlines = map ? [...map.outlines.entries()] : [];
+  const hoverO = map && hoverId ? map.outlines.get(hoverId) ?? null : null;
+  const selO = map && selId ? map.outlines.get(selId) ?? null : null;
+  const rimColor = (id: number) => {
+    const p = paints[id - 1];
+    return p?.rgb ? `rgb(${p.rgb.map((v) => Math.round(v * RIM)).join(" ")})` : INK;
+  };
 
   // điểm chuột → toạ độ ảnh
   const toLocal = (e: React.MouseEvent<SVGSVGElement>): [number, number] | null => {
@@ -313,7 +359,6 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
   const chip = hover && cursor
     ? { x: Math.max(chipW / 2 + 2, Math.min(W - chipW / 2 - 2, cursor[0])), y: Math.max(14 * S, cursor[1] - 16 * S) }
     : null;
-  const maskId = `bm-${uid}-${view}`;
   const selecting = !!onSelect;
 
   return (
@@ -339,23 +384,35 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
           if (!onSelect) { setHover(m); setCursor(m ? p : null); }
         }}
       >
+        <defs>
+          {outlines.map(([id, o]) => (
+            <clipPath key={id} id={clipOf(id)}><path d={o.d} clipRule="evenodd" /></clipPath>
+          ))}
+          <mask id={`bm-${uid}-${view}-body`} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={H} style={{ maskType: "alpha" }}>
+            <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
+          </mask>
+        </defs>
         {big && <ellipse cx={W / 2} cy={H - 4} rx={W * 0.22} ry={8} fill="var(--text)" opacity="0.08" />}
         <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
         {tint && <image href={tint} x={0} y={0} width={W} height={H} preserveAspectRatio="none" style={{ mixBlendMode: "multiply" }} />}
         {/* phủ lại chính ảnh bằng soft-light → trả lại khối sáng tối + thớ cơ dưới lớp màu (hết cảm giác sơn phẳng) */}
         {tint && <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" className="pointer-events-none" style={{ mixBlendMode: "soft-light" }} />}
-        {map && <image href={map.edges} x={0} y={0} width={W} height={H} preserveAspectRatio="none" className="pointer-events-none" />}
-        {selPop && selId !== hoverId && (
-          <image href={selPop.selLine} x={0} y={0} width={W} height={H} preserveAspectRatio="none" className="pointer-events-none" />
-        )}
-        {hoverPop && (
-          <g key={hoverId} className="muscle-pop pointer-events-none" style={{ transformOrigin: `${hoverPop.cx}px ${hoverPop.cy}px` }}>
-            <defs>
-              <mask id={maskId} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={H}>
-                <image href={hoverPop.mask} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
-              </mask>
-            </defs>
-            <g mask={`url(#${maskId})`}>
+        <g className="pointer-events-none">
+          {gaps && <image href={gaps} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />}
+          {outlines.map(([id, o]) => (
+            <path key={id} d={o.d} clipPath={`url(#${clipOf(id)})`} fill="none" stroke={rimColor(id)} strokeWidth={2 * (GAP + LINE)} strokeLinejoin="round" />
+          ))}
+          {/* khe chỉ nằm trong thân người (mặt nạ = độ trong suốt của ảnh) → không thành quầng trắng trên nền tối */}
+          <g mask={`url(#bm-${uid}-${view}-body)`}>
+            {outlines.map(([id, o]) => (
+              <path key={id} d={o.d} fill="none" stroke={GAP_CSS} strokeWidth={2 * GAP} strokeLinejoin="round" />
+            ))}
+          </g>
+          {selO && selId !== hoverId && <Rim o={selO} clip={clipOf(selId)} color={SELECT_LINE} extra={0.5} />}
+        </g>
+        {hoverO && (
+          <g key={hoverId} className="muscle-pop pointer-events-none" style={{ transformOrigin: `${hoverO.cx}px ${hoverO.cy}px` }}>
+            <g clipPath={`url(#${clipOf(hoverId)})`}>
               <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
               {tint && <image href={tint} x={0} y={0} width={W} height={H} preserveAspectRatio="none" style={{ mixBlendMode: "multiply" }} />}
               {selecting && hoverId !== selId && (
@@ -364,7 +421,7 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
               <image href={SRC[view].img} x={0} y={0} width={W} height={H} preserveAspectRatio="none" style={{ mixBlendMode: "soft-light" }} />
               <rect x={0} y={0} width={W} height={H} fill="#fff" opacity={0.08} />
             </g>
-            <image href={hoverId === selId ? hoverPop.selLine : hoverPop.line} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
+            <Rim o={hoverO} clip={clipOf(hoverId)} color={hoverId === selId ? SELECT_LINE : selecting ? INK : rimColor(hoverId)} extra={0.5} />
           </g>
         )}
         {pinBoxes.map((b) => (
@@ -449,7 +506,6 @@ export function HeatLegend({ levels }: { levels: MuscleVolume["levels"] }) {
         const range = l.level === 0 ? "0 set" : next ? `${fmt(l.min, 1)}–${fmt(Math.max(l.min, next.min - 0.5), 1)} set` : `≥ ${fmt(l.min, 1)} set`;
         return (
           <span key={l.level} className="flex items-center gap-1.5">
-            {/* nhạt như trên hình (màu được nhân mờ lên ảnh, không đặc) */}
             <span className="h-3 w-3 rounded-sm" style={{ background: HEAT_COLORS[l.level], opacity: l.level ? 0.9 : 1 }} />
             <span className="font-medium text-text">{l.label}</span> {range}
           </span>

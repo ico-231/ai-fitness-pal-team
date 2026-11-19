@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import {
-  ArrowLeft, ArrowLeftRight, BatteryMedium, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Flame, Minus, Pause, Pencil, Play, Plus, SkipForward, Sparkles, Timer, Trash2, Trophy, Volume2, VolumeX, X, Save,
+  ArrowLeft, ArrowLeftRight, BatteryMedium, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Minus, Pause, Pencil, Play, Plus, SkipForward, Sparkles, Timer, Trash2, Trophy, Volume2, VolumeX, X, Save,
 } from "lucide-react";
 import { del, get, post, put } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -91,12 +91,12 @@ function LoggedSets({ sets, timed, onEdit, onDelete }: {
             return (
               <li key={st.id} className="flex items-center gap-1.5 rounded-xl bg-[var(--glass-fill)] p-1.5">
                 {timed ? (
-                  <input aria-label="Số giây" className="input num h-9 w-20 text-center" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
+                  <input aria-label="Số giây" className="input num h-9 w-20 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" inputMode="numeric" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
                 ) : (
                   <>
                     <DecimalInput aria-label="Mức tạ (kg)" className="input num h-9 w-[4.5rem] text-center" value={w} onValue={(n) => setW(n ?? 0)} />
                     <span className="text-xs text-muted">×</span>
-                    <input aria-label="Số rep" className="input num h-9 w-14 text-center" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
+                    <input aria-label="Số rep" className="input num h-9 w-16 px-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" inputMode="numeric" type="number" value={r} onChange={(e) => setR(+e.target.value)} />
                   </>
                 )}
                 <button type="button" disabled={busy} title="Lưu" aria-label="Lưu"
@@ -188,7 +188,6 @@ export default function Session() {
   const [autoCancelled, setAutoCancelled] = useState(false);
   const lastRepAt = useRef(0);
   const [logged, setLogged] = useState<Record<string, LoggedSet[]>>({});
-  const [warmup, setWarmup] = useState(false);
   // Điểm sẵn sàng hôm nay: thấp thì đề xuất bản nhẹ (bật sẵn, tắt được trước khi bắt đầu)
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [light, setLight] = useState(false);
@@ -291,7 +290,6 @@ export default function Session() {
     setDetail(null);
     // Bài hỗ trợ Camera AI thì tự bật camera (tắt được trong Cài đặt hoặc bằng nút "Tắt Camera AI")
     setUseCam(autoCam && !!(ex.camera && EXERCISES[ex.camera]));
-    setWarmup(false);
     // gửi mục tiêu của chương trình để gợi ý tăng tải so đúng mốc (5 rep, 12 rep, 40 giây...)
     const q = `target_reps=${item.reps || 0}&target_sec=${item.duration_sec && !item.reps ? item.duration_sec : 0}`;
     get<ExDetail>(`/api/exercises/${ex.id}?${q}`).then((d) => {
@@ -352,7 +350,6 @@ export default function Session() {
       }
       setBusy(true);
       try {
-        const isWarm = warmup && !timed;
         const body = {
           exercise_id: item.exercise_id,
           set_index: setIdx,
@@ -360,20 +357,13 @@ export default function Session() {
           reps: timed ? 0 : useCam && cam.reps && !manualReps ? cam.reps : reps,
           duration_sec: timed ? durationSec || item.duration_sec : 0,
           form_score: useCam ? cam.avgScore : null,
-          is_warmup: isWarm,
+          is_warmup: false, // bỏ tính năng set khởi động (set cũ đã ghi vẫn giữ nguyên)
         };
         const r = await post<SetResult>(`/api/workouts/sessions/${session.id}/sets`, body);
         prToast(r);
         setLogged((m) => ({ ...m, [item.exercise_id]: [...(m[item.exercise_id] || []), { ...body, id: r.id, set_index: setIdx }] }));
         setCam({ reps: 0, avgScore: null, holdSec: 0 });
-        if (isWarm) {
-          // set khởi động không tính vào số set của bài: nghỉ ngắn rồi làm tiếp
-          setWarmup(false);
-          toast("Đã ghi set khởi động");
-          const rest = Math.min(60, item.rest_sec);
-          voice.speak(`Xong hiệp khởi động. ${restLine(rest)}`);
-          go("rest", rest);
-        } else if (setIdx < item.sets) {
+        if (setIdx < item.sets) {
           setSetIdx(setIdx + 1);
           voice.speak(restLine(item.rest_sec));
           go("rest", item.rest_sec);
@@ -391,7 +381,7 @@ export default function Session() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session, item, setIdx, weight, reps, timed, useCam, camKey, cam, manualReps, qi, queue.length, warmup],
+    [session, item, setIdx, weight, reps, timed, useCam, camKey, cam, manualReps, qi, queue.length],
   );
 
   // ---- tự ghi set khi camera đếm đủ rep mục tiêu rồi dừng ----
@@ -926,7 +916,7 @@ export default function Session() {
 
           {phase === "work" && (
             <>
-              <p className="eyebrow">{warmup ? "Khởi động" : <>Set <span className="num text-base text-text">{Math.min(setIdx, item.sets)}</span> / {item.sets}</>}</p>
+              <p className="eyebrow">Set <span className="num text-base text-text">{Math.min(setIdx, item.sets)}</span> / {item.sets}</p>
               {timed ? (
                 <>
                   <BigTimer seconds={count} total={countTotal} label="giây" color="var(--volt)" />
@@ -966,18 +956,11 @@ export default function Session() {
                       </div>
                     </div>
                   </div>
-                  {detail?.overload && setIdx === 1 && !warmup && (
+                  {detail?.overload && setIdx === 1 && (
                     <p className="max-w-xs rounded-2xl bg-[var(--glass-fill)] px-3.5 py-2.5 text-xs">
                       <b className="text-primary-strong">Tăng tải lũy tiến:</b> {detail.overload.reason}
                       {useLight && lp && <span className="mt-1 block text-energy-strong">Bản nhẹ hôm nay: tạ gợi ý đã giảm {lp.pct}%.</span>}
                     </p>
-                  )}
-                  {workCount(ex.id) === 0 && (
-                    <label className={clsx("flex w-full max-w-xs cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 text-left text-sm transition", warmup ? "border-energy/40 bg-energy-soft" : "border-[var(--glass-border)]")}>
-                      <input type="checkbox" className="h-4 w-4 accent-[var(--energy)]" checked={warmup} onChange={(e) => setWarmup(e.target.checked)} />
-                      <Flame size={15} className="text-energy-strong" />
-                      <span><b className="font-medium">Set khởi động</b><span className="block text-xs text-muted">Không tính vào số set, khối lượng và kỷ lục</span></span>
-                    </label>
                   )}
                   <LoggedSets sets={logged[ex.id] || []} timed={false} onEdit={editLogged} onDelete={deleteLogged} />
                   {camToggle}
@@ -990,7 +973,7 @@ export default function Session() {
                   {/* Điện thoại: nút chính dính đáy, nằm trong tầm ngón cái; nói rõ set nào, mức tạ, số rep sẽ được ghi */}
                   <button type="button" disabled={busy} onClick={() => logSet()}
                     className="inline-flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-volt text-base font-semibold text-on-volt shadow-[0_12px_32px_-12px_rgb(132_204_22/0.9)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-60 max-md:hidden">
-                    <Check size={19} /> {warmup ? "Ghi set khởi động" : "Hoàn thành set"}
+                    <Check size={19} /> Hoàn thành set
                   </button>
                   {/* Điện thoại: nút chính dính đáy (portal ra body: khung trang có transform nên fixed bên trong bị kẹt giữa màn) */}
                   {createPortal(
@@ -999,7 +982,7 @@ export default function Session() {
                       <button type="button" disabled={busy} onClick={() => logSet()}
                         className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ink text-base font-semibold text-on-ink shadow-[var(--shadow-lg)] transition active:scale-[0.98] disabled:opacity-60">
                         <Check size={19} />
-                        {warmup ? "Ghi set khởi động" : <span>Xong set {Math.min(setIdx, item.sets)} · <span className="num">{fmt(weight, 1)} kg × {shownReps}</span></span>}
+                        <span>Xong set {Math.min(setIdx, item.sets)} · <span className="num">{fmt(weight, 1)} kg × {shownReps}</span></span>
                       </button>
                     </div>,
                     document.body,

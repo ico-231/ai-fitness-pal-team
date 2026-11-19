@@ -176,7 +176,9 @@ export default function Daily() {
   const [showFormula, setShowFormula] = useState(false);
   const nav = useNavigate();
   const ai = useAI();
-  const water = useAction((delta_ml: number) => post("/api/daily/water", { delta_ml }));
+  const water = useAction<number, unknown, DailyData>((delta_ml) => post("/api/daily/water", { delta_ml }), {
+    optimistic: { key: ["daily"], update: (d, delta) => ({ ...d, water_ml: Math.max(0, d.water_ml + delta) }) },
+  });
   const reset = useAction(() => del("/api/daily/checkin"), { success: "Đã xoá check-in hôm nay" });
   useEffect(() => {
     if (data && !data.checked_in) setEditing(true);
@@ -414,10 +416,10 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
               key={c.date}
               title={c.future ? undefined : d ? `${shortDate(c.date)}: ${d.checkin != null ? `sẵn sàng ${d.checkin}` : "chưa check-in"}, ${d.workout} buổi tập, ${d.meals} bữa ăn` : shortDate(c.date)}
               className={clsx(
-                "num grid aspect-square place-items-center rounded-xl text-[12px] font-semibold transition",
+                "num grid aspect-square place-items-center rounded-xl text-[14px] font-bold transition",
                 !c.future && "hover:scale-105",
-                trained && "bg-volt text-on-volt",
-                logged && "bg-[color-mix(in_srgb,var(--volt)_50%,transparent)] text-text shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--volt)_90%,var(--text)_10%)]",
+                trained && "bg-[var(--heat-4)] text-[var(--heat-on)]",
+                logged && "bg-[var(--heat-2)] text-text",
                 !trained && !logged && !c.future && "border border-dashed border-[var(--glass-border)] font-normal text-muted",
                 c.future && "text-muted opacity-30",
                 c.today && "ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--surface)]",
@@ -429,8 +431,8 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
         })}
       </div>
       <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-muted">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-volt" /> Có tập</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[color-mix(in_srgb,var(--volt)_50%,transparent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--volt)_90%,var(--text)_10%)]" /> Có ghi chép</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[var(--heat-4)]" /> Có tập</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] bg-[var(--heat-2)]" /> Có ghi chép</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[var(--muted)]" /> Nghỉ</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[4px] ring-2 ring-[var(--text)]" /> Hôm nay</span>
       </div>

@@ -10,6 +10,7 @@ import { fileToDataUrl } from "../lib/media";
 import type { Food, Meal, Targets } from "../lib/types";
 import { BarSeries } from "../components/Charts";
 import { FavStar, FavoriteTile, FoodSheet, FoodTile, guessMealType, quickLogFood } from "../components/chat/ChatCards";
+import { useAllergy } from "../lib/allergy";
 import { splitAnalysis, useFavorites, type Favorite } from "../lib/favorites";
 import { useAI } from "../components/AIProvider";
 import { AgentAvatar } from "../components/AgentAvatar";
@@ -466,7 +467,9 @@ function MobileMeals({ day, isToday, onOpen, onAdd }: { day: Day; isToday: boole
 /** Nước uống ngay ở trang ăn uống trên điện thoại: −250 / +250 ml (ô tự nhập vẫn ở trang Hôm nay). */
 function MobileWater() {
   const { data } = useApi<{ water_ml: number; water_target_ml: number }>(["daily"], "/api/daily/today");
-  const water = useAction((delta_ml: number) => post("/api/daily/water", { delta_ml }));
+  const water = useAction<number, unknown, { water_ml: number; water_target_ml: number }>((delta_ml) => post("/api/daily/water", { delta_ml }), {
+    optimistic: { key: ["daily"], update: (d, delta) => ({ ...d, water_ml: Math.max(0, d.water_ml + delta) }) },
+  });
   if (!data) return null;
   return (
     <Card className="flex items-center gap-3 p-4 lg:hidden">
@@ -496,6 +499,7 @@ export default function Nutrition() {
   const favPg = usePaged(favList, 10, `fav|${lib}`);
   const ai = useAI();
   const invalidate = useInvalidateAll();
+  useAllergy(); // tải sớm cùng các request đầu: nếu để thẻ món ăn tự gọi thì phải chờ danh sách món về xong mới bắt đầu (thác nước ~0.5–0.9s)
   const { data, isLoading } = useApi<Day>(["nutrition", date], `/api/nutrition/day?date=${date}`);
   const { data: hist } = useApi<{ days: { date: string; calories: number; protein: number }[]; targets: Targets; target_by_day?: Record<string, number> }>(["nutrition-history"], "/api/nutrition/history?days=14");
   const [cat, setCat] = useState("");
