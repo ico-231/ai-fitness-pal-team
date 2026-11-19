@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Camera, Info, Loader2, Pencil, Plus, Scale, Sparkles, Target, Trash2 } from "lucide-react";
 import { del, post, put } from "../lib/api";
-import { useAction, useApi, useGoalCelebration } from "../lib/hooks";
+import { useAction, useApi, useGoalCelebration, useMedia } from "../lib/hooks";
+import { MobileInBody } from "./MobileInBody";
 import { dayLabel, fmt, todayISO } from "../lib/format";
 import { fileToDataUrl } from "../lib/media";
 import type { Goal } from "../lib/types";
@@ -129,7 +130,7 @@ function GoalModal({ open, onClose, goal }: { open: boolean; onClose: () => void
   );
 }
 
-export default function InBody() {
+function InBodyDesktop() {
   const { data: s, isLoading } = useApi<Summary>(["body-summary"], "/api/body/summary");
   const { data: rows } = useApi<Metric[]>(["body-metrics"], "/api/body/metrics");
   const [adding, setAdding] = useState(false);
@@ -285,4 +286,9 @@ export default function InBody() {
       </Modal>
     </div>
   );
+}
+
+/** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
+export default function InBody() {
+  return useMedia("(min-width: 1024px)") ? <InBodyDesktop /> : <MobileInBody />;
 }
