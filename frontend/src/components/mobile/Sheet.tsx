@@ -6,8 +6,8 @@ import clsx from "clsx";
 /* Ngăn xếp các sheet đang mở (sheet chồng sheet): Esc chỉ đóng sheet trên cùng; khoá cuộn trang đếm theo số sheet đang mở. */
 const stack: string[] = [];
 let locks = 0;
-const lock = () => { if (locks++ === 0) document.body.style.overflow = "hidden"; };
-const unlock = () => { if (--locks <= 0) { locks = 0; document.body.style.overflow = ""; } };
+export const lockScroll = () => { if (locks++ === 0) document.body.style.overflow = "hidden"; };
+export const unlockScroll = () => { if (--locks <= 0) { locks = 0; document.body.style.overflow = ""; } };
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 /**
@@ -41,7 +41,7 @@ export function Sheet({ open, onClose, title, sub, full, actions, children, clas
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     stack.push(uid);
-    lock();
+    lockScroll();
     const onKey = (e: KeyboardEvent) => {
       if (stack[stack.length - 1] !== uid) return; // chỉ sheet trên cùng nhận phím
       if (e.key === "Escape") { e.stopPropagation(); closeRef.current(); return; }
@@ -61,7 +61,7 @@ export function Sheet({ open, onClose, title, sub, full, actions, children, clas
       window.clearTimeout(f);
       const i = stack.lastIndexOf(uid);
       if (i >= 0) stack.splice(i, 1);
-      unlock();
+      unlockScroll();
       prev?.focus?.();
     };
   }, [open]);

@@ -1905,3 +1905,51 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
   .v1 .mt-drop { cursor: pointer; border: 0; }
   .v1 .pg-tiles .tile { align-content: space-between; }
 }
+
+/* ===== V1 "skin" cho các màn phụ trên điện thoại (Cài đặt, Hướng dẫn, Nhật ký AI, Báo cáo, Đăng nhập, Onboarding):
+   dùng lại thành phần chung (Card/Button/Segmented/Toggle/Field/Modal) nhưng đổi chất liệu sang kính V1 ===== */
+@media (max-width: 1023px) {
+  .v1-skin { font-family: var(--sans); color: var(--fg); --surface: var(--g-fill); --surface-2: var(--g-fill-2); --surface-3: var(--faint); --border: var(--faint); --card-border: transparent; }
+  .v1-skin h1, .v1-skin h2, .v1-skin h3 { font-family: var(--disp); letter-spacing: -0.02em; }
+  .v1-skin .card { position: relative; border-radius: 28px; border: 0; background: var(--g-fill); -webkit-backdrop-filter: blur(26px) saturate(185%); backdrop-filter: blur(26px) saturate(185%);
+    box-shadow: inset 1.5px 1.5px 0 -.5px var(--g-hi), inset -1px -1px 0 -.5px var(--g-lo), 0 1px 1px rgb(0 0 0 / .04), 0 26px 50px -28px var(--g-shadow); }
+  .v1-skin .card-ink { border-radius: 28px; }
+  .v1-skin .card > div:first-child h3 { font-size: 17px; }
+  .v1-skin .card > div:first-child > div > div:first-child:not(.min-w-0) { background: var(--lime-soft, var(--faint)); color: var(--lime-t); }
+  .v1-skin button, .v1-skin a.btn, .v1-skin a.inline-flex { min-height: 44px; }
+  .v1-skin button[role="switch"] { min-height: 44px; }
+  .v1-skin button[role="switch"] > span:first-child { width: 52px; height: 32px; background: var(--track, var(--faint)); box-shadow: inset 0 0 0 1px var(--line); }
+  .v1-skin button[role="switch"][aria-checked="true"] > span:first-child { background: var(--lime); }
+  .v1-skin button[role="switch"] > span:first-child > span { width: 26px; height: 26px; top: 3px; left: 3px; }
+  .v1-skin button[role="switch"][aria-checked="true"] > span:first-child > span { left: 23px; }
+  .v1-skin button[role="switch"] > span:last-child { font-size: 14px; line-height: 1.45; }
+  .v1-skin .input { min-height: 48px; border-radius: 16px; background: var(--g-fill-2); border: 0; box-shadow: inset 0 0 0 1px var(--line); color: var(--fg); font-size: 16px; }
+  .v1-skin textarea.input { min-height: 80px; }
+  .v1-skin .input:focus { box-shadow: inset 0 0 0 2px var(--lime); outline: none; }
+  .v1-skin label > span:first-child { font-size: 13px; color: var(--mute); }
+  .v1-skin .text-xs { font-size: 12px; }
+  .v1-skin .bg-ink { background: var(--ink); color: var(--on-ink); }
+  .v1-skin .bg-surface-2 { background: var(--g-fill-2); }
+}
+@media (max-width: 1023px) {
+  .v1-skin :is(.text-\[11px\], .text-\[10px\], .text-\[9px\], .text-\[10\.5px\], .text-\[11\.5px\]) { font-size: 12px !important; line-height: 1.4; }
+  .v1-skin .glass { background: var(--g-fill); border: 0; border-radius: 99px; box-shadow: inset 1.5px 1.5px 0 -.5px var(--g-hi), inset -1px -1px 0 -.5px var(--g-lo), 0 18px 36px -24px var(--g-shadow); }
+  .v1-skin .glass.rounded-full { padding-block: 0; }
+  .v1-skin input:not([type=range]):not([type=checkbox]):not([type=radio]) { min-height: 48px; }
+  .v1-skin .glass.rounded-full > input { min-height: 48px; font-size: 16px !important; }
+}
+
+/* Báo cáo: bản đọc trên điện thoại (khi in vẫn là khổ A4 như cũ — chỉ áp ở màn hình) */
+@media screen and (max-width: 1023px) {
+  .print-page .report-sheet { padding: 20px 18px 24px; border-radius: 28px; max-width: calc(100% - 24px); box-shadow: 0 24px 48px -30px rgb(0 0 0 / .18); font-family: var(--sans); }
+  .print-page .report-sheet h1 { font-family: var(--disp); font-size: 26px; }
+  .print-page .report-sheet header { flex-direction: column; gap: 10px; }
+  .print-page .report-sheet header > div:last-child { text-align: left; }
+  .print-page .report-sheet :is(p, span, td, th, li, footer, h2):not(.num-lg) { font-size: max(12px, 1em); }
+  .print-page .report-sheet [class*="text-[10"], .print-page .report-sheet [class*="text-[11"] { font-size: 12px !important; }
+  .print-page .report-sheet [class*="text-[12px]"] { font-size: 14px !important; line-height: 1.55; }
+  .print-page .report-sheet table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .print-page .report-sheet footer { flex-direction: column; gap: 4px; }
+  .print-page .no-print { padding-inline: 12px; }
+  .print-page .no-print button { min-height: 44px; }
+}

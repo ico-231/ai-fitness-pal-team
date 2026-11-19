@@ -80,6 +80,7 @@ export function MobileInBody() {
   const [info, setInfo] = useState<string | null>(null);
   const [chart, setChart] = useState(0);
   const [histN, setHistN] = useState(8);
+  const [oldOpen, setOldOpen] = useState(false);
   const delMetric = useAction((id: string) => del(`/api/body/metrics/${id}`), { success: "Đã xoá lần đo" });
   const delGoal = useAction((id: string) => del(`/api/goals/${id}`), { success: "Đã xoá mục tiêu" });
   const markGoal = useAction((g: Goal) => put(`/api/goals/${g.id}`, { ...g, status: "achieved" }), { success: "Chúc mừng bạn đã đạt mục tiêu!" });
@@ -91,6 +92,9 @@ export function MobileInBody() {
   const wGoal = s.goals.find((g) => g.metric === "weight_kg" && g.status !== "achieved") ?? null;
   const fGoal = s.goals.find((g) => g.metric === "body_fat_pct" && g.status !== "achieved") ?? null;
   const infoOf = info ? s.info[info] : null;
+  // mục tiêu đang theo dõi tách khỏi mục tiêu đã đạt / đã dừng (lưu trữ)
+  const activeGoals = s.goals.filter((g) => g.status !== "achieved" && g.status !== "archived");
+  const oldGoals = s.goals.filter((g) => g.status === "achieved" || g.status === "archived");
 
   return (
     <div className="v1 lg:hidden">
@@ -155,15 +159,15 @@ export function MobileInBody() {
 
       {/* mục tiêu */}
       <div className="pg-gh">
-        <h2>Mục tiêu{s.goals.length ? ` · ${s.goals.length}` : ""}</h2>
+        <h2>Mục tiêu{activeGoals.length ? ` · ${activeGoals.length}` : ""}</h2>
         <div className="bt">
           <button type="button" className="btn btn-glass btn-sm" onClick={() => ai.open({ text: "Mình muốn đặt một mục tiêu mới thật cụ thể. Hãy hỏi mình từng bước, đừng lập kế hoạch tập luyện." })}><Sparkles className="ic ic-sm" />Đặt cùng HeadBro</button>
           <button type="button" className="btn btn-glass btn-sm" onClick={() => setGoalSheet({ goal: null })}><Plus className="ic ic-sm" />Thêm</button>
         </div>
       </div>
       <div className="pg-goals">
-        {s.goals.length === 0 && <p className="t-small" style={{ padding: "0 6px" }}>Chưa có mục tiêu. HeadBro sẽ hỏi bạn vài câu (mục tiêu, con số, thời hạn, số buổi tập) để chốt một mục tiêu thực tế, hoặc bạn tự nhập.</p>}
-        {s.goals.map((g) => {
+        {activeGoals.length === 0 && <p className="t-small" style={{ padding: "0 6px" }}>{oldGoals.length ? "Không có mục tiêu nào đang theo dõi. Thêm mục tiêu mới hoặc nhờ HeadBro đặt cùng bạn. " : "Chưa có mục tiêu. "} HeadBro sẽ hỏi bạn vài câu (mục tiêu, con số, thời hạn, số buổi tập) để chốt một mục tiêu thực tế, hoặc bạn tự nhập.</p>}
+        {activeGoals.map((g) => {
           const done = g.status === "achieved";
           const p = done ? 100 : Math.max(0, Math.min(100, g.progress_pct ?? 0));
           const plan = (g.plan || "").split("\n").map((x) => x.replace(/^[-•*\s]+/, "").trim()).filter(Boolean);
@@ -187,6 +191,23 @@ export function MobileInBody() {
           );
         })}
       </div>
+
+      {oldGoals.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <button type="button" className="btn btn-glass btn-block" aria-expanded={oldOpen} onClick={() => setOldOpen(!oldOpen)}>Đã đạt / đã dừng ({oldGoals.length}){oldOpen ? " · thu gọn" : ""}</button>
+          {oldOpen && (
+            <div className="g list" style={{ marginTop: 8 }}>
+              {oldGoals.map((g) => (
+                <div className="li" key={g.id}>
+                  <span className="li-main"><b>{g.title}</b><small>{METRIC_GOALS[g.metric]}{g.target_value != null ? ` · mục tiêu ${withUnit(g.target_value, g.metric)}` : ""}</small></span>
+                  <span className={clsx("tag", g.status === "achieved" ? "lime" : "")}>{g.status === "achieved" ? "Đã đạt" : "Đã dừng"}</span>
+                  {g.status === "achieved" && <button type="button" className="ms-b" aria-label={`Xoá mục tiêu ${g.title}`} onClick={async () => (await confirmDialog({ title: `Xoá mục tiêu "${g.title}"?`, text: "Tiến độ của mục tiêu này sẽ mất.", confirmLabel: "Xoá mục tiêu", danger: true })) && delGoal.mutate(g.id)}><Trash2 className="ic ic-sm" /></button>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* lịch sử đo */}
       {all.length > 0 && (

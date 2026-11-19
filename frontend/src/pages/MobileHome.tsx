@@ -259,3 +259,42 @@ export function MobileHome({ ov }: { ov: Overview }) {
     </div>
   );
 }
+
+/** Tài khoản chưa có dữ liệu nào (has_any_data = false): chào mừng + các bước bắt đầu. */
+export function MobileHomeEmpty({ ov }: { ov: Overview }) {
+  const nav = useNavigate();
+  const ai = useAI();
+  const { user } = useAuth();
+  const first = user?.name?.split(" ").pop() || "bạn";
+  const steps = [
+    { to: "/daily", icon: Sun, t: "Check-in buổi sáng", d: "30 giây để biết hôm nay nên tập nặng hay nhẹ.", done: !!ov.today.readiness },
+    { to: "/nutrition", icon: Utensils, t: "Ghi bữa ăn đầu tiên", d: "Chụp ảnh, mô tả bằng một câu hoặc chọn từ thư viện món Việt.", done: ov.today.nutrition.meals_count > 0 },
+    { to: "/workouts", icon: Dumbbell, t: "Tập buổi đầu tiên", d: "Chọn một chương trình có sẵn hoặc nhờ HeadBro thiết kế.", done: ov.today.workouts.count > 0 },
+    { to: "/inbody", icon: Bike, t: "Nhập chỉ số cơ thể hoặc đặt mục tiêu", d: "Cân nặng, InBody và mục tiêu để theo dõi tiến độ.", done: Object.keys(ov.latest_body).length > 1 || ov.goals.length > 0 },
+  ];
+  return (
+    <div className="v1 lg:hidden">
+      <header className="hello">
+        <p className="d">{new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</p>
+        <h1>{greeting()}, {first}. <span>Bắt đầu với vài bước nhỏ.</span></h1>
+      </header>
+      <div className="mt"><InstallHint /></div>
+      <ol className="g list steps-list" style={{ marginTop: 16 }}>
+        {steps.map((x, i) => (
+          <li key={x.to}>
+            <Link className="li" to={x.to}>
+              <span className={clsx("li-ic", x.done ? "lime" : "")}><b className="n" style={{ fontSize: 16 }}>{x.done ? "✓" : i + 1}</b></span>
+              <span className="li-main"><b>{x.t}</b><small style={{ whiteSpace: "normal" }}>{x.d}</small></span>
+              <span className="li-end"><ChevronRight className="ic" /></span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+      <button type="button" className="g nt-ask" onClick={() => ai.open({ text: "Mình mới bắt đầu dùng FitBro. Hãy hướng dẫn mình các bước đầu tiên." })}>
+        <span className="aimark sm" aria-hidden="true"><HeadBroSvg className="ic-ai" /></span>
+        <span className="t">Chưa biết bắt đầu từ đâu? Hỏi HeadBro, mình hướng dẫn từng bước.</span><ChevronRight className="ic" />
+      </button>
+      <button type="button" className="btn btn-glass btn-block mt" onClick={() => nav("/guide")}>Xem hướng dẫn dùng FitBro</button>
+    </div>
+  );
+}

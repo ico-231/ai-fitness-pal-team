@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CircleHelp, Loader2, X } from "lucide-react";
 import { withTransition } from "../lib/transition";
+import { V1Dialog } from "./mobile/Dialog";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
 export function clickable(onClick?: () => void) {
@@ -107,10 +108,13 @@ export function Spinner({ label }: { label?: string }) {
 
 export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: string; text?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-      {icon && <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-surface-2 text-muted lg:bg-primary-soft lg:text-primary-strong">{icon}</div>}
-      <p className="font-semibold">{title}</p>
-      {text && <p className="mt-1 max-w-sm text-sm text-muted">{text}</p>}
+    <div className="flex flex-col items-center justify-center px-6 py-10 text-center max-lg:items-start max-lg:px-5 max-lg:text-left">
+      {/* điện thoại: ô icon nằm CẠNH tiêu đề; máy tính: icon phía trên như cũ */}
+      <div className="flex items-center gap-3 max-lg:flex-row lg:flex-col">
+        {icon && <div className="mb-3 grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface-2 text-muted max-lg:mb-0 lg:bg-primary-soft lg:text-primary-strong">{icon}</div>}
+        <p className="font-semibold">{title}</p>
+      </div>
+      {text && <p className="mt-1 max-w-sm text-sm text-muted max-lg:mt-2">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -517,7 +521,19 @@ export function DialogHost() {
   useEffect(() => {
     if (req?.kind === "prompt") setVal(req.initial);
   }, [req]);
+  // (không import useMedia từ lib/hooks: hooks.ts đã import ui.tsx → tránh vòng phụ thuộc)
+  const mobile = useSyncExternalStore(
+    (cb) => { const mq = window.matchMedia("(max-width: 1023px)"); mq.addEventListener("change", cb); return () => mq.removeEventListener("change", cb); },
+    () => window.matchMedia("(max-width: 1023px)").matches,
+  );
   if (!req) return null;
+  // Điện thoại: hộp thoại kính V1 (bản máy tính giữ Modal cũ)
+  if (mobile)
+    return (
+      <V1Dialog key={req.title + req.kind} kind={req.kind} title={req.title} text={req.kind === "confirm" ? req.text : undefined} danger={req.kind === "confirm" ? req.danger : false}
+        confirmLabel={req.confirmLabel} initial={req.kind === "prompt" ? req.initial : undefined}
+        onResult={(ok, v) => { if (req.kind === "confirm") req.resolve(ok); else req.resolve(ok && v.trim() ? v.trim() : null); setDialog(null); }} />
+    );
   const close = (ok: boolean) => {
     if (req.kind === "confirm") req.resolve(ok);
     else req.resolve(ok && val.trim() ? val.trim() : null);

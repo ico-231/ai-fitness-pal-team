@@ -2,7 +2,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type RefObject 
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { supportsViewTransition, withTransition } from "../lib/transition";
 import clsx from "clsx";
-import { BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, MessagesSquare, Moon, Scale, Settings, Sun, Utensils } from "lucide-react";
+import { WifiOff, BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, MessagesSquare, Moon, Scale, Settings, Sun, Utensils } from "lucide-react";
 import { put } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { voice } from "../lib/media";
@@ -144,6 +144,25 @@ export function ThemeToggle({ full }: { full?: boolean }) {
 }
 
 /** Nền toàn màn hình (aurora) — dùng cho khung app, trang đăng nhập, onboarding. */
+/** Điện thoại: dải báo mất mạng (kính V1). Dữ liệu đã tải vẫn xem được; thao tác ghi sẽ báo lỗi từng chỗ. */
+function OfflineBanner() {
+  const [on, setOn] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
+  useEffect(() => {
+    const u = () => setOn(false), d = () => setOn(true);
+    window.addEventListener("online", u); window.addEventListener("offline", d);
+    return () => { window.removeEventListener("online", u); window.removeEventListener("offline", d); };
+  }, []);
+  if (!on) return null;
+  return (
+    <div role="status" className="v1 no-print fixed inset-x-3 z-40 lg:hidden" style={{ top: "calc(env(safe-area-inset-top) + 64px)" }}>
+      <div className="g flex items-center gap-3 px-4 py-3">
+        <span className="d-ic red"><WifiOff className="ic ic-lg" aria-hidden /></span>
+        <div className="min-w-0"><b className="block text-[15px]">Đang mất kết nối</b><span className="text-[13px] opacity-75">Dữ liệu đã tải vẫn xem được; thao tác lưu cần có mạng.</span></div>
+      </div>
+    </div>
+  );
+}
+
 export function Backdrop() {
   return (
     <div className="aurora no-print" aria-hidden>
@@ -290,6 +309,7 @@ export function Layout() {
 
       {/* Điện thoại: thanh trên cố định (công tắc Tổng quan | Hôm nay hoặc tiêu đề + avatar) — chỉ ở các trang có thanh trên.
           Trang Chat và buổi tập tự lo phần đầu trang; dải nền che vùng tai thỏ khi cuộn. */}
+      <OfflineBanner />
       {topBar ? <MobileTopBar /> : <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl lg:hidden" />}
 
       <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "pt-[env(safe-area-inset-top)] lg:pt-0" : focusTask ? "pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+7.5rem)] lg:pb-24 lg:pt-0" : "pt-[calc(env(safe-area-inset-top)+56px)] pb-[calc(var(--bottombar-h)+1.5rem)] lg:pb-24 lg:pt-0")}>
@@ -297,7 +317,7 @@ export function Layout() {
         {fullBleed ? (
           <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
         ) : (
-          <div key={loc.pathname} className="page-main stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
+          <div key={loc.pathname} className="page-main v1-skin stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
             <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
           </div>
         )}

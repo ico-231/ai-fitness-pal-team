@@ -13,7 +13,7 @@ import { useAI } from "../components/AIProvider";
 import { Button, Card, CardHeader, Modal, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { InstallHint } from "../components/InstallHint";
-import { MobileHome, MobileHomeSkeleton } from "./MobileHome";
+import { MobileHome, MobileHomeEmpty, MobileHomeSkeleton } from "./MobileHome";
 import { LogoMark } from "../components/Layout";
 import { GoalsCard, PRCard, ReadinessCard, TodayRings, type Overview } from "../components/Widgets";
 
@@ -456,6 +456,5 @@ export default function Dashboard() {
   const { data: ov, isLoading } = useApi<Overview>(["dashboard"], "/api/dashboard");
   if (desktop) return <DashboardDesktop />;
   if (isLoading || !ov) return <MobileHomeSkeleton />;
-  // chưa có dữ liệu nào: dùng khung chào mừng của bản đầy đủ (tự co giãn theo màn hình)
-  return ov.has_any_data ? <MobileHome ov={ov} /> : <DashboardDesktop />;
+  return ov.has_any_data ? <MobileHome ov={ov} /> : <MobileHomeEmpty ov={ov} />;
 }

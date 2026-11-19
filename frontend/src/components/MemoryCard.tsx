@@ -20,7 +20,7 @@ export function MemoryCard() {
   return (
     <Card>
       <div id="memory" />
-      <CardHeader title="Trí nhớ của AI" subtitle="Những điều các agent đã ghi nhớ về bạn để không phải hỏi lại" icon={<Brain size={16} />} />
+      <CardHeader title="Trí nhớ của AI" subtitle={<><span className="lg:hidden">Những điều HeadBro đã ghi nhớ về bạn để không phải hỏi lại</span><span className="max-lg:hidden">Những điều các agent đã ghi nhớ về bạn để không phải hỏi lại</span></>} icon={<Brain size={16} />} />
       <div className="space-y-3 px-5 pb-5">
         {!data ? (
           <Spinner />
@@ -32,8 +32,8 @@ export function MemoryCard() {
               <li key={m.id} className="flex items-center gap-3 py-2 text-sm">
                 <div className="min-w-0 flex-1">
                   <p>{m.content}</p>
-                  <p className="text-[11px] text-muted">
-                    {CAT[m.category] || m.category} · {m.source === "manual" ? "bạn tự thêm" : `${AGENTS[m.source as AgentKey]?.name || m.source} ghi nhớ`} · {timeAgo(m.created_at)}
+                  <p className="text-[11px] text-muted max-lg:!text-xs">
+                    {CAT[m.category] || m.category} · {m.source === "manual" ? "bạn tự thêm" : <><span className="lg:hidden">HeadBro</span><span className="max-lg:hidden">{AGENTS[m.source as AgentKey]?.name || m.source}</span> ghi nhớ</>} · {timeAgo(m.created_at)}
                   </p>
                 </div>
                 <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-danger pointer-coarse:h-11 pointer-coarse:w-11" onClick={() => remove.mutate(m.id)} title="Xoá" aria-label="Xoá ghi nhớ này">

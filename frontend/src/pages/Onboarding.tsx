@@ -159,7 +159,7 @@ export default function Onboarding() {
 
   const s = steps[step];
   return (
-    <div className="immersive relative flex min-h-full items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className="immersive v1-skin relative flex min-h-full items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <Backdrop />
       <div className="card rise relative z-10 w-full max-w-lg rounded-[30px] p-6 sm:p-9">
         <div className="mb-6 flex items-center justify-between">
