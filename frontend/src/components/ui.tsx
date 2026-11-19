@@ -35,7 +35,7 @@ export function CardHeader({ title, subtitle, icon, right }: { title: ReactNode;
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-5 pb-2">
       <div className="flex min-w-0 items-center gap-3">
-        {icon && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-volt text-on-volt">{icon}</div>}
+        {icon && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-volt text-on-volt lg:shadow-[0_6px_14px_-6px_rgb(132_204_22/0.7)]">{icon}</div>}
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold tracking-tight">{title}</h3>
           {subtitle && <p className="truncate text-xs text-muted">{subtitle}</p>}
@@ -68,7 +68,7 @@ export function Button({
         variant === "primary" && "bg-ink text-on-ink hover:opacity-90",
         variant === "secondary" && "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-text backdrop-blur-xl hover:bg-surface",
         variant === "outline" && "border border-border bg-surface text-text hover:border-text/30 hover:bg-surface-2",
-        variant === "ghost" && "text-muted hover:bg-surface-2 hover:text-text",
+        variant === "ghost" && "text-muted hover:bg-surface-2 hover:text-text lg:hover:bg-primary-soft lg:hover:text-primary-strong",
         variant === "danger" && "bg-danger text-on-danger hover:bg-danger/90",
         className,
       )}
@@ -81,7 +81,7 @@ export function Button({
 
 export function IconButton({ children, className, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" aria-label={rest["aria-label"] ?? rest.title} {...rest} className={clsx("grid h-9 w-9 place-items-center rounded-full text-muted transition pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-surface-2 hover:text-text disabled:opacity-40", className)}>
+    <button type="button" aria-label={rest["aria-label"] ?? rest.title} {...rest} className={clsx("grid h-9 w-9 place-items-center rounded-full text-muted transition pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-surface-2 hover:text-text lg:hover:bg-primary-soft lg:hover:text-primary-strong disabled:opacity-40", className)}>
       {children}
     </button>
   );
@@ -109,7 +109,7 @@ export function Spinner({ label }: { label?: string }) {
 export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: string; text?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-      {icon && <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-surface-2 text-muted">{icon}</div>}
+      {icon && <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-surface-2 text-muted lg:bg-primary-soft lg:text-primary-strong">{icon}</div>}
       <p className="font-semibold">{title}</p>
       {text && <p className="mt-1 max-w-sm text-sm text-muted">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
@@ -121,7 +121,7 @@ export function Progress({ value, max, color, className, height = 8 }: { value: 
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   const over = max > 0 && value > max * 1.08;
   return (
-    <div className={clsx("w-full overflow-hidden rounded-full bg-surface-3", className)} style={{ height }}>
+    <div className={clsx("w-full overflow-hidden rounded-full bg-surface-3", className)} style={{ height, background: "var(--track, var(--surface-3))" }}>
       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: over ? "var(--warn)" : color || "var(--primary)" }} />
     </div>
   );
@@ -134,7 +134,7 @@ export function Ring({ value, max = 100, size = 92, stroke = 9, color, track, ch
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track || "var(--surface-3)"} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track || "var(--track, var(--surface-3))"} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -239,7 +239,7 @@ export function Segmented<T extends string>({ value, onChange, options, size = "
           className={clsx(
             "shrink-0 whitespace-nowrap rounded-full font-medium transition",
             size === "sm" ? "px-3 py-1 text-xs pointer-coarse:py-2" : "px-4 py-1.5 text-sm pointer-coarse:py-2.5",
-            value === o.value ? "bg-ink text-on-ink shadow-sm" : "text-muted hover:text-text",
+            value === o.value ? "bg-ink text-on-ink shadow-sm lg:bg-volt lg:text-on-volt lg:shadow-[0_6px_18px_-8px_rgb(132_204_22/0.8)]" : "text-muted hover:text-text lg:hover:bg-primary-soft",
           )}
         >
           {o.label}
@@ -265,7 +265,7 @@ export function Stat({ label, value, unit, sub, icon, onClick, accent }: { label
       <div className="flex items-center justify-between gap-2 text-[13px] text-muted">
         <span className="truncate">{label}</span>
         {icon && (
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ color: accent, background: accent ? `color-mix(in srgb, ${accent} 14%, transparent)` : "var(--surface-2)" }}>
+          <span className={clsx("grid h-8 w-8 shrink-0 place-items-center rounded-full", !accent && "bg-surface-2 lg:bg-primary-soft lg:text-primary-strong")} style={accent ? { color: accent, background: `color-mix(in srgb, ${accent} 14%, transparent)` } : undefined}>
             {icon}
           </span>
         )}

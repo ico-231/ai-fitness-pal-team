@@ -16,7 +16,7 @@ from ..agents.prompts import AGENTS
 from ..agents.tools import REGISTRY, execute_action
 from ..config import get_settings
 from ..db import SessionLocal, get_db
-from ..services import stats
+from ..services import quota, stats
 from ..models import AgentTrace, Conversation, Message, PendingAction, User
 from ..security import get_current_user
 from ..utils import prepare_image, thumbnail
@@ -129,8 +129,9 @@ async def send(body: SendIn, user: User = Depends(get_current_user), db: Session
     # Lượt đã xử lý (trace không bị xoá theo tin nhắn) → "tạo lại" nhiều lần vẫn bị tính vào giới hạn
     turns_today = db.scalar(select(func.count(AgentTrace.id)).where(AgentTrace.user_id == user.id, AgentTrace.created_at >= start)) or 0
     sent_today = max(sent_today, turns_today)
-    if sent_today >= get_settings().chat_daily_limit:
-        raise HTTPException(429, f"Bạn đã dùng hết {get_settings().chat_daily_limit} tin nhắn AI hôm nay. Quay lại vào ngày mai nhé!")
+    limit = quota.chat_limit(user)  # demo có mức trần cao hơn (xem services/quota.py)
+    if sent_today >= limit:
+        raise HTTPException(429, f"Bạn đã dùng hết {limit} tin nhắn AI hôm nay. Quay lại vào ngày mai nhé!")
     if body.conversation_id:
         conv = _own_conv(db, user, body.conversation_id)
         if body.replace_from:

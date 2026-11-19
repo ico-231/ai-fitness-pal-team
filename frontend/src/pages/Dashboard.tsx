@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { Activity, ArrowRight, Bike, Check, CheckCircle2, ChevronRight, Circle, Dumbbell, Flame, Moon, Pause, Play, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight } from "lucide-react";
@@ -15,9 +15,10 @@ import type { Insight, MuscleVolume } from "../lib/types";
 import { BodyMap, HeatLegend } from "../components/BodyMap";
 import type { DetailKind, Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
-import { Button, Card, CardHeader, Progress, Ring, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
+import { Button, Card, CardHeader, Modal, Progress, Ring, Segmented, Spinner, Stat, toast, clickable, IconButton, HelpButton } from "../components/ui";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { InstallHint } from "../components/InstallHint";
+import { LogoMark } from "../components/Layout";
 import { GoalsCard, PRCard, ReadinessCard, TodayRings, type Overview } from "../components/Widgets";
 
 const ReportDetail = lazy(() => import("../components/ReportDetail"));
@@ -273,8 +274,8 @@ function MobileHome({ ov }: { ov: Overview }) {
   const kcalLeft = t.targets.calories - t.nutrition.calories;
   const tiles = [
     { label: kcalLeft >= 0 ? "Calo còn" : "Calo vượt", value: fmt(Math.abs(kcalLeft)), unit: "kcal", pct: t.targets.calories ? (t.nutrition.calories / t.targets.calories) * 100 : 0, color: "var(--nutri)", to: "/nutrition" },
-    { label: "Đạm", value: fmt(t.nutrition.protein), unit: `/${fmt(t.targets.protein)} g`, pct: t.targets.protein ? (t.nutrition.protein / t.targets.protein) * 100 : 0, color: "var(--primary)", to: "/nutrition" },
-    { label: "Nước", value: fmt(t.water_ml / 1000, 2), unit: `/${fmt(t.targets.water_ml / 1000, 1)} L`, pct: t.targets.water_ml ? (t.water_ml / t.targets.water_ml) * 100 : 0, color: "var(--info)", to: "/daily" },
+    { label: "Đạm", value: fmt(t.nutrition.protein), unit: `/${fmt(t.targets.protein)} g`, pct: t.targets.protein ? (t.nutrition.protein / t.targets.protein) * 100 : 0, color: "var(--m-protein, var(--primary))", to: "/nutrition" },
+    { label: "Nước", value: fmt(t.water_ml / 1000, 2), unit: `/${fmt(t.targets.water_ml / 1000, 1)} L`, pct: t.targets.water_ml ? (t.water_ml / t.targets.water_ml) * 100 : 0, color: "var(--m-water, var(--info))", to: "/daily" },
   ];
   const tips = ov.insights || [];
   const shownTips = allTips ? tips : tips.slice(0, 1);
@@ -359,6 +360,20 @@ function MobileHomeSkeleton() {
 }
 
 export default function Dashboard() {
+  // Máy tính: cột phải cao đúng bằng cột trái → ô "Dùng trên điện thoại" (mt-auto) thẳng đáy với ô "Hôm nay"
+  const leftCol = useRef<HTMLDivElement>(null);
+  const rightCol = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const l = leftCol.current, r = rightCol.current;
+    if (!l || !r) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => { r.style.minHeight = mq.matches ? `${l.offsetHeight}px` : ""; };
+    const ro = new ResizeObserver(sync);
+    ro.observe(l);
+    mq.addEventListener("change", sync);
+    sync();
+    return () => { ro.disconnect(); mq.removeEventListener("change", sync); };
+  });
   const { user } = useAuth();
   const nav = useNavigate();
   const ai = useAI();
@@ -441,7 +456,7 @@ export default function Dashboard() {
 
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(270px,300px)_minmax(0,1fr)_minmax(250px,280px)] lg:items-start xl:gap-10 [&>*]:min-w-0">
             {/* Cột trái */}
-            <div className="rise space-y-6" style={{ animationDelay: "120ms" }}>
+            <div ref={leftCol} className="rise space-y-6" style={{ animationDelay: "120ms" }}>
               <ReadinessCard readiness={r} streak={t.streak.current} />
               <TodayRings t={t} />
             </div>
@@ -476,9 +491,10 @@ export default function Dashboard() {
             </div>
 
             {/* Cột phải */}
-            <div className="rise space-y-6" style={{ animationDelay: "280ms" }}>
+            <div ref={rightCol} className="rise space-y-6 lg:flex lg:flex-col" style={{ animationDelay: "280ms" }}>
               <PRCard prs={ov.prs} />
               <GoalsCard goals={ov.goals} onEmpty={() => ai.open({ agent: "headbro", text: "Mình muốn đặt một mục tiêu cụ thể. Hãy hỏi mình từng bước.", full: true })} />
+              <MobileAppCard />
             </div>
           </div>
 
@@ -558,6 +574,48 @@ export default function Dashboard() {
         </Suspense>
       )}
     </div>
+    </>
+  );
+}
+
+/** Máy tính: mời dùng FitBro trên điện thoại — logo + QR tới trang Vercel. Giãn hết chỗ trống cuối cột phải; ẩn dưới 1024px. */
+function MobileAppCard() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Card onClick={() => setOpen(true)} label="Mở mã QR lớn để quét bằng điện thoại" className="hidden flex-1 items-center gap-4 p-4 lg:flex">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <LogoMark size={22} />
+            <span className="text-[13px] font-semibold tracking-tight">FitBro</span>
+            <span className="rounded-full bg-primary-soft px-1.5 py-px text-[10px] font-semibold text-primary-strong">Mobile</span>
+          </div>
+          <p className="mt-2 text-[15px] font-semibold leading-snug tracking-tight">Thử app FitBro trên điện thoại</p>
+          <p className="mt-0.5 text-xs text-muted">Bấm để phóng to mã</p>
+        </div>
+        <div className="shrink-0 rounded-xl bg-white p-1.5 shadow-[var(--shadow)] ring-1 ring-[var(--card-border)]">
+          <img src="/qr-fitbro.svg" alt="" className="h-[76px] w-[76px]" />
+        </div>
+      </Card>
+      <Modal open={open} onClose={() => setOpen(false)} title="Thử app FitBro trên điện thoại">
+        <div className="flex flex-col items-center pb-2 pt-1 text-center">
+          <div className="rounded-[28px] bg-white p-5 shadow-[var(--shadow-lg)] ring-1 ring-[var(--card-border)]">
+            <img src="/qr-fitbro.svg" alt="Mã QR mở fitbro-vn.vercel.app" className="h-64 w-64" />
+          </div>
+          <div className="mt-5 flex items-center gap-2">
+            <LogoMark size={28} />
+            <span className="num text-sm font-semibold">fitbro-vn.vercel.app</span>
+          </div>
+          <ol className="mt-5 grid w-full max-w-sm grid-cols-3 gap-2 text-left text-xs">
+            {["Mở camera điện thoại, hướng vào mã", "Chạm vào link hiện ra", "Chia sẻ / Menu → Thêm vào Màn hình chính"].map((t, i) => (
+              <li key={t} className="rounded-2xl bg-surface-2 p-3">
+                <span className="num grid h-6 w-6 place-items-center rounded-full bg-volt text-[11px] font-bold text-on-volt">{i + 1}</span>
+                <p className="mt-2 leading-snug text-muted">{t}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </Modal>
     </>
   );
 }

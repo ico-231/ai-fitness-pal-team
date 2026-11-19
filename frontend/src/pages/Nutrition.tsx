@@ -399,13 +399,13 @@ const MEAL_ICON = { breakfast: Coffee, lunch: Utensils, dinner: Soup, snack: Coo
 function MobileCalories({ day }: { day: Day }) {
   const left = day.targets.calories - day.totals.calories;
   const macros = [
-    { label: "Đạm", v: day.totals.protein, t: day.targets.protein, color: "var(--primary)" },
+    { label: "Đạm", v: day.totals.protein, t: day.targets.protein, color: "var(--m-protein, var(--primary))" },
     { label: "Carb", v: day.totals.carbs, t: day.targets.carbs, color: "var(--data-carbs)" },
     { label: "Béo", v: day.totals.fat, t: day.targets.fat, color: "var(--data-fat)" },
   ];
   return (
     <Card className="flex items-center gap-5 p-5 lg:hidden">
-      <Ring value={day.totals.calories} max={day.targets.calories || 1} size={120} stroke={12} color="var(--nutri)" track="var(--surface-3)">
+      <Ring value={day.totals.calories} max={day.targets.calories || 1} size={120} stroke={12} color="var(--nutri)" track="var(--track, var(--surface-3))">
         <div>
           <p className="num text-[26px] font-semibold leading-none">{fmt(Math.abs(left))}</p>
           <p className="mt-1 text-xs text-muted">{left >= 0 ? "kcal còn lại" : "kcal vượt"}</p>
@@ -516,7 +516,7 @@ export default function Nutrition() {
 
   const askMenu = () => ai.open({ agent: "nutribro", text: "Dựa trên những gì mình đã ăn hôm nay, gợi ý thực đơn cho các bữa còn lại bằng món Việt dễ mua." });
   const MACROS = [
-    { label: "Đạm", k: "protein", unit: "g", color: "var(--volt)" },
+    { label: "Đạm", k: "protein", unit: "g", color: "var(--m-protein, var(--volt))" },
     { label: "Tinh bột", k: "carbs", unit: "g", color: "#38bdf8" },
     { label: "Chất béo", k: "fat", unit: "g", color: "#fbbf24" },
   ] as const;
@@ -569,7 +569,7 @@ export default function Nutrition() {
           {isLoading || !data ? <Spinner /> : (
             <div className="flex flex-col gap-7 sm:flex-row sm:items-center">
               <div className="flex items-center gap-5">
-                <Ring value={data.totals.calories} max={data.targets.calories || 1} size={156} stroke={13} color="var(--nutri)" track="var(--surface-3)">
+                <Ring value={data.totals.calories} max={data.targets.calories || 1} size={156} stroke={13} color="var(--nutri)" track="var(--track, var(--surface-3))">
                   <div>
                     <p className="num text-[40px] font-semibold leading-none">{fmt(data.totals.calories)}</p>
                     <p className="mt-1 text-[11px] text-muted">/ {fmt(data.targets.calories)} kcal</p>
@@ -607,7 +607,7 @@ export default function Nutrition() {
                     const v = data.totals[m.k], t = data.targets[m.k];
                     return (
                       <div key={m.k} className="flex flex-col items-center rounded-[20px] bg-[var(--glass-fill)] px-2 py-3">
-                        <Ring value={v} max={t || 1} size={70} stroke={6} color={m.color} track="var(--surface-3)">
+                        <Ring value={v} max={t || 1} size={70} stroke={6} color={m.color} track="var(--track, var(--surface-3))">
                           <span className="num text-[15px] font-semibold">{t ? Math.round((v / t) * 100) : 0}%</span>
                         </Ring>
                         <p className="mt-2 text-xs font-medium">{m.label}</p>

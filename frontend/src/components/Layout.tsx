@@ -228,7 +228,7 @@ export function Layout() {
       className={({ isActive }) =>
         clsx(
           "group relative z-10 grid h-[var(--rail-btn)] w-[var(--rail-btn)] shrink-0 place-items-center rounded-2xl transition",
-          isActive ? "text-on-volt" : "text-muted hover:bg-[var(--glass-fill)] hover:text-text",
+          isActive ? "text-on-volt" : "text-muted hover:bg-primary-soft hover:text-primary-strong",
         )
       }
     >

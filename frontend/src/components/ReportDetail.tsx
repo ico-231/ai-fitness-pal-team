@@ -76,7 +76,7 @@ export default function ReportDetail({ kind, report, onClose, targets }: { kind:
           <LineSeries
             data={report.weights}
             lines={[
-              { key: "weight", color: "var(--primary)", label: "Cân nặng (kg)" },
+              { key: "weight", color: "var(--m-weight, var(--primary))", label: "Cân nặng (kg)" },
               { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" },
             ]}
           />
@@ -86,7 +86,7 @@ export default function ReportDetail({ kind, report, onClose, targets }: { kind:
       ) : kind === "nutrition" ? (
         <>
           <BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color="var(--nutri)" target={report.bucket_days === 1 ? (report.summary.avg_target_calories ?? targets?.calories) : undefined} />
-          <BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color="var(--primary)" target={report.bucket_days === 1 ? targets?.protein : undefined} height={180} />
+          <BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color="var(--m-protein, var(--primary))" target={report.bucket_days === 1 ? targets?.protein : undefined} height={180} />
           <p className="text-xs text-muted">Có ghi bữa ăn {report.summary.meal_logged_days} ngày{unitDays}.</p>
         </>
       ) : (

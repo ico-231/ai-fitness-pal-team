@@ -53,7 +53,7 @@ export function ReadinessCard({ readiness: r, streak }: { readiness: Readiness |
           </button>
           <p className="mt-1 text-xs text-muted">{r ? r.label : "Chưa check-in sáng nay"}</p>
         </div>
-        <Ring value={r?.score ?? 0} color="var(--volt)" track="var(--surface-3)" size={64} stroke={7}>
+        <Ring value={r?.score ?? 0} color="var(--volt)" track="var(--track, var(--surface-3))" size={64} stroke={7}>
           <Activity size={18} className="text-muted" />
         </Ring>
       </div>
@@ -95,7 +95,7 @@ export function TodayRings({ t }: { t: Overview["today"] }) {
   const kcalPct = kcalMax ? Math.round((kcal / kcalMax) * 100) : 0;
   // Đủ 3 macro (theo góp ý nhóm): đạm – tinh bột – chất béo, mỗi cái 1 thanh, màu khớp trang Dinh dưỡng
   const macros = [
-    { label: "Đạm", v: t.nutrition.protein, max: t.targets.protein, color: "var(--volt)" },
+    { label: "Đạm", v: t.nutrition.protein, max: t.targets.protein, color: "var(--m-protein, var(--volt))" },
     { label: "Tinh bột", v: t.nutrition.carbs, max: t.targets.carbs, color: "#38bdf8" },
     { label: "Chất béo", v: t.nutrition.fat, max: t.targets.fat, color: "#fbbf24" },
   ];
@@ -110,7 +110,7 @@ export function TodayRings({ t }: { t: Overview["today"] }) {
       </div>
       <button type="button" onClick={() => nav("/nutrition")} aria-label={`Calo ${fmt(kcal)} trên ${fmt(kcalMax)} kcal; đạm, tinh bột, chất béo`}
         className="flex w-full items-center gap-4 rounded-2xl p-1 text-left transition hover:bg-[var(--glass-fill)]">
-        <Ring value={kcal} max={kcalMax || 1} color="var(--nutri)" track="var(--surface-3)" size={92} stroke={8}>
+        <Ring value={kcal} max={kcalMax || 1} color="var(--nutri)" track="var(--track, var(--surface-3))" size={92} stroke={8}>
           <div className="text-center leading-none">
             <span className="num block text-[19px] font-semibold">{fmt(kcal)}</span>
             <span className="mt-0.5 block text-[10px] text-muted">/{fmt(kcalMax)} kcal</span>
@@ -185,7 +185,7 @@ export function GoalsCard({ goals, onEmpty }: { goals: Goal[]; onEmpty?: () => v
                 <span className="truncate font-medium">{g.title}</span>
                 <span className="num font-semibold">{g.progress_pct ?? 0}%</span>
               </div>
-              <Progress value={g.progress_pct ?? 0} max={100} height={5} color="var(--volt)" />
+              <Progress value={g.progress_pct ?? 0} max={100} height={5} color="var(--m-goal, var(--volt))" />
             </div>
           ))}
         </div>

@@ -146,10 +146,10 @@ export default function InBody() {
 
   if (isLoading || !s) return <Spinner />;
   const lines = chart === "weight"
-    ? [{ key: "weight_kg", color: "var(--primary)", label: "Cân nặng (kg)" }]
+    ? [{ key: "weight_kg", color: "var(--m-weight, var(--primary))", label: "Cân nặng (kg)" }]
     : chart === "comp"
-      ? [{ key: "skeletal_muscle_kg", color: "var(--primary)", label: "Cơ xương (kg)" }, { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" as const }]
-      : [{ key: "waist_cm", color: "var(--primary)", label: "Eo (cm)" }, { key: "hip_cm", color: "#38bdf8", label: "Mông (cm)" }];
+      ? [{ key: "skeletal_muscle_kg", color: "var(--m-weight, var(--primary))", label: "Cơ xương (kg)" }, { key: "body_fat_pct", color: "var(--nutri)", label: "% mỡ", yAxis: "right" as const }]
+      : [{ key: "waist_cm", color: "var(--m-weight, var(--primary))", label: "Eo (cm)" }, { key: "hip_cm", color: "var(--m-hip, #38bdf8)", label: "Mông (cm)" }];
   const chartData = (rows || []).filter((r) => lines.some((l) => r[l.key] != null));
 
   return (
@@ -235,7 +235,7 @@ export default function InBody() {
                   {g.status === "achieved" && <Badge color="var(--primary-strong)">Đã đạt</Badge>}
                 </div>
               </div>
-              {g.progress_pct != null && <><Progress value={g.progress_pct} max={100} className="mt-3" color="var(--volt)" /><p className="mt-1 text-xs text-muted">{g.progress_pct}%{g.days_left != null && ` · còn ${g.days_left} ngày`}</p></>}
+              {g.progress_pct != null && <><Progress value={g.progress_pct} max={100} className="mt-3" color="var(--m-goal, var(--volt))" /><p className="mt-1 text-xs text-muted">{g.progress_pct}%{g.days_left != null && ` · còn ${g.days_left} ngày`}</p></>}
               {g.plan && <p className="mt-2 whitespace-pre-line text-xs text-muted">{g.plan}</p>}
               <div className="mt-2 flex gap-1">
                 <Button size="sm" variant="ghost" onClick={() => setGoalModal({ open: true, goal: g })}>Sửa</Button>

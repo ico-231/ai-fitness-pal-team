@@ -356,11 +356,11 @@ export default function Daily() {
           <p className="text-sm text-muted">{data.badges.filter((b) => b.achieved).length}/{data.badges.length} đã đạt · tính từ dữ liệu thật của bạn</p>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {data.badges.map((b) => {
+          {data.badges.map((b, bi) => {
             const Icon = BADGE_ICON[b.id] || Award;
             return (
               <Card key={b.id} className={clsx("p-4 text-center", !b.achieved && "opacity-80")}>
-                <div className={clsx("mx-auto grid h-12 w-12 place-items-center rounded-full", b.achieved ? "bg-volt text-on-volt shadow-[0_8px_20px_-8px_rgb(132_204_22/0.8)]" : "bg-[var(--glass-fill)] text-muted")} aria-hidden>
+                <div style={{ "--ic": ICON_COLORS[bi % ICON_COLORS.length] } as React.CSSProperties} className={clsx("mx-auto grid h-12 w-12 place-items-center rounded-full", b.achieved ? "bg-volt text-on-volt shadow-[0_8px_20px_-8px_rgb(132_204_22/0.8)] lg:bg-[var(--ic)] lg:text-white lg:shadow-[0_8px_20px_-8px_var(--ic)]" : "bg-[var(--glass-fill)] text-muted lg:text-[var(--ic)]")} aria-hidden>
                   <Icon size={21} strokeWidth={2.2} />
                 </div>
                 <p className="mt-2 text-[13px] font-semibold leading-tight">{b.label}</p>
@@ -380,6 +380,9 @@ export default function Daily() {
     </div>
   );
 }
+
+/** Màu icon trên desktop (hoạt động nhanh, huy hiệu): mỗi ô một màu, đủ đậm để icon trắng dễ đọc. */
+const ICON_COLORS = ["#f43f5e", "#f97316", "#d97706", "#65a30d", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
 
 /**
  * Lịch 5 tuần trọn (T2 → CN), mỗi cột đúng một thứ. Ô: có tập = volt, có ghi chép = volt nhạt, nghỉ = viền nét đứt,

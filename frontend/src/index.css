@@ -141,6 +141,39 @@ html.print-page { zoom: 1; }
   color-scheme: dark;
 }
 
+/* ---- Desktop (≥1024px): volt đậm hơn + mỗi chỉ số một màu ----
+   Ngoài media query các token này KHÔNG được định nghĩa; chỗ dùng luôn có giá trị dự phòng
+   (vd var(--m-protein, var(--primary))) nên dưới 1024px ra đúng màu cũ.
+   --m-*  = màu riêng từng chỉ số; --track = nền thanh/vòng tiến độ ngả volt;
+   --chart-fill-op = độ đậm lớp tô dưới đường biểu đồ; --bar-dim = độ đậm cột không chọn. */
+@media (min-width: 1024px) {
+  :root {
+    --accent-num: #4d7c0f;
+    --primary-soft: #e2f9a8;
+    --track: color-mix(in srgb, var(--volt) 22%, var(--surface-3));
+    --shadow-lg: 0 2px 4px rgb(16 24 40 / 0.04), 0 24px 48px -16px rgb(16 24 40 / 0.22), 0 10px 32px -14px rgb(132 204 22 / 0.4);
+    --m-protein: #e11d48;
+    --m-weight: #2563eb;
+    --m-hip: #7c3aed;
+    --m-water: #0891b2;
+    --m-goal: #7c3aed;
+    --chart-fill-op: 0.22;
+    --bar-dim: 60%;
+  }
+  [data-theme="dark"] {
+    --accent-num: #c6f432;
+    --primary-soft: rgb(198 244 50 / 0.18);
+    --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -16px rgb(0 0 0 / 0.7), 0 10px 32px -14px rgb(198 244 50 / 0.22);
+    --m-protein: #fb7185;
+    --m-weight: #60a5fa;
+    --m-hip: #a78bfa;
+    --m-water: #22d3ee;
+    --m-goal: #a78bfa;
+  }
+  /* trang kính (.immersive) tự định nghĩa lại --surface-3 → tính lại track theo đó */
+  .immersive { --track: color-mix(in srgb, var(--volt) 22%, var(--surface-3)); }
+}
+
 @theme inline {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-num: "Space Grotesk", "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;

@@ -1,4 +1,5 @@
-import { Bar, CartesianGrid, Cell, ComposedChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useId } from "react";
+import { Area, Bar, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { shortDate } from "../lib/format";
 
 const axis = { stroke: "var(--muted)", fontSize: 11, tickLine: false, axisLine: false } as const;
@@ -48,7 +49,7 @@ export function BarSeries({ data, dataKey, color = "var(--primary)", unit = "", 
         {/* cột đang chọn (mặc định: gần nhất) tô đậm, các cột khác nhạt hơn */}
         <Bar dataKey={dataKey} fill={color} radius={[8, 8, 8, 8]} maxBarSize={30}>
           {data.map((_, i) => (
-            <Cell key={i} fill={i === hi ? color : `color-mix(in srgb, ${color} 45%, transparent)`} />
+            <Cell key={i} fill={i === hi ? color : `color-mix(in srgb, ${color} var(--bar-dim, 45%), transparent)`} />
           ))}
         </Bar>
       </ComposedChart>
@@ -60,18 +61,32 @@ export function LineSeries({ data, lines, height = 240, unit = "" }: {
   data: Record<string, unknown>[]; lines: { key: string; color: string; label: string; yAxis?: "left" | "right" }[]; height?: number; unit?: string;
 }) {
   const hasRight = lines.some((l) => l.yAxis === "right");
+  const gid = useId().replace(/:/g, "");
+  const main = lines[0];
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: hasRight ? 0 : 8, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 8, right: hasRight ? 0 : 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="2 6" stroke={grid} vertical={false} />
         <XAxis dataKey="date" tickFormatter={(d) => shortDate(String(d))} {...axis} minTickGap={16} />
         <YAxis yAxisId="left" {...axis} width={yWidth(data.flatMap((x) => lines.filter((l) => l.yAxis !== "right").map((l) => x[l.key])))} tickFormatter={yFmt} domain={["auto", "auto"]} />
         {hasRight && <YAxis yAxisId="right" orientation="right" {...axis} width={yWidth(data.flatMap((x) => lines.filter((l) => l.yAxis === "right").map((l) => x[l.key])))} tickFormatter={yFmt} domain={["auto", "auto"]} />}
         <Tooltip {...tooltipStyle} labelFormatter={(d) => shortDate(String(d))} formatter={(v, n) => [`${v} ${unit}`, lines.find((l) => l.key === n)?.label || n]} />
+        {/* lớp tô mờ dưới đường chính: độ đậm do --chart-fill-op (0 trên điện thoại → không thấy) */}
+        {main && (
+          <>
+            <defs>
+              <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={main.color} style={{ stopOpacity: "var(--chart-fill-op, 0)" }} />
+                <stop offset="100%" stopColor={main.color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area yAxisId={main.yAxis || "left"} type="monotone" dataKey={main.key} stroke="none" fill={`url(#${gid})`} dot={false} activeDot={false} isAnimationActive={false} legendType="none" tooltipType="none" connectNulls />
+          </>
+        )}
         {lines.map((l) => (
           <Line key={l.key} yAxisId={l.yAxis || "left"} type="monotone" dataKey={l.key} stroke={l.color} strokeWidth={3} strokeLinecap="round" dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--surface)" }} connectNulls />
         ))}
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
