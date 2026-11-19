@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import clsx from "clsx";
 import { Link } from "react-router-dom";
-import { Bike, Camera, ChevronLeft, ChevronRight, Coffee, Cookie, Dumbbell, GlassWater, History, Leaf, Library, Loader2, Minus, Moon, PencilLine, Plus, Repeat, Search, Soup, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
+import { Bike, Camera, ChevronLeft, ChevronRight, Dumbbell, History, Leaf, Library, Loader2, Moon, PencilLine, Plus, Repeat, Search, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
 import { del, post, put } from "../lib/api";
 import { useAction, useApi, useInvalidateAll } from "../lib/hooks";
 import { MEAL_TYPES } from "../lib/constants";
@@ -13,8 +13,9 @@ import { FavStar, FavoriteTile, FoodSheet, FoodTile, guessMealType, quickLogFood
 import { useAllergy } from "../lib/allergy";
 import { splitAnalysis, useFavorites, type Favorite } from "../lib/favorites";
 import { useAI } from "../components/AIProvider";
+import { MobileNutrition } from "./MobileNutrition";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Progress, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput, DateInput } from "../components/ui";
+import { Badge, Button, Card, Empty, Field, Modal, PageHeader, Pager, Ring, Segmented, Spinner, toast, confirmDialog, clickable, usePaged, DecimalInput, DateInput } from "../components/ui";
 
 interface Day { date: string; meals: Meal[]; totals: { calories: number; protein: number; carbs: number; fat: number; meals_count: number }; targets: Targets }
 interface Analysis { name: string; items: Meal["items"]; calories: number; protein: number; carbs: number; fat: number; confidence: string; analysis: string; image_thumb: string | null }
@@ -392,100 +393,6 @@ function FavoriteDetail({ x, date, onClose }: { x: Favorite | null; date: string
   );
 }
 
-/* ======================= Điện thoại (phương án A): còn bao nhiêu → đã ăn gì → nước → hỏi NutriBro ======================= */
-const MAIN_MEALS = ["breakfast", "lunch", "dinner"] as const;
-const MEAL_ICON = { breakfast: Coffee, lunch: Utensils, dinner: Soup, snack: Cookie } as Record<string, typeof Utensils>;
-
-function MobileCalories({ day }: { day: Day }) {
-  const left = day.targets.calories - day.totals.calories;
-  const macros = [
-    { label: "Đạm", v: day.totals.protein, t: day.targets.protein, color: "var(--m-protein, var(--primary))" },
-    { label: "Carb", v: day.totals.carbs, t: day.targets.carbs, color: "var(--data-carbs)" },
-    { label: "Béo", v: day.totals.fat, t: day.targets.fat, color: "var(--data-fat)" },
-  ];
-  return (
-    <Card className="flex items-center gap-5 p-5 lg:hidden">
-      <Ring value={day.totals.calories} max={day.targets.calories || 1} size={120} stroke={12} color="var(--nutri)" track="var(--track, var(--surface-3))">
-        <div>
-          <p className="num text-[26px] font-semibold leading-none">{fmt(Math.abs(left))}</p>
-          <p className="mt-1 text-xs text-muted">{left >= 0 ? "kcal còn lại" : "kcal vượt"}</p>
-        </div>
-      </Ring>
-      <div className="min-w-0 flex-1 space-y-2.5">
-        {macros.map((m) => (
-          <div key={m.label}>
-            <div className="flex justify-between gap-2 text-[13px]"><span className="font-medium">{m.label}</span><span className="num text-muted">{fmt(m.v)}/{fmt(m.t)} g</span></div>
-            <Progress value={m.v} max={m.t || 1} color={m.color} className="mt-1" />
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function MobileMeals({ day, isToday, onOpen, onAdd }: { day: Day; isToday: boolean; onOpen: (m: Meal) => void; onAdd: () => void }) {
-  const hour = new Date().getHours();
-  // ô "chưa ghi" cho bữa chính đã tới giờ (hôm nay) — nhắc mà không cần thanh cảnh báo riêng
-  const due: Record<string, number> = { breakfast: 9, lunch: 13, dinner: 18 };
-  const missing = isToday ? MAIN_MEALS.filter((t) => hour >= due[t] && !day.meals.some((m) => m.meal_type === t)) : [];
-  const order = Object.keys(MEAL_TYPES);
-  const meals = [...day.meals].sort((a, b) => order.indexOf(a.meal_type) - order.indexOf(b.meal_type));
-  if (!meals.length && !missing.length) return null;
-  return (
-    <section className="lg:hidden">
-      <h2 className="mb-2 font-semibold">{isToday ? "Hôm nay đã ăn" : "Đã ăn"}</h2>
-      <Card className="divide-y divide-border">
-        {meals.map((m) => {
-          const Icon = MEAL_ICON[m.meal_type] || Utensils;
-          return (
-            <button key={m.id} type="button" onClick={() => onOpen(m)} className="flex w-full items-center gap-3 p-4 text-left">
-              {m.image ? <img src={m.image} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" /> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-muted"><Icon size={20} /></span>}
-              <span className="min-w-0 flex-1">
-                <span className="block text-xs text-muted">{MEAL_TYPES[m.meal_type] || "Bữa phụ"}</span>
-                <span className="line-clamp-2 block font-medium leading-snug">{m.name}</span>
-                <span className="block text-xs text-muted">{fmt(m.protein, 1)} g đạm</span>
-              </span>
-              <span className="num shrink-0 font-semibold">{fmt(m.calories)}<span className="font-sans text-xs font-normal text-muted"> kcal</span></span>
-            </button>
-          );
-        })}
-        {missing.map((t) => {
-          const Icon = MEAL_ICON[t];
-          return (
-            <div key={t} className="flex items-center gap-3 p-4">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-dashed border-muted/60 text-muted"><Icon size={20} /></span>
-              <p className="min-w-0 flex-1 text-sm text-muted"><b className="block font-medium text-text">{MEAL_TYPES[t]}</b>Chưa ghi</p>
-              <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={onAdd}>Ghi</Button>
-            </div>
-          );
-        })}
-      </Card>
-    </section>
-  );
-}
-
-/** Nước uống ngay ở trang ăn uống trên điện thoại: −250 / +250 ml (ô tự nhập vẫn ở trang Hôm nay). */
-function MobileWater() {
-  const { data } = useApi<{ water_ml: number; water_target_ml: number }>(["daily"], "/api/daily/today");
-  const water = useAction<number, unknown, { water_ml: number; water_target_ml: number }>((delta_ml) => post("/api/daily/water", { delta_ml }), {
-    optimistic: { key: ["daily"], update: (d, delta) => ({ ...d, water_ml: Math.max(0, d.water_ml + delta) }) },
-  });
-  if (!data) return null;
-  return (
-    <Card className="flex items-center gap-3 p-4 lg:hidden">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-info"><GlassWater size={20} /></span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">Nước</p>
-        <p className="text-sm text-muted"><span className="num">{fmt(data.water_ml / 1000, 2)}</span> / {fmt(data.water_target_ml / 1000, 1)} L</p>
-      </div>
-      <button type="button" aria-label="Bớt 250 ml" disabled={water.isPending || data.water_ml <= 0} onClick={() => water.mutate(-Math.min(250, data.water_ml))}
-        className="grid h-11 w-11 place-items-center rounded-full border border-border disabled:opacity-40"><Minus size={20} /></button>
-      <button type="button" disabled={water.isPending} onClick={() => water.mutate(250)}
-        className="num h-11 rounded-full bg-surface-2 px-4 text-sm font-semibold disabled:opacity-50">+250 ml</button>
-    </Card>
-  );
-}
-
 export default function Nutrition() {
   const [date, setDate] = useState(todayISO());
   const [adding, setAdding] = useState(false);
@@ -522,7 +429,9 @@ export default function Nutrition() {
   ] as const;
 
   return (
-    <div className="space-y-8">
+    <>
+    <MobileNutrition />
+    <div className="space-y-8 max-lg:hidden">
       <PageHeader
         help="dinh-duong"
         lead="Dinh dưỡng,"
@@ -538,30 +447,6 @@ export default function Nutrition() {
           <Button className="max-lg:hidden" icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ghi bữa ăn</Button>
         </>}
       />
-
-      {/* Điện thoại: một cột theo phương án A */}
-      {data && (
-        <div className="-mt-4 space-y-4 lg:hidden">
-          <MobileCalories day={data} />
-          <MobileMeals day={data} isToday={date === todayISO()} onOpen={setDetail} onAdd={() => setAdding(true)} />
-          {date === todayISO() && <MobileWater />}
-          {date === todayISO() && <button type="button" onClick={askMenu} className="card flex w-full items-center gap-3 p-4 text-left">
-            <AgentAvatar agent="nutribro" size={36} />
-            <span className="min-w-0 flex-1 text-sm">
-              <b className="font-semibold text-nutri">NutriBro: </b>
-              {data.totals.protein < data.targets.protein
-                ? `còn thiếu ${fmt(data.targets.protein - data.totals.protein)} g đạm. Bấm để được gợi ý món cho bữa còn lại.`
-                : "đạm hôm nay đã đủ. Bấm để được gợi ý thực đơn cho bữa còn lại."}
-            </span>
-            <ChevronRight size={18} className="shrink-0 text-muted" />
-          </button>}
-        </div>
-      )}
-      {/* Nút nổi ghi bữa: luôn trong tầm ngón cái, ngay trên thanh tab */}
-      <button type="button" onClick={() => setAdding(true)}
-        className="no-print fixed bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))+4.75rem)] right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-ink px-5 font-semibold text-on-ink shadow-[var(--shadow-lg)] transition active:scale-[0.98] lg:hidden">
-        <Camera size={20} /> Ghi bữa
-      </button>
 
       {/* Hàng đầu: calo + macro (vòng) | lịch sử 14 ngày */}
       <div className="grid gap-6 lg:grid-cols-12 xl:gap-8">
@@ -757,5 +642,6 @@ export default function Nutrition() {
       <MealDetail meal={detail} onClose={() => setDetail(null)} />
       <FavoriteDetail x={favOpen} date={todayISO()} onClose={() => setFavOpen(null)} />
     </div>
+    </>
   );
 }

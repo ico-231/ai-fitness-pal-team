@@ -227,7 +227,7 @@ function CheckinCard({ data, editing, setEditing, openSheet, onReset }: { data: 
         </div>
         {r && (
           <button type="button" className="g rdy" onClick={openSheet} aria-label={`Điểm sẵn sàng ${r.score} trên 100, xem chi tiết`}>
-            <Rings size={26} sw={4} gap={0} rings={[{ value: r.score / 100, color: "lime" }]} />Điểm sẵn sàng <b className="n">{r.score}</b>
+            <Rings size={26} sw={4} gap={0} rings={[{ value: r.score / 100, color: "lime" }]} /><b className="n">{r.score}</b>
           </button>
         )}
       </div>
@@ -236,7 +236,7 @@ function CheckinCard({ data, editing, setEditing, openSheet, onReset }: { data: 
         <>
           <div className="sum">
             <div><b className="n">{fmt(i.sleep_hours ?? 0, 1)}<small>giờ</small></b><span>Ngủ</span></div>
-            {SCALES.map((s) => <div key={s.k}><b className="n">{shown(s, i[s.k] ?? 3)}<small>/5</small></b><span>{s.short}</span></div>)}
+            {SCALES.map((s) => <div key={s.k}><b className="n txt">{s.labels[shown(s, i[s.k] ?? 3) - 1]}</b><span>{s.short}</span></div>)}
           </div>
           <button type="button" className="btn btn-glass btn-block edit" onClick={() => setEditing(true)}><Edit3 className="ic" />Sửa check-in</button>
         </>
@@ -280,7 +280,7 @@ function WeightTile() {
   useEffect(() => { if (last && !touched) setTxt(fmt(last.value, 1)); }, [last?.value, touched]); // eslint-disable-line react-hooks/exhaustive-deps
   const v = parseDecimal(txt);
   const bad = txt.trim() !== "" && (v == null || v < 25 || v > 250);
-  const save = useAction((w: number) => post("/api/body/metrics", { weight_kg: w, note: "Cân lúc check-in sáng" }), { success: "Đã lưu cân nặng" });
+  const save = useAction((w: number) => post("/api/body/metrics", { weight_kg: w, note: "Cân ở trang Hôm nay" }), { success: "Đã lưu cân nặng" });
   const bump = (d: number) => { setTouched(true); const cur = v ?? last?.value ?? 68; setTxt(fmt(Math.min(250, Math.max(25, Math.round((cur + d) * 10) / 10)), 1)); };
   const delta = !bad && v != null && last ? Math.round((v - last.value) * 10) / 10 : null;
   return (

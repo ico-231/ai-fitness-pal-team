@@ -165,6 +165,7 @@ export function MobileTopBar() {
             <p className="fb-title">{title}</p>
           </>
         )}
+        <div id="fb-top-actions" className="fb-top-actions" />
         <MobileMenuButton />
       </header>
     </>

@@ -6,7 +6,7 @@ import { fmt } from "../../lib/format";
 import { useAction, useApi } from "../../lib/hooks";
 import type { Readiness } from "../../lib/types";
 import { Modal } from "../ui";
-import { vars } from "./V1";
+import { Rings, vars } from "./V1";
 
 /** Công tắc đoạn V1 (thấu kính trượt). `value` = vị trí đang chọn (0..n-1). */
 export function Seg({ options, value, onChange, ink, sm, label, className }: {
@@ -84,5 +84,34 @@ export function WaterTile({ steps }: { steps?: boolean }) {
         <button type="button" className="btn btn-primary" disabled={water.isPending} onClick={() => water.mutate(step)}>+ {step} ml</button>
       </div>
     </section>
+  );
+}
+
+interface MacroTotals { calories: number; protein: number; carbs: number; fat: number }
+
+/** 4 vòng dinh dưỡng + chú thích: calo (cam), đạm (hồng đỏ), tinh bột (xanh trời), chất béo (vàng). */
+export function MacroRings({ totals, targets, onPick }: { totals: MacroTotals; targets: MacroTotals; onPick?: () => void }) {
+  const left = targets.calories - totals.calories;
+  const rows = [
+    { key: "Calo", color: "orange" as const, v: totals.calories, max: targets.calories, unit: "kcal" },
+    { key: "Đạm", color: "rose" as const, v: totals.protein, max: targets.protein, unit: "g" },
+    { key: "Tinh bột", color: "sky" as const, v: totals.carbs, max: targets.carbs, unit: "g" },
+    { key: "Chất béo", color: "gold" as const, v: totals.fat, max: targets.fat, unit: "g" },
+  ];
+  const p = (v: number, m: number) => (m > 0 ? Math.max(0, v / m) : 0);
+  return (
+    <div className="nutg">
+      <Rings size={156} sw={9} gap={3} label={`Calo ${fmt(totals.calories)} trên ${fmt(targets.calories)}`} rings={rows.map((r) => ({ value: p(r.v, r.max), color: r.color }))}>
+        <div><b className="n" style={{ fontSize: 22 }}>{fmt(Math.abs(left))}</b><small>{left >= 0 ? "kcal còn" : "kcal vượt"}</small></div>
+      </Rings>
+      <div className="legend">
+        {rows.map((r) => (
+          <button key={r.key} type="button" onClick={onPick} aria-label={`${r.key}: ${fmt(r.v)} trên ${fmt(r.max)} ${r.unit}`}>
+            <small><span className={clsx("dot", r.color)} />{r.key}<em className="n">{Math.round(p(r.v, r.max) * 100)}%</em></small>
+            <b className="n">{fmt(r.v)}<span>/{fmt(r.max)} {r.unit}</span></b>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
