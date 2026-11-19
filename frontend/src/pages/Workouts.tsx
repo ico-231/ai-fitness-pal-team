@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bike, CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
 import { del, get, post } from "../lib/api";
-import { useAction, useApi, useInvalidateAll } from "../lib/hooks";
+import { useAction, useApi, useInvalidateAll, useMedia } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
 import { dayLabel, exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR, WorkoutSession } from "../lib/types";
@@ -421,7 +421,7 @@ function HistoryTab() {
   );
 }
 
-export default function Workouts() {
+function WorkoutsDesktop() {
   const [sp, setSp] = useSearchParams();
   // link cũ / gõ sai tên tab (vd ?tab=week) → về tab mặc định thay vì trang trống
   const rawTab = sp.get("tab");
@@ -452,8 +452,7 @@ export default function Workouts() {
 
   return (
     <>
-    <MobileWorkouts />
-    <div className="max-lg:hidden">
+    <div>
       <PageHeader lead="Tập luyện," help="tap-luyen" title="hôm nay tập gì?" subtitle="Chương trình có sẵn, buổi Custom của bạn, bản đồ cơ có AI gợi ý và thư viện 1.324 bài có ảnh minh hoạ." />
       {active && active.sets.length > 0 && (
         <Card className="mb-6 flex flex-wrap items-center gap-3 p-4">
@@ -493,4 +492,9 @@ export default function Workouts() {
     </div>
     </>
   );
+}
+
+/** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
+export default function Workouts() {
+  return useMedia("(min-width: 1024px)") ? <WorkoutsDesktop /> : <MobileWorkouts />;
 }

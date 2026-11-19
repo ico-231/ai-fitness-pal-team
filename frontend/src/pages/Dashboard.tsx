@@ -1,10 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import clsx from "clsx";
 import { Activity, ArrowRight, Bike, CheckCircle2, Circle, Dumbbell, Pause, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight } from "lucide-react";
 import { get } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useApi } from "../lib/hooks";
+import { useApi, useMedia } from "../lib/hooks";
 import { fmt, greeting, minutes, shortDate } from "../lib/format";
 import { voice } from "../lib/media";
 import type { Insight, MuscleVolume } from "../lib/types";
@@ -191,7 +190,7 @@ function AskBar({ insights }: { insights: Insight[] }) {
   );
 }
 
-export default function Dashboard() {
+function DashboardDesktop() {
   // Máy tính: cột phải cao đúng bằng cột trái → ô "Dùng trên điện thoại" (mt-auto) thẳng đáy với ô "Hôm nay"
   const leftCol = useRef<HTMLDivElement>(null);
   const rightCol = useRef<HTMLDivElement>(null);
@@ -218,7 +217,7 @@ export default function Dashboard() {
   const { data: rep } = useApi<Report>(["report", period], `/api/dashboard/report?period=${period}`);
   const { data: heat } = useApi<MuscleVolume>(["heatmap", days], `/api/dashboard/heatmap?days=${days}`);
 
-  if (isLoading || !ov) return <><MobileHomeSkeleton /><div className="hidden lg:block"><Spinner /></div></>;
+  if (isLoading || !ov) return <Spinner />;
   const t = ov.today;
   const r = t.readiness;
   const s = rep?.summary;
@@ -259,8 +258,7 @@ export default function Dashboard() {
   const pins = heat ? Object.entries(heat.muscles).filter(([, v]) => v.level >= 3).sort((x, y) => y[1].sets - x[1].sets).map(([k]) => k) : [];
   return (
     <>
-    {ov.has_any_data && <MobileHome ov={ov} />}
-    <div className={clsx("space-y-8", ov.has_any_data && "max-lg:hidden")}>
+    <div className="space-y-8">
       <InstallHint />
       {/* ===== Sân khấu: bản đồ cơ thể ở giữa, các tấm kính nổi xung quanh ===== */}
       <section className="relative">
@@ -450,4 +448,14 @@ function MobileAppCard() {
       </Modal>
     </>
   );
+}
+
+/** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính) — không mount cả hai rồi ẩn bằng CSS (tốn bộ nhớ, hook, gọi API thừa). */
+export default function Dashboard() {
+  const desktop = useMedia("(min-width: 1024px)");
+  const { data: ov, isLoading } = useApi<Overview>(["dashboard"], "/api/dashboard");
+  if (desktop) return <DashboardDesktop />;
+  if (isLoading || !ov) return <MobileHomeSkeleton />;
+  // chưa có dữ liệu nào: dùng khung chào mừng của bản đầy đủ (tự co giãn theo màn hình)
+  return ov.has_any_data ? <MobileHome ov={ov} /> : <DashboardDesktop />;
 }

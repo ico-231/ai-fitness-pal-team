@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { Activity, Award, Beef, CalendarDays, Crown, Droplets, Dumbbell, Flag, Flame, Goal, Info, Minus, Play, Plus, RotateCcw, Ruler, Sparkles, StretchHorizontal, Sunrise, Target, Timer, Trophy, Utensils, Weight, Zap, type LucideIcon } from "lucide-react";
 import { del, post } from "../lib/api";
-import { useAction, useApi } from "../lib/hooks";
+import { useAction, useApi, useMedia } from "../lib/hooks";
 import { exName, shortDate, fmt } from "../lib/format";
 import type { Plan, Readiness } from "../lib/types";
 import { useAI } from "../components/AIProvider";
@@ -167,7 +167,7 @@ const REST_ADVICE: Record<string, string> = {
   moderate: "Hôm nay là ngày nghỉ theo lịch, rất hợp lý: ưu tiên ngủ đủ, giãn cơ nhẹ nếu muốn vận động.",
 };
 
-export default function Daily() {
+function DailyDesktop() {
   const { data, isLoading } = useApi<DailyData>(["daily"], "/api/daily/today");
   const { data: cal } = useApi<{ days: CalendarDay[] }>(["calendar"], "/api/daily/calendar?days=35");
   const { data: tpls } = useApi<Plan[]>(["templates"], "/api/workouts/templates", { staleTime: 600_000 });
@@ -185,7 +185,7 @@ export default function Daily() {
     if (data && !data.checked_in) setEditing(true);
   }, [data?.checked_in]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (isLoading || !data) return <><MobileDailySkeleton /><div className="hidden lg:block"><Spinner /></div></>;
+  if (isLoading || !data) return <Spinner />;
   const r = data.readiness;
   const weakestScore = r?.components.find((c) => c.key === r.weakest)?.score;
   const weakestUnique = !!r && r.components.filter((c) => c.score === weakestScore).length === 1;
@@ -207,8 +207,7 @@ export default function Daily() {
 
   return (
     <>
-    <MobileDaily data={data} />
-    <div className="space-y-8 max-lg:hidden">
+    <div className="space-y-8">
       <PageHeader
         help="hom-nay"
         lead="Hôm nay,"
@@ -445,4 +444,13 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
       </div>
     </div>
   );
+}
+
+/** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
+export default function Daily() {
+  const desktop = useMedia("(min-width: 1024px)");
+  const { data, isLoading } = useApi<DailyData>(["daily"], "/api/daily/today");
+  if (desktop) return <DailyDesktop />;
+  if (isLoading || !data) return <MobileDailySkeleton />;
+  return <MobileDaily data={data} />;
 }
