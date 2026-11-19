@@ -3,11 +3,11 @@ import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import {
-  ArrowLeft, ArrowLeftRight, BatteryMedium, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Minus, Pause, Pencil, Play, Plus, SkipForward, Sparkles, Timer, Trash2, Trophy, Volume2, VolumeX, X, Save,
+  ArrowLeft, ArrowLeftRight, BatteryMedium, ChevronLeft, MoreHorizontal, Camera, Check, CheckCircle2, ChevronRight, Clock, Flag, Minus, Pause, Pencil, Play, Plus, SkipForward, Sparkles, Timer, Trash2, Trophy, Volume2, VolumeX, X, Save,
 } from "lucide-react";
 import { del, get, post, put } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useInvalidateAll } from "../lib/hooks";
+import { useInvalidateAll, useMedia } from "../lib/hooks";
 import { beep, voice } from "../lib/media";
 import { exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import { restLine, setLine, setsLine, spokenExercise } from "../lib/speech";
@@ -20,6 +20,10 @@ import { ExerciseImage } from "../components/Exercise";
 import { ExercisePicker, itemFor } from "../components/ExercisePicker";
 import { useAI } from "../components/AIProvider";
 import { Badge, Button, Card, Ring, Spinner, toast, confirmDialog, DecimalInput } from "../components/ui";
+import { Sheet } from "../components/mobile/Sheet";
+import { PickerSheet } from "../components/mobile/WorkoutParts";
+import { Rings } from "../components/mobile/V1";
+import { HeadBroSvg } from "../components/MobileShell";
 
 type Phase = "overview" | "prep" | "work" | "rest" | "summary";
 
@@ -197,6 +201,11 @@ export default function Session() {
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(voice.enabled);
   const [error, setError] = useState("");
+  // Điện thoại (< 1024px): dựng bản V1 "Kính lỏng"; logic (đồng hồ, camera, ghi set) dùng chung với bản máy tính
+  const desktop = useMedia("(min-width: 1024px)");
+  const [editSet, setEditSet] = useState<LoggedSet | null>(null);
+  const [esW, setEsW] = useState(0);
+  const [esR, setEsR] = useState(0);
   const startedAt = useRef<number>(Date.now());
   const [elapsed, setElapsed] = useState(0);
   // Đếm ngược theo thời điểm kết thúc (không đếm từng giây): trình duyệt làm chậm bộ hẹn giờ khi tắt màn hình
@@ -607,6 +616,63 @@ export default function Session() {
   if (!plan) return <Spinner />;
 
   // ================= Tổng kết =================
+  if (phase === "summary" && summary && !desktop) {
+    const groups: Record<string, WorkoutSession["sets"]> = {};
+    summary.sets.forEach((x) => (groups[x.exercise_name] = [...(groups[x.exercise_name] || []), x]));
+    const when = new Date(summary.started_at);
+    const hl = Object.fromEntries(Object.entries(summary.muscles).map(([k, v]) => [k, v.sets]));
+    return (
+      <div className="v1">
+        <header className="hello">
+          <p className="d">{when.toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" })} · {when.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</p>
+          <h1><span>Hoàn thành,</span> {summary.name}.</h1>
+        </header>
+        {summary.prs.length > 0 && (
+          <section className="g pad ss-pr" aria-label="Kỷ lục mới">
+            <span className="li-ic orange"><Trophy className="ic" /></span>
+            <div>
+              <b>Kỷ lục mới! Làm tốt lắm!</b>
+              {summary.prs.map((x, i) => <p key={i} style={{ textTransform: "capitalize" }}>{x.exercise_name}: {prValue(x, x.previous)} → <b>{prValue(x)}</b> <span className="mute" style={{ textTransform: "none" }}>({prLabel(x.kind).toLowerCase()})</span></p>)}
+            </div>
+          </section>
+        )}
+        <dl className="stats c2 g pad mt">
+          <div><dt>Thời gian</dt><dd>{mmss(summary.duration_sec)}</dd></div>
+          <div><dt>Khối lượng</dt><dd>{fmt(summary.total_volume)}<small>kg</small></dd></div>
+          <div><dt>Số set</dt><dd>{summary.sets.length}</dd></div>
+          <div><dt>Điểm form</dt><dd>{summary.avg_form_score ?? "—"}</dd></div>
+        </dl>
+        <h2 className="sec">Nhóm cơ đã tập</h2>
+        <section className="g pad" style={{ marginTop: -6 }}>
+          <div className="ss-map"><BodyMap highlight={hl} /></div>
+          <div className="chips" style={{ justifyContent: "center", marginTop: 8 }}>
+            {Object.entries(summary.muscles).map(([k, v]) => <span key={k} className="tag lime">{MUSCLES[k] || v.label} {fmt(v.sets, 1)} set</span>)}
+          </div>
+        </section>
+        <h2 className="sec">Các bài<span>{Object.keys(groups).length} bài</span></h2>
+        <div className="g list" style={{ marginTop: -6 }}>
+          {Object.entries(groups).map(([name, sets]) => (
+            <div className="li" key={name}>
+              <span className="li-main"><b style={{ textTransform: "capitalize", whiteSpace: "normal" }}>{name}</b><small>{sets.map((x) => (x.duration_sec ? `${x.duration_sec}s` : x.weight_kg ? `${fmt(x.weight_kg, 1)}×${x.reps}` : `${x.reps} rep`)).join(" · ")}</small></span>
+              <span className="li-end"><Check className="ic" /></span>
+            </div>
+          ))}
+        </div>
+        <button type="button" className="g nt-ask" onClick={() => ai.open({
+          text: "Nhận xét buổi tập vừa rồi của mình và gợi ý cho buổi sau.",
+          context: `Buổi tập vừa xong: ${summary.name}, ${Math.round(summary.duration_sec / 60)} phút, ${summary.sets.length} set, khối lượng ${Math.round(summary.total_volume)}kg, form TB ${summary.avg_form_score ?? "không đo"}. Chi tiết: ${summary.sets.map((x) => `${x.exercise_name} set${x.set_index}: ${x.weight_kg}kg×${x.reps}${x.duration_sec ? ` ${x.duration_sec}s` : ""}`).join("; ")}`,
+        })}>
+          <span className="aimark sm" aria-hidden="true"><HeadBroSvg className="ic-ai" /></span>
+          <span className="t">HeadBro nhận xét buổi tập vừa rồi và gợi ý cho buổi sau</span><ChevronRight className="ic" />
+        </button>
+        <p style={{ textAlign: "center", marginTop: 8 }}><button type="button" className="link" onClick={() => nav("/workouts")}>Về Tập luyện</button></p>
+        <div className="g fb-actionbar">
+          <button type="button" className="btn btn-glass" onClick={() => nav("/")}>Về Tổng quan</button>
+          <button type="button" className="btn btn-primary" onClick={() => nav("/nutrition")}>Ghi bữa ăn</button>
+        </div>
+      </div>
+    );
+  }
   if (phase === "summary" && summary) {
     const highlight = Object.fromEntries(Object.entries(summary.muscles).map(([k, v]) => [k, v.sets]));
     return (
@@ -674,6 +740,49 @@ export default function Session() {
   }
 
   // ================= Tổng quan trước khi tập =================
+  if (phase === "overview" && !desktop) {
+    const mins = queue.length === plan.items.length && !useLight ? plan.est_minutes : estMinutes(queue);
+    return (
+      <div className="v1">
+        <div className="ss-top"><button type="button" className="g icon-btn" aria-label="Quay lại Tập luyện" onClick={() => nav("/workouts")}><ChevronLeft className="ic ic-lg" /></button></div>
+        <header className="hello">
+          <p className="d">Buổi tập</p>
+          <h1>{plan.name}</h1>
+          {plan.description && <p className="t-small" style={{ marginTop: 6 }}>{plan.description}</p>}
+        </header>
+        <div className="chips mt"><span className="tag sky"><Clock className="ic" />khoảng {mins} phút</span><span className="tag">{queue.length}{queue.length < plan.items.length ? ` / ${plan.items.length}` : ""} bài</span></div>
+        {lp && readiness && (
+          <section className={clsx("g alert", useLight ? "warn" : "info")} style={{ marginTop: 12 }}>
+            <span className="a-ic"><BatteryMedium className="ic" /></span>
+            <div style={{ flex: 1 }}>
+              <b>Điểm sẵn sàng {readiness.score}/100 · {readiness.label.toLowerCase()}</b>
+              <p>{useLight ? `Đang dùng bản nhẹ: ${readiness.intensity <= 0.4 ? "còn nửa số set" : "bớt 1 set"} mỗi bài, gợi ý tạ giảm ${lp.pct}%. Chương trình gốc giữ nguyên.` : "Cơ thể chưa hồi phục hẳn. Nên dùng bản nhẹ để tránh quá tải."}</p>
+            </div>
+            <label className="switch"><input type="checkbox" role="switch" aria-label="Dùng bản nhẹ" checked={useLight} onChange={() => setLight(!light)} /><span /></label>
+          </section>
+        )}
+        <p className="t-small" style={{ margin: "14px 4px 8px" }}>{plan.optional ? "Bài phục hồi: chọn 1–3 bài muốn tập, đổi bằng bài giãn cơ khác hoặc thêm bài." : `Bỏ chọn bài muốn bỏ qua, đổi sang bài cùng nhóm cơ hoặc thêm bài liên quan. Trước mỗi bài có ${prepSeconds} giây đếm ngược.`}</p>
+        <div className="g list">
+          {plan.items.map((it, i) => (
+            <div key={`${it.exercise_id}-${i}`} className={clsx("li ss-row", !selected[i] && "off")}>
+              <label className="check"><input type="checkbox" checked={!!selected[i]} onChange={() => setSelected((v) => v.map((x, j) => (j === i ? !x : x)))} /><span className="box" /><span className="sr">{exName(it.exercise)}</span></label>
+              <span className="li-main"><b style={{ textTransform: "capitalize", whiteSpace: "normal" }}>{exName(it.exercise)}</b>
+                <small>{useLight && lp && lp.sets(it.sets) !== it.sets ? `${lp.sets(it.sets)} (gốc ${it.sets})` : it.sets} set × {it.duration_sec && !it.reps ? `${it.duration_sec} giây` : `${it.reps} rep`} · nghỉ {it.rest_sec}s{it.exercise.camera ? " · Camera AI" : ""}{it.note ? ` · ${it.note}` : ""}</small></span>
+              <button type="button" className="icon-btn sm" aria-label={`Đổi ${exName(it.exercise)} sang bài liên quan`} onClick={() => setPicker({ index: i })}><ArrowLeftRight className="ic" /></button>
+              <button type="button" className="icon-btn sm" aria-label={`Xoá ${exName(it.exercise)} khỏi buổi`} disabled={plan.items.length <= 1} onClick={() => editItems(plan.items.filter((_, j) => j !== i), selected.filter((_, j) => j !== i))}><X className="ic" /></button>
+            </div>
+          ))}
+        </div>
+        <div className="btn-row mt">
+          <button type="button" className="btn btn-glass btn-sm" onClick={() => setPicker({ index: null })}><Plus className="ic" />Thêm bài liên quan</button>
+          {dirty && <button type="button" className="btn btn-glass btn-sm" disabled={busy} onClick={saveOnly}><Save className="ic" />{plan.source === "template" ? "Lưu thành Custom" : "Lưu thay đổi"}</button>}
+        </div>
+        {dirty && plan.source === "template" && <p className="t-small" style={{ textAlign: "center", marginTop: 8 }}>Bản đã chỉnh sẽ được lưu vào tab Tự tạo, chương trình gốc giữ nguyên.</p>}
+        <div className="g fb-actionbar"><button type="button" className="btn btn-primary" disabled={!queue.length || busy} onClick={begin}><Play className="ic" />Bắt đầu ({queue.length} bài)</button></div>
+        <PickerSheet open={!!picker} onClose={() => setPicker(null)} onPick={(e) => { pickExercise(e); setPicker(null); }} exclude={plan.items.map((it) => it.exercise_id)} focus={plan.focus} />
+      </div>
+    );
+  }
   if (phase === "overview") {
     return (
       <div className="mx-auto max-w-3xl">
@@ -789,6 +898,142 @@ export default function Session() {
     </Button>
   );
   const showEx = phase === "rest" && nextItem ? nextItem.exercise : ex;
+  if (!desktop) {
+    const myLogged = (logged[item.exercise_id] || []).filter((x) => !x.is_warmup);
+    const endAsk = async () => (await confirmDialog({ title: "Kết thúc buổi tập ngay?", text: myLogged.length || Object.values(logged).some((a) => a.length) ? "Các set đã ghi vẫn được lưu." : "Buổi tập chưa có set nào nên sẽ không được lưu.", confirmLabel: "Kết thúc buổi tập", danger: true })) && finish();
+    const camOn = useCam && camKey && (phase === "work" || phase === "prep" || (phase === "rest" && !nextItem));
+    const segDone = (i: number) => (i < qi ? 1 : i === qi ? Math.min(1, myLogged.length / Math.max(1, item.sets)) : 0);
+    const fmtVal = (x: LoggedSet) => (timed || (!x.reps && x.duration_sec) ? `${x.duration_sec} giây` : x.weight_kg ? `${fmt(x.weight_kg, 1)} kg × ${x.reps}` : `${x.reps} rep`);
+    const stepW = (d: number) => setWeight((w) => Math.max(0, +(w + d).toFixed(1)));
+    const timerLabel = phase === "prep" ? "chuẩn bị" : phase === "rest" ? "nghỉ" : "giây";
+    return (
+      <div className="v1 ss">
+        <div className="ss-bar">
+          <button type="button" className="g icon-btn" aria-label="Kết thúc buổi tập" disabled={busy} onClick={endAsk}><X className="ic ic-lg" /></button>
+          <p className="ss-title"><b>{plan.name}</b><span className="n">{mmss(elapsed)}</span></p>
+          {camKey && <button type="button" className={clsx("g icon-btn", useCam && "ink")} aria-label={useCam ? "Tắt Camera AI" : "Bật Camera AI"} aria-pressed={useCam} onClick={() => setUseCam(!useCam)}><Camera className="ic" /></button>}
+          <button type="button" className="g icon-btn" aria-label={voiceOn ? "Tắt giọng PT" : "Bật giọng PT"} aria-pressed={voiceOn} onClick={() => { voice.enabled = !voiceOn; setVoiceOn(!voiceOn); if (voiceOn) voice.stop(); }}>{voiceOn ? <Volume2 className="ic" /> : <VolumeX className="ic" />}</button>
+        </div>
+        <div className="ss-seg" role="img" aria-label={`Bài ${qi + 1} trên ${queue.length}`}>{queue.map((q, i) => <span key={i} title={exName(q.exercise)}><i style={{ width: `${segDone(i) * 100}%` }} /></span>)}</div>
+        <p className="t-label" style={{ marginTop: 10 }}>Bài {qi + 1}/{queue.length} · {phase === "rest" && nextItem ? "Bài tiếp theo" : "Bài hiện tại"}</p>
+        <h1 className="ss-name">{exName(showEx)}</h1>
+        <p className="t-small">{item.sets} set × {timed ? `${item.duration_sec} giây` : `${item.reps} rep`} · nghỉ {item.rest_sec}s · {ex.equipment_vi.toLowerCase()}{camKey ? " · hỗ trợ Camera AI" : ""}</p>
+        <div className="ss-dots" aria-label={`Set ${Math.min(setIdx, item.sets)} trên ${item.sets}`}>
+          {Array.from({ length: item.sets }).map((_, i) => <i key={i} className={clsx(i < myLogged.length && "on")} />)}
+          <b className="n">Set {Math.min(setIdx, item.sets)}/{item.sets}</b>
+        </div>
+
+        {lp && useLight && phase === "work" && setIdx === 1 && <div className="g alert warn" style={{ marginTop: 12 }}><span className="a-ic"><BatteryMedium className="ic" /></span><div><b>Bản nhẹ hôm nay</b><p>Tạ gợi ý đã giảm {lp.pct}%.</p></div></div>}
+
+        {camOn && (
+          <section className="g ss-cam">
+            <CameraCoach exerciseKey={camKey!} targetReps={timed ? undefined : reps} onUpdate={setCam} active={phase === "work"} idleLabel={phase === "prep" ? `Chuẩn bị · ${count}s` : phase === "rest" ? `Nghỉ · ${count}s` : undefined} />
+          </section>
+        )}
+
+        {phase === "prep" && (
+          <section className="g pad-l ss-timer">
+            <p className="t-label">Chuẩn bị vào tư thế</p>
+            <Rings size={220} sw={14} gap={0} label={`Còn ${count} giây`} rings={[{ value: countTotal ? count / countTotal : 0, color: "sky" }]}><div><b className="n ss-big">{count >= 60 ? mmss(count) : count}</b><small>{timerLabel}</small></div></Rings>
+            <div className="btn-row" style={{ width: "100%" }}>
+              <button type="button" className="btn btn-glass btn-sm" onClick={() => adjust(10)}><Plus className="ic" />10 giây</button>
+              <button type="button" className="btn btn-glass btn-sm" onClick={togglePause}>{paused ? <Play className="ic" /> : <Pause className="ic" />}{paused ? "Tiếp tục" : "Tạm dừng"}</button>
+            </div>
+          </section>
+        )}
+
+        {phase === "rest" && (
+          <section className="g pad-l ss-timer">
+            <p className="t-label">Nghỉ ngơi</p>
+            <span className="vessel ss-tube" role="img" aria-label={`Còn ${count} giây nghỉ`}><span className="liq teal" style={{ "--v": countTotal ? count / countTotal : 0 } as React.CSSProperties} /></span>
+            <b className="n ss-big">{count >= 60 ? mmss(count) : count}<small className="unit"> giây</small></b>
+            <p className="t-small">{nextItem ? `Tiếp theo: ${exName(nextItem.exercise)}` : `Tiếp theo: set ${setIdx}/${item.sets}`}</p>
+            <div className="btn-row" style={{ width: "100%" }}>
+              <button type="button" className="btn btn-glass btn-sm" onClick={() => adjust(-15)}><Minus className="ic" />15s</button>
+              <button type="button" className="btn btn-glass btn-sm" onClick={() => adjust(15)}><Plus className="ic" />15s</button>
+            </div>
+          </section>
+        )}
+
+        {phase === "work" && timed && (
+          <section className="g pad-l ss-timer">
+            <p className="t-label">Giữ tư thế</p>
+            <Rings size={220} sw={14} gap={0} label={`Còn ${count} giây`} rings={[{ value: countTotal ? count / countTotal : 0, color: "lime" }]}><div><b className="n ss-big">{count >= 60 ? mmss(count) : count}</b><small>giây</small></div></Rings>
+            {useCam && cam.holdSec > 0 && <p className="t-small">Giữ đúng form: {cam.holdSec}s</p>}
+            <button type="button" className="btn btn-glass btn-sm" onClick={togglePause}>{paused ? <Play className="ic" /> : <Pause className="ic" />}{paused ? "Tiếp tục" : "Tạm dừng"}</button>
+          </section>
+        )}
+
+        {phase === "work" && !timed && (
+          <section className="g pad-l ss-steps">
+            <div className="field"><span className="lbl">Mức tạ (kg)</span>
+              <div className="stepper ss-step">
+                <button type="button" aria-label="Giảm 2,5 kg" onClick={() => stepW(-2.5)}><Minus className="ic" /></button>
+                <label className="sv-box"><DecimalInput aria-label="Mức tạ (kg)" className="sv n" value={weight} onValue={(n) => setWeight(n ?? 0)} /><span>kg</span></label>
+                <button type="button" aria-label="Tăng 2,5 kg" onClick={() => stepW(2.5)}><Plus className="ic" /></button>
+              </div></div>
+            <div className="field"><span className="lbl">Số rep {useCam && camKey && <span>{manualReps ? "bạn nhập" : cam.reps ? "camera đếm" : "mục tiêu"}</span>}</span>
+              <div className="stepper ss-step">
+                <button type="button" aria-label="Bớt 1 rep" onClick={() => editReps(shownReps - 1)}><Minus className="ic" /></button>
+                <label className="sv-box"><input aria-label="Số rep" inputMode="numeric" className="sv n" value={shownReps} onChange={(e) => editReps(+e.target.value.replace(/\D/g, ""))} /><span>rep</span></label>
+                <button type="button" aria-label="Thêm 1 rep" onClick={() => editReps(shownReps + 1)}><Plus className="ic" /></button>
+              </div></div>
+            {detail?.overload && setIdx === 1 && <p className="t-small"><b style={{ color: "var(--lime-t)" }}>Tăng tải lũy tiến:</b> {detail.overload.reason}</p>}
+            {autoLeft != null && (
+              <div role="status" className="g alert ok"><span className="a-ic"><Check className="ic" /></span><div style={{ flex: 1 }}><b>Đủ {cam.reps} rep · tự ghi set sau {autoLeft}s</b></div><button type="button" className="btn btn-glass btn-xs" onClick={() => setAutoCancelled(true)}>Tập thêm</button></div>
+            )}
+          </section>
+        )}
+        {phase === "work" && timed && detail?.overload && setIdx === 1 && <p className="t-small" style={{ marginTop: 10 }}><b style={{ color: "var(--lime-t)" }}>Tăng tải lũy tiến:</b> {detail.overload.reason}</p>}
+
+        {myLogged.length > 0 && (
+          <>
+            <h2 className="sec" style={{ paddingBottom: 0 }}>Đã ghi<span>{myLogged.length}/{item.sets} set</span></h2>
+            <div className="g list">
+              {myLogged.map((x, i) => (
+                <div className="li" key={x.id}>
+                  <span className="li-ic lime"><Check className="ic" /></span>
+                  <span className="li-main"><b>Set {i + 1} · {fmtVal(x)}</b>{x.form_score != null && <small>Điểm form {x.form_score}</small>}</span>
+                  <button type="button" className="icon-btn sm" aria-label={`Sửa set ${i + 1}`} onClick={() => { setEditSet(x); setEsW(x.weight_kg); setEsR(timed ? x.duration_sec : x.reps); }}><MoreHorizontal className="ic" /></button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="g ss-next">
+          <span className="li-ic"><SkipForward className="ic" /></span>
+          <span className="li-main"><small>Tiếp theo</small><b>{queue[qi + 1] ? `${exName(queue[qi + 1].exercise)} · ${queue[qi + 1].sets} × ${queue[qi + 1].duration_sec && !queue[qi + 1].reps ? `${queue[qi + 1].duration_sec}s` : queue[qi + 1].reps}` : "Bài cuối của buổi"}</b></span>
+        </div>
+
+        <div className="g fb-actionbar">
+          <button type="button" className="btn btn-glass" onClick={nextExercise} disabled={busy}>Bỏ qua bài</button>
+          {phase === "work" && !timed && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => logSet()}>Xong set {Math.min(setIdx, item.sets)} · {fmt(weight, 1)} kg × {shownReps}</button>}
+          {phase === "work" && timed && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => logSet(countTotal - count)}><Check className="ic" />Xong sớm</button>}
+          {(phase === "prep" || phase === "rest") && <button type="button" className="btn btn-primary" onClick={skipCount}>{phase === "prep" ? "Vào luôn" : "Bỏ nghỉ"}</button>}
+        </div>
+
+        <Sheet open={!!editSet} onClose={() => setEditSet(null)} title="Sửa set" sub={`${exName(ex)}`}
+          actions={<>
+            <button type="button" className="btn btn-primary btn-block" onClick={async () => { if (!editSet) return; try { await editLogged(editSet, timed ? { weight_kg: 0, reps: 0, duration_sec: Math.max(0, esR) } : { weight_kg: Math.max(0, esW), reps: Math.max(0, esR), duration_sec: 0 }); setEditSet(null); } catch { /* đã báo lỗi */ } }}>Lưu</button>
+            <button type="button" className="btn btn-danger-soft btn-block" onClick={async () => { if (editSet && (await confirmDialog({ title: "Xoá set này?", text: "Set này sẽ không còn tính vào khối lượng và kỷ lục.", confirmLabel: "Xoá set", danger: true }))) { await deleteLogged(editSet); setEditSet(null); } }}><Trash2 className="ic" />Xoá set</button>
+          </>}>
+          <div className="sheet-body">
+            {!timed && (
+              <div className="field"><span className="lbl">Mức tạ (kg)</span>
+                <div className="stepper ss-step"><button type="button" aria-label="Giảm 2,5 kg" onClick={() => setEsW((w) => Math.max(0, +(w - 2.5).toFixed(1)))}><Minus className="ic" /></button>
+                  <label className="sv-box"><DecimalInput aria-label="Mức tạ (kg)" className="sv n" value={esW} onValue={(n) => setEsW(n ?? 0)} /><span>kg</span></label>
+                  <button type="button" aria-label="Tăng 2,5 kg" onClick={() => setEsW((w) => +(w + 2.5).toFixed(1))}><Plus className="ic" /></button></div></div>
+            )}
+            <div className="field"><span className="lbl">{timed ? "Số giây" : "Số rep"}</span>
+              <div className="stepper ss-step"><button type="button" aria-label="Bớt" onClick={() => setEsR((r) => Math.max(0, r - 1))}><Minus className="ic" /></button>
+                <label className="sv-box"><input aria-label={timed ? "Số giây" : "Số rep"} inputMode="numeric" className="sv n" value={esR} onChange={(e) => setEsR(+e.target.value.replace(/\D/g, ""))} /><span>{timed ? "giây" : "rep"}</span></label>
+                <button type="button" aria-label="Thêm" onClick={() => setEsR((r) => r + 1)}><Plus className="ic" /></button></div></div>
+          </div>
+        </Sheet>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto max-w-4xl">
       {/* Điện thoại: thanh trên 44px kiểu màn con — ✕ kết thúc, tên buổi + đồng hồ, bật/tắt giọng PT */}

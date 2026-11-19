@@ -120,7 +120,7 @@ export function ExerciseSheet({ id, onClose, startTab = 0 }: { id: string | null
 }
 
 /* ---------------- Chọn bài (thêm vào buổi Custom) ---------------- */
-function PickerSheet({ open, onClose, onPick, exclude, focus }: { open: boolean; onClose: () => void; onPick: (ex: Exercise) => void; exclude: string[]; focus: string }) {
+export function PickerSheet({ open, onClose, onPick, exclude, focus }: { open: boolean; onClose: () => void; onPick: (ex: Exercise) => void; exclude: string[]; focus: string }) {
   const [q, setQ] = useState("");
   const [f, setF] = useState(focus === "full" ? "" : focus);
   useEffect(() => { if (open) setF(focus === "full" ? "" : focus); }, [open, focus]);

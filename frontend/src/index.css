@@ -1745,3 +1745,46 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
   .v1 .steps li::before { counter-increment: s; content: counter(s); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-family: var(--disp); font-weight: 700; background: var(--faint); }
   .v1 .hstack .li-ic { flex: none; }
 }
+
+/* V1 — Buổi tập (session) + tổng kết */
+@media (max-width: 1023px) {
+  .v1 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .fb-actionbar { position: fixed; z-index: 40; left: max(12px, calc(50% - var(--maxw) / 2 + 4px)); right: max(12px, calc(50% - var(--maxw) / 2 + 4px)); bottom: calc(12px + var(--safe-b)); padding: 8px; border-radius: 99px; display: flex; gap: 8px; align-items: center; }
+  .fb-actionbar .btn { flex: 1; min-width: 0; height: 56px; padding: 0 14px; font-size: 15px; white-space: normal; line-height: 1.2; }
+  .fb-actionbar .btn-glass { flex: 0 0 auto; padding: 0 18px; }
+  .v1 .ss-top { display: flex; padding-top: 4px; }
+  .v1 .ss-bar { display: flex; align-items: center; gap: 8px; min-height: 52px; }
+  .v1 .ss-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+  .v1 .ss-title b { font-family: var(--disp); font-size: 17px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .v1 .ss-title span { font-size: 14px; color: var(--mute); }
+  .v1 .icon-btn.ink { background: var(--ink); color: var(--on-ink); }
+  .v1 .ss-seg { display: flex; gap: 4px; margin-top: 6px; }
+  .v1 .ss-seg > span { flex: 1; height: 6px; border-radius: 9px; background: var(--track); overflow: hidden; }
+  .v1 .ss-seg i { display: block; height: 100%; background: var(--lime); border-radius: 9px; transition: width 0.5s var(--ez); }
+  .v1 .ss-name { font-family: var(--disp); font-weight: 800; font-size: 30px; line-height: 1.08; letter-spacing: -0.035em; margin: 4px 0; text-transform: capitalize; text-wrap: balance; }
+  .v1 .ss-dots { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .v1 .ss-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); }
+  .v1 .ss-dots i.on { background: var(--lime); border-color: var(--lime); }
+  .v1 .ss-dots b { margin-left: 4px; font-size: 15px; }
+  .v1 .ss-cam { margin-top: 12px; overflow: hidden; border-radius: 24px; }
+  .v1 .ss-timer { margin-top: 12px; display: grid; justify-items: center; gap: 12px; text-align: center; }
+  .v1 .ss-big { font-family: var(--disp); font-weight: 800; font-size: 56px; letter-spacing: -0.04em; line-height: 1; display: block; }
+  .v1 .ss-tube { width: 120px; height: 200px; border-radius: 60px; }
+  .v1 .ss-steps { margin-top: 12px; display: grid; gap: 14px; }
+  .v1 .ss-steps .lbl { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .v1 .ss-steps .lbl span { color: var(--mute); font-weight: 500; font-size: 13px; }
+  .v1 .stepper.ss-step { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+  .v1 .stepper.ss-step > button { height: 56px; }
+  .v1 .stepper.ss-step .sv-box { height: 56px; }
+  .v1 .stepper.ss-step .sv-box input { width: 5.4ch !important; font-size: 28px !important; }
+  .v1 .ss { padding-bottom: 24px; }
+  .v1 .fb-actionbar .btn { font-size: 14.5px; }
+  .v1 .ss-next { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-top: 14px; border-radius: 22px; opacity: 0.85; }
+  .v1 .ss-next .li-main small { font-size: 12px; }
+  .v1 .ss-pr { display: flex; gap: 12px; align-items: flex-start; }
+  .v1 .ss-pr p { font-size: 14px; margin-top: 2px; }
+  .v1 .ss-map { max-height: 300px; overflow: hidden; display: grid; place-items: center; }
+  .v1 .ss-row.off { opacity: 0.5; }
+  .v1 .ss-row .check { flex: none; }
+  .v1 .li-ic.gold { background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold-t); }
+}
