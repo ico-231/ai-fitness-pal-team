@@ -619,6 +619,8 @@ export default function Session() {
   if (phase === "summary" && summary && !desktop) {
     const groups: Record<string, WorkoutSession["sets"]> = {};
     summary.sets.forEach((x) => (groups[x.exercise_name] = [...(groups[x.exercise_name] || []), x]));
+    // tên bài thống nhất với màn chọn bài: ưu tiên tên tiếng Việt của bài trong chương trình
+    const viName = (n: string) => { const f = plan.items.find((it) => it.exercise.name === n || it.exercise_id === summary.sets.find((x) => x.exercise_name === n)?.exercise_id); return f ? exName(f.exercise) : n; };
     const when = new Date(summary.started_at);
     const hl = Object.fromEntries(Object.entries(summary.muscles).map(([k, v]) => [k, v.sets]));
     return (
@@ -653,7 +655,7 @@ export default function Session() {
         <div className="g list" style={{ marginTop: -6 }}>
           {Object.entries(groups).map(([name, sets]) => (
             <div className="li" key={name}>
-              <span className="li-main"><b style={{ textTransform: "capitalize", whiteSpace: "normal" }}>{name}</b><small>{sets.map((x) => (x.duration_sec ? `${x.duration_sec}s` : x.weight_kg ? `${fmt(x.weight_kg, 1)}×${x.reps}` : `${x.reps} rep`)).join(" · ")}</small></span>
+              <span className="li-main"><b style={{ textTransform: "capitalize", whiteSpace: "normal" }}>{viName(name)}</b><small>{sets.map((x) => (x.duration_sec ? `${x.duration_sec}s` : x.weight_kg ? `${fmt(x.weight_kg, 1)}×${x.reps}` : `${x.reps} rep`)).join(" · ")}</small></span>
               <span className="li-end"><Check className="ic" /></span>
             </div>
           ))}
@@ -665,7 +667,6 @@ export default function Session() {
           <span className="aimark sm" aria-hidden="true"><HeadBroSvg className="ic-ai" /></span>
           <span className="t">HeadBro nhận xét buổi tập vừa rồi và gợi ý cho buổi sau</span><ChevronRight className="ic" />
         </button>
-        <p style={{ textAlign: "center", marginTop: 8 }}><button type="button" className="link" onClick={() => nav("/workouts")}>Về Tập luyện</button></p>
         <div className="g fb-actionbar">
           <button type="button" className="btn btn-glass" onClick={() => nav("/")}>Về Tổng quan</button>
           <button type="button" className="btn btn-primary" onClick={() => nav("/nutrition")}>Ghi bữa ăn</button>
@@ -946,11 +947,11 @@ export default function Session() {
           <section className="g pad-l ss-timer">
             <p className="t-label">Nghỉ ngơi</p>
             <span className="vessel ss-tube" role="img" aria-label={`Còn ${count} giây nghỉ`}><span className="liq teal" style={{ "--v": countTotal ? count / countTotal : 0 } as React.CSSProperties} /></span>
-            <b className="n ss-big">{count >= 60 ? mmss(count) : count}<small className="unit"> giây</small></b>
+            <b className="n ss-big">{count >= 60 ? mmss(count) : count}{count < 60 && <small className="unit"> giây</small>}</b>
             <p className="t-small">{nextItem ? `Tiếp theo: ${exName(nextItem.exercise)}` : `Tiếp theo: set ${setIdx}/${item.sets}`}</p>
             <div className="btn-row" style={{ width: "100%" }}>
-              <button type="button" className="btn btn-glass btn-sm" onClick={() => adjust(-15)}><Minus className="ic" />15s</button>
-              <button type="button" className="btn btn-glass btn-sm" onClick={() => adjust(15)}><Plus className="ic" />15s</button>
+              <button type="button" className="btn btn-glass btn-sm" aria-label="Bớt 15 giây nghỉ" onClick={() => adjust(-15)}><Minus className="ic" />15s</button>
+              <button type="button" className="btn btn-glass btn-sm" aria-label="Thêm 15 giây nghỉ" onClick={() => adjust(15)}><Plus className="ic" />15s</button>
             </div>
           </section>
         )}

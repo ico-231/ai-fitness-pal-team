@@ -304,7 +304,7 @@ export function Layout() {
       </main>
 
       {/* Thanh dưới điện thoại + nút HeadBro (ẩn khi đang trong buổi tập) */}
-      {!focusTask && <MobileDock />}
+      {!focusTask && !fullBleed && <MobileDock />}
     </div>
   );
 }

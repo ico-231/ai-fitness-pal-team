@@ -3,6 +3,8 @@ import clsx from "clsx";
 import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Pencil, RotateCcw, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useChat } from "../../lib/chat";
+import { useMedia } from "../../lib/hooks";
+import { BubbleV1 } from "../mobile/ChatV1";
 import { TOOL_LABELS } from "../../lib/constants";
 import { createRecognizer, fileToDataUrl, voice } from "../../lib/media";
 import type { AgentKey, ChatMessage } from "../../lib/types";
@@ -188,6 +190,8 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<ReturnType<typeof createRecognizer>>(null);
   const sentInitial = useRef<string | null>(null);
+  // Điện thoại (< 1024px): bản V1 "Kính lỏng" (bong bóng .msg, ô soạn kính, gợi ý .qr); logic gửi/nhận dùng chung
+  const mobile = useMedia("(max-width: 1023px)");
 
   useEffect(() => {
     if (!initial) {
@@ -316,6 +320,53 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
       </div>
     </div>
   );
+
+  if (mobile) {
+    const composerV1 = (
+      <div className="chat-comp">
+        {!config?.ai_enabled && <div className="g alert warn" role="status"><span className="a-ic"><ShieldCheck className="ic" /></span><div><b>AI chưa được cấu hình trên server</b><p>HeadBro sẽ chưa trả lời được.</p></div></div>}
+        {image && (
+          <div className="chat-img"><img src={image} alt="Ảnh đính kèm" /><button type="button" className="icon-btn sm" aria-label="Bỏ ảnh" onClick={() => setImage(null)}><X className="ic ic-sm" /></button></div>
+        )}
+        <div className="g composer">
+          <button type="button" className="icon-btn sm" aria-label="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}><ImagePlus className="ic" /></button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setImage(await fileToDataUrl(f)); e.target.value = ""; }} />
+          <textarea value={text} rows={1} aria-label="Tin nhắn cho HeadBro" placeholder={listening ? "Đang nghe..." : "Hỏi HeadBro..."}
+            onChange={(e) => setText(e.target.value)} style={{ fieldSizing: "content" } as React.CSSProperties}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !touch) { e.preventDefault(); submit(); } }} />
+          <button type="button" className={clsx("icon-btn sm", listening && "rec")} aria-label={listening ? "Dừng nhập giọng nói" : "Nhập bằng giọng nói"} aria-pressed={listening} onClick={toggleMic}>{listening ? <MicOff className="ic" /> : <Mic className="ic" />}</button>
+          {sending ? (
+            <button type="button" className="send" aria-label="Dừng trả lời" onClick={stop}><Square className="ic ic-sm" fill="currentColor" /></button>
+          ) : (
+            <button type="button" className="send" aria-label="Gửi tin nhắn" disabled={!text.trim() && !image} onClick={submit}><Send className="ic" /></button>
+          )}
+        </div>
+        {!compact && <p className="chat-foot">HeadBro có thể nhầm lẫn. Hỏi bác sĩ khi có vấn đề sức khoẻ.</p>}
+      </div>
+    );
+    return (
+      <div className="v1 chatv1">
+        <div ref={scroller} className="chat-scroll">
+          <div className="chat">
+            {loading && <div className="chat-load"><span className="spinner" aria-label="Đang tải" /></div>}
+            {!loading && messages.length === 0 && emptyState}
+            {messages.map((m, i) => (
+              <BubbleV1 key={m.id} m={m} compact={compact} onCardStatus={updateCard}
+                onFollowup={i === messages.length - 1 && !sending ? (q) => send({ text: q, page, pageContext }) : undefined}
+                onEdit={m.role === "user" && !sending && !m.id.startsWith("tmp-") && conversationId ? (t) => send({ text: t, page, pageContext, replaceFrom: m.id }) : undefined}
+                onRegenerate={(() => {
+                  if (m.role !== "assistant" || i !== messages.length - 1 || sending || m.streaming) return undefined;
+                  const q = [...messages.slice(0, i)].reverse().find((x) => x.role === "user");
+                  if (!q || q.id.startsWith("tmp-") || !conversationId) return undefined;
+                  return () => send({ text: q.content, image: q.image, page, pageContext, replaceFrom: q.id });
+                })()} />
+            ))}
+          </div>
+        </div>
+        {composerV1}
+      </div>
+    );
+  }
 
   // Màn chào kiểu Claude/Gemini: lời chào + ô nhập ở giữa màn hình, gợi ý bên dưới
   if (showHero) {

@@ -2,6 +2,8 @@ import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useSta
 import { useLocation, useNavigate } from "react-router-dom";
 import { Activity, Apple, Beef, CalendarDays, ClipboardList, Dumbbell, Maximize2, MessageSquarePlus, Moon, Scale, Target, TrendingUp, UtensilsCrossed, X, type LucideIcon } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
+import { useMedia } from "../lib/hooks";
+import { Sheet } from "./mobile/Sheet";
 
 import type { AgentKey } from "../lib/types";
 import { Spinner } from "./ui";
@@ -75,6 +77,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ open, close }), [open, close]);
 
   const onChatPage = loc.pathname.startsWith("/chat");
+  const mobile = useMedia("(max-width: 1023px)");
 
   return (
     <Ctx.Provider value={value}>
@@ -103,7 +106,22 @@ export function AIProvider({ children }: { children: ReactNode }) {
           </span>
         </button>
       )}
-      {isOpen && !onChatPage && (
+      {/* Điện thoại: khung hỏi nhanh là sheet kính V1 (mở từ nút HeadBro ở thanh dưới); có nút phóng to sang trang chat */}
+      {mobile && !onChatPage && (
+        <Sheet open={isOpen} onClose={close} full className="aq" title="Trợ lý HeadBro" sub={`Đang ở trang ${page}`}>
+          <div className="aq-bar">
+            <button type="button" className="icon-btn sm chipg" aria-label="Cuộc trò chuyện mới" onClick={() => { setConv(null); setInitial(null); setContext(undefined); setNonce((n) => n + 1); }}><MessageSquarePlus className="ic" /></button>
+            <button type="button" className="icon-btn sm chipg" aria-label="Mở toàn màn hình" onClick={() => { close(); nav(conv ? `/chat/${conv}` : "/chat"); }}><Maximize2 className="ic" /></button>
+          </div>
+          <div className="aq-chat">
+            <Suspense fallback={<span className="spinner" aria-label="Đang tải" />}>
+              <ChatView key={nonce} compact conversationId={conv} onConversation={setConv} page={page} pageContext={context} initial={initial} onInitialSent={() => setInitial(null)}
+                emptyState={<QuickEmpty page={page} onPick={(t) => setInitial({ text: t, autoSend: true })} />} />
+            </Suspense>
+          </div>
+        </Sheet>
+      )}
+      {!mobile && isOpen && !onChatPage && (
         <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/30 lg:bg-transparent" onClick={close}>
           <div
             role="dialog"
@@ -158,6 +176,21 @@ const SUGGEST: Record<string, [string, AgentKey, LucideIcon][]> = {
   nutrition: [["Lên thực đơn các bữa còn lại hôm nay", "nutribro", ClipboardList], ["Trưa nay mình ăn 1 đĩa cơm tấm sườn", "nutribro", UtensilsCrossed], ["Ăn gì trước buổi tập?", "nutribro", Apple]],
   inbody: [["Giúp mình đặt mục tiêu cụ thể", "headbro", Target], ["Giải thích chỉ số InBody của mình", "headbro", Scale]],
 };
+
+/** Gợi ý của khung hỏi nhanh trên điện thoại (V1): theo trang đang mở. */
+function QuickEmpty({ page, onPick }: { page: string; onPick: (t: string) => void }) {
+  const list = SUGGEST[page] || SUGGEST.dashboard;
+  return (
+    <div className="aq-empty">
+      <h3>Hỏi HeadBro bất cứ điều gì</h3>
+      <p>Tập luyện, ăn uống, cơ thể — hỏi gì cũng được, ở trang nào cũng được.</p>
+      <p className="aq-gl">Gợi ý theo trang này</p>
+      <div className="aq-list">
+        {list.map(([t]) => <button key={t} type="button" className="aq-q" onClick={() => onPick(t)}>{t}</button>)}
+      </div>
+    </div>
+  );
+}
 
 function DrawerEmpty({ page, onPick }: { page: string; onPick: (t: string, a: AgentKey) => void }) {
   const list = SUGGEST[page] || SUGGEST.dashboard;

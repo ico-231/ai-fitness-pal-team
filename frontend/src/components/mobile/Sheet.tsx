@@ -15,8 +15,8 @@ const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),textarea
  * Render ở body (portal) trong khung `.v1` để dùng được class V1; khoá cuộn trang khi đang mở.
  * `actions` = vùng nút dính đáy; `full` = gần toàn màn hình.
  */
-export function Sheet({ open, onClose, title, sub, full, actions, children }: {
-  open: boolean; onClose: () => void; title: ReactNode; sub?: ReactNode; full?: boolean; actions?: ReactNode; children: ReactNode;
+export function Sheet({ open, onClose, title, sub, full, actions, children, className }: {
+  open: boolean; onClose: () => void; title: ReactNode; sub?: ReactNode; full?: boolean; actions?: ReactNode; children: ReactNode; className?: string;
 }) {
   const [mounted, setMounted] = useState(open);
   const [on, setOn] = useState(false);
@@ -71,7 +71,7 @@ export function Sheet({ open, onClose, title, sub, full, actions, children }: {
     <div className="v1 no-print">
       <div className={clsx("scrim", on && "on")} aria-hidden="true" onClick={onClose} />
       <div ref={box} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}
-        className={clsx("g sheet", full && "full", on && "open")}>
+        className={clsx("g sheet", full && "full", on && "open", className)}>
         <div className="grab" />
         <div className="sheet-h">
           <div style={{ minWidth: 0 }}>

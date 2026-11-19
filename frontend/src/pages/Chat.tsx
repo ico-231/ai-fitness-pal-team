@@ -2,9 +2,9 @@ import { MobileMenuButton } from "../components/MobileMenu";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
-import { CalendarDays, ChevronDown, Dumbbell, History, MessageSquarePlus, Pencil, Salad, Search, Target, Trash2, TrendingUp } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, Dumbbell, History, MessageSquarePlus, Pencil, Plus, Salad, Search, Target, Trash2, TrendingUp } from "lucide-react";
 import { del, api } from "../lib/api";
-import { useApi, useInvalidateAll } from "../lib/hooks";
+import { useApi, useInvalidateAll, useMedia } from "../lib/hooks";
 import { greeting, timeAgo } from "../lib/format";
 import { useAuth } from "../lib/auth";
 import type { AgentKey, Conversation } from "../lib/types";
@@ -12,6 +12,8 @@ import { ChatView } from "../components/chat/ChatView";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { confirmDialog, HelpButton, promptDialog } from "../components/ui";
 import type { ChatHandoff } from "../components/AIProvider";
+import { Sheet } from "../components/mobile/Sheet";
+import { HeadBroSvg } from "../components/MobileShell";
 
 // Gợi ý dưới ô nhập: nhãn ngắn (hiện trên viên) + câu đầy đủ (gửi đi), nhóm theo chuyên gia
 const STARTERS: { label: string; text: string; agent: AgentKey; icon: typeof Dumbbell }[] = [
@@ -120,6 +122,76 @@ function HistoryButton({ current }: { current?: string }) {
   );
 }
 
+/** Lịch sử hội thoại (điện thoại): tìm, mở, đổi tên, xoá — sheet kính. */
+function HistorySheetM({ open, onClose, current }: { open: boolean; onClose: () => void; current?: string }) {
+  const nav = useNavigate();
+  const invalidate = useInvalidateAll();
+  const [q, setQ] = useState("");
+  const { data: convs } = useApi<Conversation[]>(["conversations"], "/api/chat/conversations", { enabled: open });
+  const list = (convs || []).filter((c) => c.title.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <Sheet open={open} onClose={onClose} full title="Lịch sử trò chuyện" sub={convs ? `${convs.length} cuộc trò chuyện` : undefined}>
+      <div className="sheet-body">
+        <label className="search"><Search className="ic" /><input className="input" type="search" placeholder="Tìm cuộc trò chuyện..." aria-label="Tìm cuộc trò chuyện" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} /></label>
+        <div className="g list" style={{ padding: "0 16px" }}>
+          {!convs && <span className="sk sk-block" />}
+          {list.map((c) => (
+            <div key={c.id} className="li">
+              <button type="button" className="li-main conv-open" aria-current={c.id === current ? "page" : undefined} onClick={() => { nav(`/chat/${c.id}`); onClose(); }}>
+                <b>{c.title}</b><small>{timeAgo(c.updated_at)}{c.id === current ? " · đang mở" : ""}</small>
+              </button>
+              <button type="button" className="icon-btn sm" aria-label={`Đổi tên "${c.title}"`} onClick={async () => {
+                const t = await promptDialog({ title: "Đổi tên cuộc trò chuyện", initial: c.title, confirmLabel: "Lưu tên" });
+                if (t) { await api(`/api/chat/conversations/${c.id}`, { method: "PATCH", body: { title: t } }); invalidate(); }
+              }}><Pencil className="ic" /></button>
+              <button type="button" className="icon-btn sm" aria-label={`Xoá "${c.title}"`} onClick={async () => {
+                if (!(await confirmDialog({ title: `Xoá "${c.title}"?`, text: "Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ mất.", confirmLabel: "Xoá cuộc trò chuyện", danger: true }))) return;
+                await del(`/api/chat/conversations/${c.id}`);
+                invalidate();
+                if (c.id === current) { nav("/chat"); onClose(); }
+              }}><Trash2 className="ic" /></button>
+            </div>
+          ))}
+          {convs && !list.length && <p className="nt-none">{q ? "Không tìm thấy." : "Chưa có cuộc trò chuyện nào."}</p>}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Màn chào khi chưa có tin nhắn (điện thoại): lời chào + gợi ý mở đầu. */
+function MobileWelcome({ onPick }: { onPick: (t: string) => void }) {
+  const { user } = useAuth();
+  const first = (user?.name || "").trim().split(/\s+/).pop();
+  return (
+    <div className="chat-welcome">
+      <span className="aimark lg" aria-hidden="true"><HeadBroSvg /></span>
+      <h1>{greeting()}{first ? `, ${first}` : ""}. <span>Hôm nay tập gì?</span></h1>
+      <p>Hỏi gì về tập luyện, ăn uống hay cơ thể cũng được — HeadBro trả lời theo dữ liệu thật của bạn.</p>
+      <div className="g list">
+        {STARTERS.map(({ label, text, icon: I }) => (
+          <button key={label} type="button" className="li" onClick={() => onPick(text)}><span className="li-ic lime"><I className="ic" /></span><span className="li-main"><b>{label}</b><small>{text}</small></span></button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Chiều cao vùng nhìn thấy thật (trừ bàn phím ảo) — để ô nhập luôn nằm trên bàn phím, không bị che. */
+function useVisualViewport() {
+  const [v, setV] = useState<{ h: number; top: number } | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const on = () => setV({ h: vv.height, top: vv.offsetTop });
+    on();
+    vv.addEventListener("resize", on);
+    vv.addEventListener("scroll", on);
+    return () => { vv.removeEventListener("resize", on); vv.removeEventListener("scroll", on); };
+  }, []);
+  return v;
+}
+
 export default function Chat() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -142,6 +214,36 @@ export default function Chat() {
   const viewKey = id && id === created.current ? "new" : id || "new";
   if (!id) created.current = null;
   const ask = (text: string) => setPick({ text, autoSend: true });
+  const desktop = useMedia("(min-width: 1024px)");
+  const [hist, setHist] = useState(false);
+  const vv = useVisualViewport();
+
+  if (!desktop) {
+    const newChat = () => { nav("/chat"); setPick(null); setHandoffCtx(undefined); };
+    return (
+      <div className="v1 chat-page" style={vv ? { height: vv.h, transform: `translateY(${vv.top}px)` } : undefined}>
+        <header className="chat-top">
+          <button type="button" className="g icon-btn" aria-label="Quay lại" onClick={() => (window.history.length > 1 ? nav(-1) : nav("/"))}><ChevronLeft className="ic ic-lg" /></button>
+          <div className="chat-title"><span className="aimark sm" aria-hidden="true"><HeadBroSvg /></span><b>HeadBro</b></div>
+          <button type="button" className="g icon-btn" aria-label="Lịch sử trò chuyện" onClick={() => setHist(true)}><History className="ic" /></button>
+          <button type="button" className="g icon-btn ink" aria-label="Cuộc trò chuyện mới" onClick={newChat}><Plus className="ic" /></button>
+        </header>
+        <div className="chat-main">
+          <ChatView
+            key={viewKey}
+            conversationId={id || null}
+            onConversation={(cid) => { created.current = cid; nav(`/chat/${cid}`, { replace: true }); }}
+            page="chat"
+            pageContext={handoffCtx}
+            initial={pick}
+            onInitialSent={() => setPick(null)}
+            emptyState={<MobileWelcome onPick={ask} />}
+          />
+        </div>
+        <HistorySheetM open={hist} onClose={() => setHist(false)} current={id} />
+      </div>
+    );
+  }
 
   return (
     // Trang Trợ lý AI chỉ còn khung chat (theo góp ý: bỏ các khối chỉ số hai bên cho gọn, tập trung vào hội thoại)
