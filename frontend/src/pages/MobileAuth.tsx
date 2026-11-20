@@ -153,11 +153,11 @@ const GOAL_UI: Record<string, { ic: typeof Dumbbell; c: string; s: string }> = {
 };
 const LEVEL_SUB: Record<string, [string, string]> = { beginner: ["Người mới", "Dưới 6 tháng"], intermediate: ["Trung cấp", "6 tháng – 2 năm"], advanced: ["Nâng cao", "Trên 2 năm"] };
 const SAY: Record<string, string> = {
-  fat_loss: "Ăn thấp hơn TDEE để xuống cân đều mà vẫn giữ cơ. Đạm cao là phần quan trọng nhất.",
-  muscle: "Ăn dư nhẹ so với TDEE để tăng cơ mà ít lên mỡ. Đạm giúp cơ hồi phục sau mỗi buổi.",
-  maintain: "Ăn gần bằng TDEE để giữ cân và vóc dáng. Đạm đủ giữ khối cơ ổn định.",
+  fat_loss: "Ăn thấp hơn mức tiêu hao để xuống cân đều mà vẫn giữ cơ. Đạm cao là phần quan trọng nhất.",
+  muscle: "Ăn dư nhẹ so với mức tiêu hao để tăng cơ mà ít lên mỡ. Đạm giúp cơ hồi phục sau mỗi buổi.",
+  maintain: "Ăn gần bằng mức tiêu hao để giữ cân và vóc dáng. Đạm đủ giữ khối cơ ổn định.",
   endurance: "Thêm một chút calo cho cardio và HIIT. Tinh bột là nhiên liệu chính của bạn.",
-  health: "Ăn ngang TDEE, đủ đạm và chất béo tốt để khớp và cơ hồi phục. Không cần ép cân.",
+  health: "Ăn ngang mức tiêu hao, đủ đạm và chất béo tốt để khớp và cơ hồi phục. Không cần ép cân.",
 };
 
 function NumStep({ value, onChange, min, max, dec = 0, unit, label, stepBy, w }: { value: number; onChange: (n: number) => void; min: number; max: number; dec?: number; unit?: string; label: string; stepBy: number; w?: number }) {
@@ -341,10 +341,10 @@ export function MobileOnboarding() {
               <div className="ob-tiles">
                 <div className="g ob-tile"><div><span className="k"><Droplet className="ic" />Nước</span><span className="v n">{fmt(pv.water_ml / 1000, 1)}<small> L</small></span><span className="s">mỗi ngày</span></div>
                   <span className="vessel ob-cup" aria-hidden="true"><span className="liq teal" style={vars({ "--v": 0.62 })} /></span></div>
-                <div className="g ob-tile"><div><span className="k"><Zap className="ic" />TDEE</span><span className="v n">{fmt(pv.tdee)}<small> kcal</small></span><span className="s">đốt mỗi ngày</span></div></div>
+                <div className="g ob-tile"><div><span className="k"><Zap className="ic" />Tiêu hao</span><span className="v n">{fmt(pv.tdee)}<small> kcal</small></span><span className="s">đốt mỗi ngày</span></div></div>
               </div>
 
-              <p className="t-small ob-why">Tính theo công thức Mifflin-St Jeor: BMR {fmt(pv.bmr)} kcal × hệ số vận động = TDEE, rồi điều chỉnh theo mục tiêu. Bạn có thể sửa trong Cài đặt bất cứ lúc nào.</p>
+              <p className="t-small ob-why">Tính từ tuổi, chiều cao, cân nặng và mức vận động của bạn, rồi điều chỉnh theo mục tiêu. Có thể sửa trong Cài đặt bất cứ lúc nào.</p>
 
               <section className="g chat" aria-label="HeadBro giải thích">
                 <div className="msg"><span className="hb"><HeadBroSvg className="ic-ai" /></span><div className="bub"><b>HeadBro</b><span>{SAY[f.goal] ?? SAY.maintain}</span></div></div>

@@ -106,7 +106,7 @@ export function Logo({ small }: { small?: boolean }) {
             FitBro
             <span className="rounded-full bg-volt px-1.5 py-px text-[10px] font-bold tracking-normal text-on-volt">AI</span>
           </p>
-          <p className="text-[11.5px] text-muted">Trợ lý thể hình đa tác tử</p>
+          <p className="text-[11.5px] text-muted">Huấn luyện viên AI của bạn</p>
         </div>
       )}
     </div>
