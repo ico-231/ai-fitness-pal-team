@@ -569,7 +569,17 @@ html[data-theme="light"] .v1 .vessel{box-shadow:inset 0 0 0 1.5px var(--g-rim),i
 .v1 .tubes > button{width:100%;display:grid;justify-items:center;align-content:start;gap:6px;min-height:44px}
 .v1 .tubes .dl{font-size:12px;color:var(--mute)}
 .v1 .tubes .dl.t{color:var(--fg);font-weight:700}
-.v1 .tubes > [aria-pressed="true"] .tube{box-shadow:inset 0 0 0 2px var(--fg)}
+/* Ngày đang chọn = nhãn thứ nằm trong viên thuốc đặc (không viền quanh ống: viền trắng dễ nhầm với "dự kiến"). */
+.v1 .tubes .dl{padding:2px 8px;border-radius:99px}
+.v1 .tubes .dl.on{background:var(--fg);color:var(--bg);font-weight:700}
+.v1 .tube.missed{color:var(--red);background:color-mix(in srgb,var(--red) 14%,transparent)}
+.v1 .wlegend{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;margin-top:10px;font-size:12px;color:var(--mute)}
+.v1 .wlegend span{display:inline-flex;align-items:center;gap:5px}
+.v1 .wlegend .lg{display:inline-block;width:8px;height:14px;border-radius:99px;box-sizing:border-box}
+.v1 .wlegend .lg.done{background:var(--lime)}
+.v1 .wlegend .lg.missed{background:color-mix(in srgb,var(--red) 50%,transparent)}
+.v1 .wlegend .lg.plan{border:1.5px dashed var(--mute)}
+.v1 .wlegend .lg.rest{background:var(--faint);box-shadow:inset 0 0 0 1px var(--g-rim)}
 .v1 .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .v1 .cols > *{display:grid;justify-items:center;gap:6px;text-align:center}
 .v1 .cols b{font-family:var(--disp);font-size:17px;font-weight:700;line-height:1}

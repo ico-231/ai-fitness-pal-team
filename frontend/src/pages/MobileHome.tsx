@@ -1,9 +1,9 @@
 import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Bike, BarChart3, ChevronRight, Moon, Play, Sun, Utensils, Dumbbell } from "lucide-react";
+import { ArrowRight, Bike, BarChart3, ChevronRight, Moon, Play, Sun, Utensils, Dumbbell, X } from "lucide-react";
 import clsx from "clsx";
 import type { Insight, ScheduleDay } from "../lib/types";
-import { fmt, greeting, todayISO } from "../lib/format";
+import { addDays, fmt, greeting, todayISO } from "../lib/format";
 import { useApi } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { clickable } from "../components/ui";
@@ -25,6 +25,18 @@ import { METRIC } from "../lib/palette";
  */
 const ReportSheet = lazy(() => import("../components/mobile/ReportSheet"));
 const WEEK_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+/** Một ngày trong /api/schedule/week: trạng thái thật theo buổi tập đã ghi (khác /api/schedule: chỉ biết "đã tập" của riêng hôm nay). */
+interface WeekDay {
+  date: string; weekday: number; is_today: boolean; rest: boolean; note?: string;
+  plan: ScheduleDay["plan"];
+  status: "done" | "missed" | "planned" | "rest" | "replaced" | "active";
+  sessions: { id: string; name: string; minutes: number }[];
+  activities: { id: string; name: string; minutes: number }[];
+}
+const mondayOf = (iso: string) => { const [y, m, d] = iso.split("-").map(Number); return addDays(iso, -((new Date(y, m - 1, d).getDay() + 6) % 7)); };
+/** Mức nước của ống ngày đã tập theo số phút (35% tối thiểu, đầy ~95% từ 90 phút). */
+const tubeLevel = (min: number) => Math.min(0.95, Math.max(0.35, 0.35 + (min / 90) * 0.6));
+const STATUS_VI: Record<WeekDay["status"], string> = { done: "đã tập", missed: "bỏ lỡ", planned: "dự kiến", rest: "nghỉ", replaced: "đã vận động thay thế", active: "đã vận động" };
 /** Bỏ phần số bài / phút / điểm sẵn sàng mà thẻ đã hiện ở chỗ khác, chỉ giữ lời khuyên. */
 function trimReason(s: string) {
   const t = s
@@ -55,6 +67,8 @@ export function MobileHome({ ov }: { ov: Overview }) {
   const { user } = useAuth();
   const advice = useTodayAdvice();
   const { data: sch } = useApi<{ today: ScheduleDay; days: ScheduleDay[]; has_schedule: boolean }>(["schedule"], "/api/schedule");
+  const monday = mondayOf(todayISO());
+  const { data: wk } = useApi<{ days: WeekDay[] }>(["schedule-week", monday], `/api/schedule/week?start=${monday}`);
   const { data: month } = useApi<Report>(["report", "month"], "/api/dashboard/report?period=month");
   const [sheet, setSheet] = useState(false);
   const [detail, setDetail] = useState<DetailKind | null>(null);
@@ -89,7 +103,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
   const ask = (text: string) => ai.open({ text });
   const chips = ["Gợi ý bữa tối", "Hôm nay mình nên tập gì?", "Còn thiếu bao nhiêu đạm?"];
 
-  const days = sch?.days ?? [];
+  const days = wk?.days ?? [];
   const todayIdx = Math.max(0, days.findIndex((d) => d.is_today));
   const [sel, setSel] = useState<number | null>(null);
   const cur = days[sel ?? todayIdx];
@@ -215,28 +229,38 @@ export function MobileHome({ ov }: { ov: Overview }) {
         {/* Tuần này */}
         <section className="g pad span2" aria-label="Tuần này">
           <div className="pad-h"><b className="t-h3" style={{ fontSize: 18 }}>Tuần này</b><span>{t.streak.current > 0 ? `chuỗi ${t.streak.current} ngày` : "chưa có chuỗi"}</span></div>
+          {days.length === 0 && <span className="sk sk-block mt" style={{ height: 150 }} />}
           {days.length > 0 && cur && (
             <>
               <div className="tubes mt">
                 {days.map((d, i) => {
-                  const missed = !d.done && !d.rest && !d.is_today && d.date != null && d.date < todayISO();
                   const on = i === (sel ?? todayIdx);
+                  const mins = d.sessions.reduce((a, x) => a + x.minutes, 0) || d.activities.reduce((a, x) => a + x.minutes, 0);
+                  const filled = d.status === "done" || d.status === "replaced" || d.status === "active";
+                  const label = d.status === "planned" && d.is_today ? "hôm nay, chưa tập" : STATUS_VI[d.status];
                   return (
                     <button key={d.weekday} type="button" aria-pressed={on} onClick={() => setSel(i)}
-                      aria-label={`${WEEK_SHORT[d.weekday]}: ${d.done ? "đã tập" : d.rest ? "nghỉ" : d.is_today ? "hôm nay" : missed ? "bỏ lỡ" : "có lịch"}${d.plan ? `, ${d.plan.name}` : ""}`}>
-                      <span className={clsx("vessel tube", d.rest && "rest", !d.rest && !d.done && !d.is_today && !missed && "plan2")}>
-                        {/* API chỉ cho biết đã tập hay chưa (chưa có khối lượng theo ngày) → ống đã tập đầy cố định 90% */}
-                        {d.done && <span className="liq" style={vars({ "--v": 0.9 })} />}
-                        {d.rest && <Moon className="ic ic-sm" />}
+                      aria-label={`${WEEK_SHORT[d.weekday]}: ${label}${d.plan ? `, ${d.plan.name}` : ""}`}>
+                      <span className={clsx("vessel tube", d.status === "rest" && "rest", d.status === "missed" && "rest missed", d.status === "planned" && "plan2")}>
+                        {filled && <span className="liq" style={vars({ "--v": d.status === "done" ? tubeLevel(mins) : 0.3 })} />}
+                        {d.status === "rest" && <Moon className="ic ic-sm" />}
+                        {d.status === "missed" && <X className="ic ic-sm" />}
                       </span>
-                      <span className={clsx("dl", d.is_today && "t")}>{WEEK_SHORT[d.weekday]}</span>
+                      <span className={clsx("dl", d.is_today && "t", on && "on")}>{WEEK_SHORT[d.weekday]}</span>
                     </button>
                   );
                 })}
               </div>
+              <p className="wlegend" aria-hidden="true"><span><i className="lg done" />Đã tập</span><span><i className="lg missed" />Bỏ lỡ</span><span><i className="lg plan" />Chưa tập</span><span><i className="lg rest" />Nghỉ</span></p>
               <div className="wdetail chipg" aria-live="polite">
-                <b>{cur.is_today ? "Hôm nay" : WEEK_SHORT[cur.weekday]} · {cur.plan ? cur.plan.name : "Nghỉ"}{cur.done ? " · đã tập" : cur.plan && !cur.is_today ? " · dự kiến" : ""}</b>
-                <small>{cur.plan ? smallPlan(cur.plan) : cur.note || "Nghỉ theo kế hoạch."}</small>
+                <b>{cur.is_today ? "Hôm nay" : WEEK_SHORT[cur.weekday]} · {cur.sessions[0]?.name ?? cur.plan?.name ?? "Nghỉ"} · {cur.status === "planned" && cur.is_today ? "chưa tập" : STATUS_VI[cur.status]}</b>
+                <small>{
+                  cur.status === "done" ? cur.sessions.map((x) => `${x.name} · ${x.minutes} phút`).join(" · ")
+                  : cur.status === "replaced" || cur.status === "active" ? cur.activities.map((x) => `${x.name} · ${x.minutes} phút`).join(" · ")
+                  : cur.status === "missed" ? `Có lịch ${cur.plan?.name ?? "tập"} nhưng chưa ghi buổi tập nào ngày này.`
+                  : cur.plan ? smallPlan(cur.plan)
+                  : cur.note || "Nghỉ theo kế hoạch."
+                }</small>
               </div>
             </>
           )}
