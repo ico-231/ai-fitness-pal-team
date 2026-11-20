@@ -6,6 +6,7 @@ import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import { DialogHost } from "./components/ui";
 import "./index.css";
+import "./styles/mobile-v1.css";
 import { applyUiZoom } from "./lib/zoom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { UpdateToast } from "./components/UpdateToast";
