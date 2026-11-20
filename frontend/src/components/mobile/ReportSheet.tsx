@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { fmt, prDetail, prLabel, prValue, shortDate } from "../../lib/format";
 import type { Targets } from "../../lib/types";
 import { BarSeries, LineSeries } from "../Charts";
@@ -15,11 +16,15 @@ const TITLES: Record<DetailKind, string> = {
  * Chi tiết báo cáo trên điện thoại (V1): 6 loại như ReportDetail của bản máy tính — buổi tập, khối lượng, kỷ lục, cân nặng,
  * dinh dưỡng, điểm sẵn sàng — nhưng là Sheet kính toàn màn hình. Tách file để recharts chỉ tải khi mở.
  */
-export default function ReportSheet({ kind, report, onClose, targets }: { kind: DetailKind | null; report?: Report; onClose: () => void; targets?: Targets }) {
+export default function ReportSheet({ kind, report: live, onClose, targets }: { kind: DetailKind | null; report?: Report; onClose: () => void; targets?: Targets }) {
+  // Sheet đang mở phải giữ nguyên khi dữ liệu làm mới: nếu `report` tạm thời undefined (đang tải lại) thì dùng bản gần nhất, không gỡ sheet.
+  const last = useRef<Report | undefined>(live);
+  if (live) last.current = live;
+  const report = live ?? last.current;
   if (!kind || !report) return null;
   const unitDays = report.bucket_days > 1 ? " (gộp theo tuần)" : "";
   const sub = `${shortDate(report.start)} – ${shortDate(report.end)}`;
-  const last = report.weights.filter((w) => w.weight != null).slice(-1)[0];
+  const lastW = report.weights.filter((w) => w.weight != null).slice(-1)[0];
   return (
     <Sheet open onClose={onClose} full title={TITLES[kind]} sub={sub}>
       <div className="sheet-body">
@@ -58,11 +63,11 @@ export default function ReportSheet({ kind, report, onClose, targets }: { kind: 
                 { key: "weight", color: baseOf(METRIC.weight), label: "Cân nặng (kg)" },
                 { key: "body_fat_pct", color: baseOf(METRIC.calories), label: "% mỡ", yAxis: "right" },
               ]} /></div>
-              {last && (
+              {lastW && (
                 <dl className="kv rd-kv">
-                  <div><dt>Cân nặng gần nhất</dt><dd className="n">{fmt(last.weight, 1)} kg</dd></div>
-                  {last.body_fat_pct != null && <div><dt>% mỡ</dt><dd className="n">{fmt(last.body_fat_pct, 1)} %</dd></div>}
-                  {last.skeletal_muscle_kg != null && <div><dt>Cơ xương</dt><dd className="n">{fmt(last.skeletal_muscle_kg, 1)} kg</dd></div>}
+                  <div><dt>Cân nặng gần nhất</dt><dd className="n">{fmt(lastW.weight, 1)} kg</dd></div>
+                  {lastW.body_fat_pct != null && <div><dt>% mỡ</dt><dd className="n">{fmt(lastW.body_fat_pct, 1)} %</dd></div>}
+                  {lastW.skeletal_muscle_kg != null && <div><dt>Cơ xương</dt><dd className="n">{fmt(lastW.skeletal_muscle_kg, 1)} kg</dd></div>}
                 </dl>
               )}
             </>
