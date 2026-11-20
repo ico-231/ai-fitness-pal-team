@@ -62,23 +62,44 @@ def page(theme: str, w: int, h: int) -> str:
             f'<body><div id="dev">{body}</div></body></html>')
 
 
+def shoot(src: Path, shot: Path, w: int, h: int, r: int, profile: Path, theme: str, transparent: bool = False) -> Image.Image:
+    args = [
+        BROWSER, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run",
+        f"--user-data-dir={profile}", f"--force-device-scale-factor={r}", f"--window-size={max(w, 600)},{max(h, 400)}",
+        f"--blink-settings=preferredColorScheme={0 if theme == 'dark' else 1}",  # màn khởi động theo chế độ của máy
+        "--virtual-time-budget=6000", "--run-all-compositor-stages-before-draw", f"--screenshot={shot}", src.as_uri(),
+    ]
+    if transparent:
+        args.insert(1, "--default-background-color=00000000")
+    subprocess.run(args, check=True, capture_output=True, timeout=120)
+    return Image.open(shot).crop((0, 0, w * r, h * r))
+
+
+# 1) Ảnh chữ "FitBro" + dòng giới thiệu (nền trong suốt, @3x) cho màn khởi động — vẽ bằng đúng font web.
+WORD = ROOT / "public" / "boot"
+WORD.mkdir(exist_ok=True)
+TW, TH = 300, 60  # khớp #boot .b-text trong index.html
+with tempfile.TemporaryDirectory() as tmp:
+    for theme in THEMES:
+        src = Path(tmp) / f"word-{theme}.html"
+        src.write_text(
+            f'<!doctype html><html data-theme="{theme}"><head><meta charset="utf-8"><link href="{fonts}" rel="stylesheet">{css}'
+            f'<style>html,body{{margin:0;background:transparent}} #boot{{position:absolute;inset:auto;left:0;top:0;width:{TW}px;'
+            f'height:{TH}px;background:transparent;display:block;text-align:center}}</style></head>'
+            '<body><div id="boot" class="still"><div class="b-word">FitBro</div><div class="b-tag">Huấn luyện viên AI của bạn</div></div></body></html>',
+            encoding="utf-8")
+        im = shoot(src, Path(tmp) / f"w-{theme}.png", TW, TH, 3, Path(tmp) / f"profile-{theme}", theme, transparent=True)
+        im.save(WORD / f"word-{theme}.png", optimize=True)
+
+# 2) Ảnh màn chờ iOS: chụp chính màn khởi động (đã dùng ảnh chữ ở bước 1) cho từng cỡ iPhone.
+html = html.replace('src="/boot/', f'src="{WORD.as_uri()}/')
 links = []
 with tempfile.TemporaryDirectory() as tmp:
     for theme in THEMES:
         for name, w, h, r in DEVICES:
             src = Path(tmp) / f"boot-{name}-{theme}.html"
             src.write_text(page(theme, w, h), encoding="utf-8")
-            shot = Path(tmp) / f"{name}-{theme}.png"
-            subprocess.run([
-                BROWSER, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run",
-                f"--user-data-dir={Path(tmp) / 'profile'}",
-                f"--force-device-scale-factor={r}", f"--window-size={max(w, 600)},{h}",
-                "--virtual-time-budget=6000", "--run-all-compositor-stages-before-draw",
-                f"--screenshot={shot}", src.as_uri(),
-            ], check=True, capture_output=True, timeout=120)
-            im = Image.open(shot).convert("RGB")
-            if im.size != (w * r, h * r):
-                im = im.crop((0, 0, w * r, h * r))
+            im = shoot(src, Path(tmp) / f"{name}-{theme}.png", w, h, r, Path(tmp) / f"profile-{theme}", theme).convert("RGB")
             f = OUT / f"{name}-{theme}.png"
             im.quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(f, optimize=True)
             links.append(f'<link rel="apple-touch-startup-image" href="/splash/{name}-{theme}.png" media="(device-width: {w}px) and (device-height: {h}px) and (-webkit-device-pixel-ratio: {r}) and (orientation: portrait) and (prefers-color-scheme: {theme})" />')

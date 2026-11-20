@@ -1,6 +1,7 @@
 import { ConnectionLost } from "./components/ConnectionLost";
 import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "./components/Layout";
 import { AIProvider } from "./components/AIProvider";
 import { Spinner } from "./components/ui";
@@ -22,17 +23,30 @@ const SettingsPage = lazy(() => import("./pages/Settings"));
 const AiLog = lazy(() => import("./pages/AiLog"));
 const PrintReport = lazy(() => import("./pages/PrintReport"));
 
-/** Ẩn màn khởi động (#boot trong index.html) bằng hiệu ứng mờ dần rồi gỡ khỏi trang. */
-function hideBoot() {
+/**
+ * Ẩn màn khởi động (#boot trong index.html): đợi trang đầu tiên tải xong dữ liệu (không còn truy vấn nào đang chạy,
+ * tối đa 2,5 giây) và đã vẽ ra màn hình, rồi mới mờ dần — tránh lộ khung trống/khung xương trong tích tắc (nháy).
+ */
+function hideBoot(isFetching: () => number) {
   const el = document.getElementById("boot");
-  if (!el || el.classList.contains("out")) return;
-  el.classList.add("out");
-  window.setTimeout(() => el.remove(), 400);
+  if (!el || el.dataset.hiding) return;
+  el.dataset.hiding = "1";
+  const started = performance.now();
+  const go = () => {
+    el.classList.add("out");
+    window.setTimeout(() => el.remove(), 400);
+  };
+  const wait = () => {
+    if (isFetching() > 0 && performance.now() - started < 2500) return void window.setTimeout(wait, 60);
+    requestAnimationFrame(() => requestAnimationFrame(go)); // để trang vẽ xong khung hình đầu rồi mới mờ
+  };
+  window.setTimeout(wait, 30); // cho các trang kịp bắt đầu truy vấn
 }
 
 export default function App() {
   const { user, loading, unreachable, retry } = useAuth();
-  useEffect(() => { if (!loading) hideBoot(); }, [loading]);
+  const qc = useQueryClient();
+  useEffect(() => { if (!loading) hideBoot(() => qc.isFetching()); }, [loading, qc]);
   // Đang kiểm tra đăng nhập: màn khởi động trong index.html vẫn đang hiện (logo + vạch tải)
   if (loading)
     return document.getElementById("boot") ? null : ( // thử lại sau khi mất kết nối: màn khởi động đã gỡ → hiện vòng tải

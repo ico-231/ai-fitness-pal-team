@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: false, // dùng public/manifest.webmanifest (đã có link trong index.html)
       workbox: {
         // Precache app shell + file có hash. KHÔNG precache giọng PT (18 MB) và ảnh cơ thể.
-        globPatterns: ["**/*.{js,css,html,woff2,svg,ico,webmanifest}", "*.png"],
+        globPatterns: ["**/*.{js,css,html,woff2,svg,ico,webmanifest}", "*.png", "boot/*.png"],
         globIgnores: ["voice/**", "bodymap/**"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
