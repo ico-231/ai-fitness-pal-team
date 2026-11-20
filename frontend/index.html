@@ -8,8 +8,11 @@
     <style>
       html { background: #f2f4f3; color-scheme: light; }
       @media (prefers-color-scheme: dark) { html { background: #08090a; color-scheme: dark; } }
-      html[data-theme="light"] { background: #f2f4f3; color-scheme: light; }
-      html[data-theme="dark"] { background: #08090a; color-scheme: dark; }
+      /* Trong lúc khởi động nền theo chế độ CỦA MÁY (khớp ảnh màn chờ iOS + màn khởi động): iOS co giãn khung nhìn lúc vừa
+         mở và lộ nền này ở đáy ~0,7s — trước đây nền theo giao diện app chọn (vd app sáng, máy tối) → dải sáng ở đáy.
+         Chỉ sau khi màn khởi động tắt (html.booted) mới theo giao diện app. */
+      html.booted[data-theme="light"] { background: #f2f4f3; color-scheme: light; }
+      html.booted[data-theme="dark"] { background: #08090a; color-scheme: dark; }
     </style>
     <!-- Icon tab trình duyệt. "?v=" đổi mỗi khi đổi logo: trình duyệt lưu icon rất lâu theo đúng đường dẫn. -->
     <link rel="icon" href="/favicon.ico?v=7" sizes="48x48" />

@@ -29,12 +29,13 @@ const PrintReport = lazy(() => import("./pages/PrintReport"));
  */
 function hideBoot(isFetching: () => number) {
   const el = document.getElementById("boot");
-  if (!el || el.dataset.hiding) return;
+  if (!el) return void document.documentElement.classList.add("booted");
+  if (el.dataset.hiding) return;
   el.dataset.hiding = "1";
   const started = performance.now();
   const go = () => {
     el.classList.add("out");
-    window.setTimeout(() => el.remove(), 400);
+    window.setTimeout(() => { el.remove(); document.documentElement.classList.add("booted"); }, 400);
   };
   const wait = () => {
     if (isFetching() > 0 && performance.now() - started < 2500) return void window.setTimeout(wait, 60);
