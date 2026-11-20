@@ -105,7 +105,7 @@ _inline = {
     "lt": _data_uri(Image.open(WORD / "word-light.png").convert("RGBA"), 32),
     "dk": _data_uri(Image.open(WORD / "word-dark.png").convert("RGBA"), 32),
 }
-index = re.sub(r'(<img data-boot="(\w+)"[^>]*?\ssrc=")[^"]*(")', lambda m: m.group(1) + _inline[m.group(2)] + m.group(3), index)
+index = re.sub(r'(<img[^>]*?\sdata-boot="(\w+)"[^>]*?\ssrc=")[^"]*(")', lambda m: m.group(1) + _inline[m.group(2)] + m.group(3), index)
 (ROOT / "index.html").write_text(index, encoding="utf-8", newline="")
 html = re.search(r"<!-- BOOT:HTML -->(.*?)<!-- /BOOT:HTML -->", index, re.S).group(1)
 
