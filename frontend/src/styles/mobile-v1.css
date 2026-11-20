@@ -1413,7 +1413,8 @@ html[data-theme="dark"] .v1 .ob-err{--g-fill:rgb(38 28 28 / .96)}
   .v1 .gd-cam small { display: block; font-size: 12px; color: var(--mute); }
   .v1 .rp-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .v1 .rp-bar b { font-family: var(--disp); font-size: 20px; flex: 1; text-align: center; }
-  .v1 .rp-chart .recharts-text { font-size: 12px; }
+  .v1 .stats [role="button"] { min-height: 44px; cursor: pointer; }
+  .v1 .recharts-text { font-size: 12px; } /* mọi biểu đồ trong khung V1: chữ trục ≥ 12px */
   .v1 .gd-tabs { --g-fill: rgb(255 255 255 / 0.92); }
   html[data-theme="dark"] .v1 .gd-tabs { --g-fill: rgb(28 31 33 / 0.94); }
   .v1 .wcust { display: grid; gap: 8px; }
