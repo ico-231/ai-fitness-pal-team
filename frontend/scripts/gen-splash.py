@@ -6,6 +6,8 @@ trùng vị trí từng điểm ảnh: iOS hiện ảnh → app mở → màn kh
 
 Chạy: python scripts/gen-splash.py   (cần Pillow + Edge hoặc Chrome). Ghi các thẻ <link> vào scripts/splash-links.html.
 """
+import base64
+import io
 import re
 import shutil
 import subprocess
@@ -54,7 +56,7 @@ logo = (ROOT / "public" / "logo.png").as_uri()
 def page(theme: str, w: int, h: int) -> str:
     # Trình duyệt chạy ngầm không cho cửa sổ hẹp hơn ~500px → dựng màn trong một khung đúng cỡ máy ở góc trên trái
     # (transform tạo khối chứa mới nên #boot `position: fixed` nằm gọn trong khung), rồi cắt ảnh theo khung.
-    body = html.replace('src="/logo.png"', f'src="{logo}"').replace('id="boot"', 'id="boot" class="still"')
+    body = html.replace('id="boot"', 'id="boot" class="still"')
     return (f'<!doctype html><html data-theme="{theme}"><head><meta charset="utf-8">'
             f'<link href="{fonts}" rel="stylesheet">{css}'
             f'<style>html,body{{margin:0;overflow:hidden}} #dev{{position:absolute;left:0;top:0;width:{w}px;height:{h}px;'
@@ -91,8 +93,23 @@ with tempfile.TemporaryDirectory() as tmp:
         im = shoot(src, Path(tmp) / f"w-{theme}.png", TW, TH, 3, Path(tmp) / f"profile-{theme}", theme, transparent=True)
         im.save(WORD / f"word-{theme}.png", optimize=True)
 
+# 1b) NHÚNG logo + ảnh chữ vào index.html (data URI, đã nén): trang vẽ khung hình đầu tiên là có ngay — nếu là file
+#     riêng thì lúc iOS chuyển từ ảnh màn chờ sang trang, ảnh chưa tải xong → logo/chữ nháy mất rồi mới hiện lại.
+def _data_uri(im: Image.Image, colors: int) -> str:
+    b = io.BytesIO()
+    im.quantize(colors=colors, method=Image.Quantize.FASTOCTREE).save(b, "PNG", optimize=True)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+_inline = {
+    "logo": _data_uri(Image.open(ROOT / "public" / "logo.png").convert("RGBA").resize((276, 276), Image.LANCZOS), 64),
+    "lt": _data_uri(Image.open(WORD / "word-light.png").convert("RGBA"), 32),
+    "dk": _data_uri(Image.open(WORD / "word-dark.png").convert("RGBA"), 32),
+}
+index = re.sub(r'(<img data-boot="(\w+)"[^>]*?\ssrc=")[^"]*(")', lambda m: m.group(1) + _inline[m.group(2)] + m.group(3), index)
+(ROOT / "index.html").write_text(index, encoding="utf-8", newline="")
+html = re.search(r"<!-- BOOT:HTML -->(.*?)<!-- /BOOT:HTML -->", index, re.S).group(1)
+
 # 2) Ảnh màn chờ iOS: chụp chính màn khởi động (đã dùng ảnh chữ ở bước 1) cho từng cỡ iPhone.
-html = html.replace('src="/boot/', f'src="{WORD.as_uri()}/')
 links = []
 with tempfile.TemporaryDirectory() as tmp:
     for theme in THEMES:

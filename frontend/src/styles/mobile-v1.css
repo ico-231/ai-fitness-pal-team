@@ -1019,7 +1019,9 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
 /* V1 — Chat HeadBro (trang + khung hỏi nhanh) */
 
 @media (max-width: 1023px) {
-  .v1.chat-page { position: fixed; left: 0; right: 0; top: 0; height: 100dvh; z-index: 25; display: flex; flex-direction: column; max-width: var(--maxw); margin-inline: auto; padding-top: var(--safe-t); }
+  /* Neo cả mép trên lẫn mép dưới thay vì height: 100dvh — mở từ màn hình chính (thanh trạng thái trong suốt), iOS tính
+     100dvh THIẾU phần thanh trạng thái (~47pt) → khung chat hụt đáy, lộ dải nền và cả ô nhập bị đẩy lên. */
+  .v1.chat-page { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; max-width: var(--maxw); margin-inline: auto; padding-top: var(--safe-t); }
   .v1 .chat-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 6px; min-height: 60px; }
   .v1 .chat-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-family: var(--disp); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
   .v1 .chat-main { flex: 1; min-height: 0; }
