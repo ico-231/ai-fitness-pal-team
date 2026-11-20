@@ -247,8 +247,8 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   // Ô nhập dùng chung cho cả 3 kiểu: ngăn nổi (compact), màn chào giữa trang (hero), đáy trang khi đang trò chuyện
   const composer = (
     <div className={clsx(!compact && "mx-auto w-full", !compact && !showHero && "max-w-3xl")}>
-      {!config?.ai_enabled && (
-        <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — các agent sẽ chưa trả lời được.</p>
+      {config?.ai_enabled === false && (
+        <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — HeadBro sẽ chưa trả lời được.</p>
       )}
       {image && (
         <div className="relative mb-2 inline-block">
@@ -324,7 +324,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   if (mobile) {
     const composerV1 = (
       <div className="chat-comp">
-        {!config?.ai_enabled && <div className="g alert warn" role="status"><span className="a-ic"><ShieldCheck className="ic" /></span><div><b>AI chưa được cấu hình trên server</b><p>HeadBro sẽ chưa trả lời được.</p></div></div>}
+        {config?.ai_enabled === false && <div className="g alert warn" role="status"><span className="a-ic"><ShieldCheck className="ic" /></span><div><b>AI chưa được cấu hình trên server</b><p>HeadBro sẽ chưa trả lời được.</p></div></div>}
         {image && (
           <div className="chat-img"><img src={image} alt="Ảnh đính kèm" /><button type="button" className="icon-btn sm" aria-label="Bỏ ảnh" onClick={() => setImage(null)}><X className="ic ic-sm" /></button></div>
         )}

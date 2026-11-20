@@ -82,7 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(signOut);
     (async () => {
-      get<AuthState["config"]>("/api/auth/config").then(setConfig).catch(() => setConfig({ google_client_id: null, ai_enabled: false, model: null }));
+      // Đọc lỗi (mạng / máy chủ vừa khởi động) KHÔNG có nghĩa là AI chưa cấu hình → thử lại vài lần, không tự coi là tắt
+      const loadConfig = (left: number) => get<AuthState["config"]>("/api/auth/config").then(setConfig)
+        .catch(() => { if (left > 0) window.setTimeout(() => loadConfig(left - 1), 2000); });
+      loadConfig(3);
+      window.addEventListener("online", () => loadConfig(2)); // có mạng lại → đọc lại cấu hình
       await boot();
     })();
   }, [boot, signOut]);

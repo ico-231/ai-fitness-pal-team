@@ -217,7 +217,7 @@ export default function MobileSettings() {
       <div className="g st-pad">
         <p style={{ fontSize: 14, lineHeight: 1.55 }}>
           {config?.ai_enabled ? <>Đang dùng mô hình <b>{config.model}</b>. Bạn chỉ trò chuyện với HeadBro; phía sau, HeadBro chia việc cho các chuyên mục (tập luyện, dinh dưỡng) và lớp an toàn kiểm tra lại.</>
-            : "AI chưa được cấu hình trên server (thiếu LLM_API_KEY). Các tính năng không cần AI vẫn hoạt động bình thường."}
+            : !config ? "Đang kiểm tra trạng thái AI…" : "AI chưa được cấu hình trên server (thiếu LLM_API_KEY). Các tính năng không cần AI vẫn hoạt động bình thường."}
         </p>
         <Link className="link" to="/ai-log">Nhật ký AI<ChevronRight className="ic ic-sm" /></Link>
       </div>
