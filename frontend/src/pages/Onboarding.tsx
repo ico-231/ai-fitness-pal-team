@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { fmt } from "../lib/format";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { get, post } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
-import type { Targets } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, DecimalInput } from "../components/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useOnboardForm } from "../lib/useOnboardForm";
 import { useDesktop } from "../lib/hooks";
 import { MobileOnboarding } from "./MobileAuth";
 
@@ -33,30 +31,9 @@ function Choice({ options, value, onChange }: { options: Record<string, string>;
 }
 
 function OnboardingDesktop() {
-  const { user, refresh, signOut } = useAuth();
+  const { signOut } = useAuth();
   const [step, setStep] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const [f, setF] = useState({
-    name: user?.name || "",
-    age: 22,
-    gender: "male",
-    height_cm: 170,
-    weight_kg: 65,
-    goal: "muscle",
-    level: "beginner",
-    activity_level: "moderate",
-    training_days: 3,
-    equipment: "gym",
-    injuries: "",
-  });
-  const set = (k: string, v: unknown) => setF((x) => ({ ...x, [k]: v }));
-
-  const q = useMemo(
-    () => `/api/profile/targets/preview?weight_kg=${f.weight_kg}&height_cm=${f.height_cm}&age=${f.age}&gender=${f.gender}&goal=${f.goal}&activity_level=${f.activity_level}`,
-    [f.weight_kg, f.height_cm, f.age, f.gender, f.goal, f.activity_level],
-  );
-  const { data: preview } = useQuery({ queryKey: ["preview", q], queryFn: () => get<Targets & { tdee: number; bmr: number }>(q), enabled: step === 3 });
+  const { f, set, preview, busy, err, finish } = useOnboardForm(step === 3);
 
   const steps = [
     {
@@ -147,18 +124,6 @@ function OnboardingDesktop() {
     },
   ];
 
-  const finish = async () => {
-    setBusy(true);
-    setErr("");
-    try {
-      await post("/api/profile/onboard", f);
-      await refresh();
-    } catch (e) {
-      setErr((e as Error).message);
-      setBusy(false);
-    }
-  };
-
   const s = steps[step];
   return (
     <div className="immersive relative flex min-h-full items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
@@ -187,7 +152,7 @@ function OnboardingDesktop() {
               Tiếp tục <ArrowRight size={16} />
             </Button>
           ) : (
-            <Button onClick={finish} loading={busy} icon={<Check size={16} />}>
+            <Button onClick={() => finish()} loading={busy} icon={<Check size={16} />}>
               Bắt đầu dùng FitBro
             </Button>
           )}

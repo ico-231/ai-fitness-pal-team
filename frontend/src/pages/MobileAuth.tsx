@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, Camera, Check, ChevronDown, ChevronLeft, Dumbbell, Droplet, Eye, EyeOff, Flame, HeartPulse, Lock, Minus, Moon, Plus, Scale, Sparkles, Utensils, Zap, Footprints } from "lucide-react";
 import clsx from "clsx";
-import { get, post } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import { fmt } from "../lib/format";
-import type { Targets, User } from "../lib/types";
 import { DecimalInput, toast } from "../components/ui";
 import { METRIC } from "../lib/palette";
 import { HeadBroSvg } from "../components/MobileShell";
 import { Rings, vars } from "../components/mobile/V1";
 import { Seg } from "../components/mobile/Shared";
 import { GoogleButton } from "./Login";
+import { useAuthActions } from "../lib/useAuthActions";
+import { useOnboardForm } from "../lib/useOnboardForm";
 
 /* =====================================================================================
    Đăng nhập / Đăng ký — V1 "Kính lỏng" (điện thoại). Cùng chức năng với bản máy tính:
@@ -25,13 +24,13 @@ const WEEK: { d: string; h: number; v?: number; rest?: boolean; today?: boolean 
 ];
 
 export function MobileLogin() {
-  const { signIn, config } = useAuth();
+  const { config } = useAuth();
   const [mode, setMode] = useState(0); // 0 đăng nhập · 1 đăng ký
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [show, setShow] = useState(false);
   const [err, setErr] = useState<{ msg: string; field?: "name" | "email" | "password" } | null>(null);
-  const [busy, setBusy] = useState(false);
   const [go, setGo] = useState(false);
+  const { submit: doSubmit, google: doGoogle, busy } = useAuthActions();
   const refs = { name: useRef<HTMLInputElement>(null), email: useRef<HTMLInputElement>(null), password: useRef<HTMLInputElement>(null) };
   const login = mode === 0;
 
@@ -45,7 +44,6 @@ export function MobileLogin() {
     if (field) refs[field].current?.focus();
   };
   const switchMode = (m: number) => { setMode(m); setErr(null); };
-  const done = (r: { token: string; user: User }) => signIn(r.token, r.user);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,18 +52,14 @@ export function MobileLogin() {
     if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Email chưa đúng định dạng.", "email");
     if (form.password.length < 6) return fail("Mật khẩu cần tối thiểu 6 ký tự.", "password");
     setErr(null);
-    setBusy(true);
-    try {
-      done(await post(login ? "/api/auth/login" : "/api/auth/register", login ? { email, password: form.password } : { ...form, email }));
-    } catch (er) {
-      fail((er as Error).message, login ? "password" : undefined);
-      setBusy(false);
-    }
+    const msg = await doSubmit(login ? "login" : "register", { ...form, email });
+    if (msg) fail(msg, login ? "password" : undefined);
   };
 
   const google = async (credential: string) => {
     setErr(null);
-    try { done(await post("/api/auth/google", { credential })); } catch (er) { fail((er as Error).message); }
+    const msg = await doGoogle(credential);
+    if (msg) fail(msg);
   };
 
   return (
@@ -176,39 +170,16 @@ function NumStep({ value, onChange, min, max, dec = 0, unit, label, stepBy, w }:
 }
 
 export function MobileOnboarding() {
-  const { user, refresh, signOut } = useAuth();
+  const { signOut } = useAuth();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const [f, setF] = useState({
-    name: user?.name || "", age: 22, gender: "male", height_cm: 170, weight_kg: 65, goal: "muscle", level: "beginner",
-    activity_level: "moderate", training_days: 3, equipment: "gym", injuries: "",
-  });
-  const set = (k: string, v: unknown) => setF((x) => ({ ...x, [k]: v }));
+  const { f, set, preview: pv, busy, err, setErr, finish: save } = useOnboardForm(step === 3);
   const head = useRef<HTMLHeadingElement>(null);
-
-  const q = useMemo(
-    () => `/api/profile/targets/preview?weight_kg=${f.weight_kg}&height_cm=${f.height_cm}&age=${f.age}&gender=${f.gender}&goal=${f.goal}&activity_level=${f.activity_level}`,
-    [f.weight_kg, f.height_cm, f.age, f.gender, f.goal, f.activity_level],
-  );
-  const { data: pv } = useQuery({ queryKey: ["preview", q], queryFn: () => get<Targets & { tdee: number; bmr: number }>(q), enabled: step === 3 });
 
   useEffect(() => { window.scrollTo(0, 0); head.current?.focus({ preventScroll: true }); }, [step]);
 
   const go = (n: number) => { setDir(n > step ? 1 : -1); setStep(n); setErr(""); };
-  const finish = async () => {
-    setBusy(true);
-    setErr("");
-    try {
-      await post("/api/profile/onboard", f);
-      toast("Đã lưu hồ sơ. Chào mừng đến với FitBro!");
-      await refresh();
-    } catch (e) {
-      setErr((e as Error).message || "Kiểm tra kết nối rồi thử lại.");
-      setBusy(false);
-    }
-  };
+  const finish = () => save(() => toast("Đã lưu hồ sơ. Chào mừng đến với FitBro!"));
 
   const last = step === 3;
   const nextDisabled = busy || (step === 0 && !f.name.trim());

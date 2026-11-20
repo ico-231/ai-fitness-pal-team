@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, ChevronDown, ChevronRight, Download, LogOut, Minus, Plus, Sparkles, Trash2 } from "lucide-react";
 import clsx from "clsx";
-import { apiUrl, del, post, put, tokenStore } from "../lib/api";
+import { del, post } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
 import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import { fmt, timeAgo } from "../lib/format";
 import { useAction, useApi } from "../lib/hooks";
 import { voice } from "../lib/media";
 import { getUiZoom, setUiZoom, type UiZoom } from "../lib/zoom";
-import type { Profile, Settings as S } from "../lib/types";
-import { DecimalInput, confirmDialog, toast } from "../components/ui";
+import { DecimalInput, confirmDialog } from "../components/ui";
 import { HeadBroSvg } from "../components/MobileShell";
 import { Seg } from "../components/mobile/Shared";
 import { Sheet } from "../components/mobile/Sheet";
+import { useSettingsActions, useVoicePacks } from "../lib/useSettingsActions";
 import { vars } from "../components/mobile/V1";
 
 /* =====================================================================================
@@ -58,7 +58,8 @@ function NumStep({ value, onChange, min, max, dec = 0, stepBy, label, unit }: { 
 }
 
 export default function MobileSettings() {
-  const { user, refresh, signOut, config } = useAuth();
+  const { user, signOut, config } = useAuth();
+  const { busy, saveProfile, setSetting, exportData, testCamera, deleteAccount, wipeData } = useSettingsActions();
   const p = user!.profile!;
   const s = p.settings;
   const [f, setF] = useState({
@@ -68,7 +69,6 @@ export default function MobileSettings() {
     target_fat: p.targets.fat, target_water_ml: p.targets.water_ml,
   });
   const set = (k: keyof typeof f, v: unknown) => setF((x) => ({ ...x, [k]: v }));
-  const [busy, setBusy] = useState(false);
   const [profOpen, setProfOpen] = useState(false);
   const [wipeOpen, setWipeOpen] = useState(false);
   const [memOpen, setMemOpen] = useState(false);
@@ -77,53 +77,8 @@ export default function MobileSettings() {
   const [usingPack, setUsingPack] = useState(!!voice.pack);
   const mems = useApi<Mem[]>(["memories"], "/api/memories");
 
-  const save = async (over?: Partial<typeof f>, okMsg = "Đã lưu hồ sơ — mục tiêu dinh dưỡng đã cập nhật") => {
-    const g = { ...f, ...over };
-    setBusy(true);
-    try {
-      const body: Record<string, unknown> = { ...g };
-      if (!g.targets_manual) ["target_calories", "target_protein", "target_carbs", "target_fat", "target_water_ml"].forEach((k) => delete body[k]);
-      await put<Profile>("/api/profile", body);
-      await refresh();
-      toast(okMsg);
-      return true;
-    } catch (e) {
-      toast((e as Error).message, "error");
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  };
-  const setSetting = async (patch: Partial<S>) => {
-    try { await put("/api/profile/settings", patch); await refresh(); } catch (e) { toast((e as Error).message, "error"); }
-  };
-
-  const exportData = async () => {
-    try {
-      const r = await fetch(apiUrl("/api/data/export"), { headers: { Authorization: `Bearer ${tokenStore.get()}` } });
-      const blob = await r.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `fitbro-data-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-    } catch { toast("Chưa xuất được dữ liệu. Kiểm tra kết nối rồi thử lại.", "error"); }
-  };
-  const testCamera = async () => {
-    try {
-      const st = await navigator.mediaDevices.getUserMedia({ video: true });
-      st.getTracks().forEach((t) => t.stop());
-      toast("Camera hoạt động bình thường");
-    } catch { toast("Chưa có quyền camera — bật trong cài đặt trình duyệt", "error"); }
-  };
-  const delAccount = async () => {
-    if (await confirmDialog({ title: "Xoá vĩnh viễn tài khoản?", text: "Toàn bộ dữ liệu tập luyện, bữa ăn, số đo và hội thoại sẽ bị xoá. Không thể hoàn tác.", confirmLabel: "Xoá tài khoản", danger: true })) {
-      try { await del("/api/me"); signOut(); } catch (e) { toast((e as Error).message, "error"); }
-    }
-  };
-  const wipe = async () => {
-    try { await post("/api/data/wipe", { confirm: confirmText }); toast("Đã xoá sạch dữ liệu"); setWipeOpen(false); setConfirmText(""); await refresh(); }
-    catch (e) { toast((e as Error).message, "error"); }
-  };
+  const save = (over?: Partial<typeof f>, okMsg?: string) => saveProfile({ ...f, ...over }, okMsg);
+  const wipe = async () => { if (await wipeData(confirmText)) { setWipeOpen(false); setConfirmText(""); } };
 
   const lifestyle = s.lifestyle ?? "sitting";
   const eatBack = s.eat_back ?? 0.5;
@@ -274,7 +229,7 @@ export default function MobileSettings() {
         <button type="button" className="li" onClick={exportData}><span className="li-ic"><Download className="ic" /></span><span className="li-main"><b>Xuất toàn bộ dữ liệu (JSON)</b></span></button>
         <button type="button" className="li" onClick={signOut}><span className="li-ic"><LogOut className="ic" /></span><span className="li-main"><b>Đăng xuất</b></span></button>
         <button type="button" className="li st-red" onClick={() => setWipeOpen(true)}><span className="li-ic"><Trash2 className="ic" /></span><span className="li-main"><b>Xoá sạch dữ liệu</b></span></button>
-        <button type="button" className="li st-red" onClick={delAccount}><span className="li-ic"><AlertTriangle className="ic" /></span><span className="li-main"><b>Xoá tài khoản</b></span></button>
+        <button type="button" className="li st-red" onClick={deleteAccount}><span className="li-ic"><AlertTriangle className="ic" /></span><span className="li-main"><b>Xoá tài khoản</b></span></button>
       </div>
 
       {/* Hồ sơ */}
@@ -316,15 +271,8 @@ export default function MobileSettings() {
 
 /** Chọn giọng PT thu sẵn (frontend/public/voice/<giọng>/, liệt kê trong packs.json). Không có giọng nào → ẩn. */
 function VoicePack({ onUsing }: { onUsing: (on: boolean) => void }) {
-  const [packs, setPacks] = useState<{ id: string; name: string; count: number }[]>([]);
   const [pack, setPack] = useState(voice.pack ?? "browser");
-  useEffect(() => {
-    fetch("/voice/packs.json").then((r) => (r.ok ? r.json() : [])).then((list) => {
-      setPacks(Array.isArray(list) ? list : []);
-      if (voice.pack && Array.isArray(list) && !list.some((x: { id: string }) => x.id === voice.pack)) { voice.setPack(null); setPack("browser"); onUsing(false); }
-    }).catch(() => setPacks([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const packs = useVoicePacks(() => { setPack("browser"); onUsing(false); });
   const opts = useMemo(() => [{ id: "browser", name: "Trình duyệt" }, ...packs], [packs]);
   if (!packs.length) return null;
   return (
@@ -338,7 +286,7 @@ function VoicePack({ onUsing }: { onUsing: (on: boolean) => void }) {
 
 /** Đổi mật khẩu (tài khoản Google chưa có mật khẩu thì đặt mật khẩu mới để đăng nhập bằng email). */
 function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
-  const { refresh } = useAuth();
+  const { changePassword } = useSettingsActions();
   const [f, setF] = useState({ current: "", next: "", confirm: "" });
   const [busy, setBusy] = useState(false);
   const [tried, setTried] = useState(false);
@@ -350,13 +298,11 @@ function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
     setTried(true);
     if (!valid) return;
     setBusy(true);
-    try {
-      await put("/api/me/password", { current_password: f.current, new_password: f.next });
-      toast(hasPassword ? "Đã đổi mật khẩu" : "Đã đặt mật khẩu");
+    if (await changePassword(f.current, f.next, hasPassword)) {
       setF({ current: "", next: "", confirm: "" });
       setTried(false);
-      refresh();
-    } catch (er) { toast((er as Error).message, "error"); } finally { setBusy(false); }
+    }
+    setBusy(false);
   };
   const msg = short ? "Tối thiểu 6 ký tự." : mismatch ? "Hai mật khẩu mới chưa giống nhau." : tried && hasPassword && !f.current ? "Nhập mật khẩu hiện tại." : "";
   return (

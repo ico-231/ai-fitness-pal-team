@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Dumbbell, Salad, ShieldCheck, Sparkles } from "lucide-react";
-import { post } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { User } from "../lib/types";
+import { useAuthActions, type AuthMode } from "../lib/useAuthActions";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, Segmented } from "../components/ui";
 import { useDesktop } from "../lib/hooks";
@@ -54,34 +53,14 @@ const FEATURES: [typeof Sparkles, string][] = [
 ];
 
 function LoginDesktop() {
-  const { signIn, config } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const { config } = useAuth();
+  const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { error: err, setError: setErr, busy, submit: doSubmit, google } = useAuthActions();
 
-  const done = (r: { token: string; user: User }) => signIn(r.token, r.user);
-
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErr("");
-    setBusy(true);
-    try {
-      done(await post(mode === "login" ? "/api/auth/login" : "/api/auth/register", mode === "login" ? { email: form.email, password: form.password } : form));
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const google = async (credential: string) => {
-    setErr("");
-    try {
-      done(await post("/api/auth/google", { credential }));
-    } catch (e) {
-      setErr((e as Error).message);
-    }
+    void doSubmit(mode, form);
   };
 
   const isLogin = mode === "login";
