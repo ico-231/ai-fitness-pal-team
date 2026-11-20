@@ -371,10 +371,15 @@ function GuideDesktop() {
     if (!nq) return null;
     const words = nq.split(/\s+/);
     const hit = (txt: string) => words.every((w) => txt.includes(w));
-    return {
-      cards: CHAPTERS.flatMap((ch) => ch.cards.filter((c) => hit(cardText(c))).map((c) => ({ ch, c }))),
-      troubles: TROUBLES.filter((t) => hit(troubleText(t))),
-    };
+    const cards = CHAPTERS.flatMap((ch) => ch.cards.filter((c) => hit(cardText(c))).map((c) => ({ ch, c })));
+    const troubles = TROUBLES.filter((t) => hit(troubleText(t)));
+    // Nhiều từ ("di ung"): có mục chứa đúng cả cụm thì chỉ hiện các mục đó, khỏi lẫn với mục chỉ chứa từng từ rời ("di" nằm trong "dien", "di chuyen"…)
+    if (words.length > 1) {
+      const pc = cards.filter((x) => cardText(x.c).includes(nq));
+      const pt = troubles.filter((t) => troubleText(t).includes(nq));
+      if (pc.length + pt.length) return { cards: pc, troubles: pt };
+    }
+    return { cards, troubles };
   }, [nq]);
 
   const jump = (id: string) => {
