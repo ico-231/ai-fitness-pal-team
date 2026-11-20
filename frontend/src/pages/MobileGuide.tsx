@@ -4,10 +4,8 @@ import clsx from "clsx";
 import { AlertTriangle, ArrowRight, Camera, Check, ChevronDown, Cpu, Dumbbell, Gauge, Info, LayoutGrid, Lightbulb, Link2, Rocket, Salad, Scale, Search, Settings, Sparkles, Sunrise, X, type LucideIcon } from "lucide-react";
 import { useApi } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
-import { HEAT_COLORS, TOOL_LABELS } from "../lib/constants";
-import type { AgentKey } from "../lib/types";
+import { HEAT_COLORS } from "../lib/constants";
 import { CHAPTERS, HIGHLIGHTS, INTRO, TROUBLE_GROUPS, TROUBLES, type GuideCard, type Trouble, type Visual } from "../content/guide";
-import { AgentAvatar } from "../components/AgentAvatar";
 import { useAI } from "../components/AIProvider";
 import { toast } from "../components/ui";
 import { HeadBroSvg } from "../components/MobileShell";
@@ -159,30 +157,18 @@ function Start() {
   );
 }
 
-interface AgentInfo { name: string; title: string; color: string; domain: string; tools: { name: string; description: string }[] }
 function Inside() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
-  const { data } = useApi<Record<string, AgentInfo>>(["agents"], "/api/chat/agents", { staleTime: 3600_000, enabled: open });
   return (
     <section id="ben-trong" className="g gd-q" style={{ marginTop: 24 }}>
-      <Item id="ben-trong-i" open={open} onToggle={() => setOpen(!open)} head={<span className="gd-sh"><span className="li-ic"><Cpu className="ic" /></span><span><b>Bên trong FitBro</b><small>Cách AI xử lý câu hỏi — dành cho người tò mò, không cần đọc để dùng app.</small></span></span>}>
+      <Item id="ben-trong-i" open={open} onToggle={() => setOpen(!open)} head={<span className="gd-sh"><span className="li-ic"><Cpu className="ic" /></span><span><b>HeadBro làm việc thế nào</b><small>Dành cho người tò mò — không cần đọc để dùng app.</small></span></span>}>
         <ol className="gd-steps">
-          <li><span className="n">1</span><span><b>Lớp an toàn</b> kiểm tra tin nhắn trước: dấu hiệu cấp cứu, khủng hoảng tâm lý, rối loạn ăn uống, chất cấm → trả lời bằng hướng dẫn an toàn.</span></li>
-          <li><span className="n">2</span><span><b>Bộ định tuyến</b> đọc câu hỏi và ngữ cảnh, chuyển cho chuyên gia tập luyện, chuyên gia dinh dưỡng hoặc HeadBro tự trả lời.</span></li>
-          <li><span className="n">3</span><span><b>Chuyên gia</b> gọi <i>công cụ</i> để đọc dữ liệu thật của bạn rồi mới trả lời — không bịa số.</span></li>
-          <li><span className="n">4</span><span>Khi cần <b>ghi dữ liệu</b>, chuyên gia chỉ tạo thẻ — bạn bấm <b>Xác nhận</b> thì mới lưu.</span></li>
-          <li><span className="n">5</span><span>Câu hỏi cần cả hai chuyên gia: lần lượt trả lời, sau đó <b>HeadBro tổng kết</b>.</span></li>
+          <li><span className="n">1</span><span><b>Kiểm tra an toàn trước.</b> Nếu tin nhắn có dấu hiệu nguy hiểm (cấp cứu, khủng hoảng, ăn kiêng cực đoan…), HeadBro trả lời bằng hướng dẫn an toàn thay vì lời khuyên tập luyện.</span></li>
+          <li><span className="n">2</span><span><b>Đọc dữ liệu thật của bạn.</b> HeadBro xem lịch sử tập, bữa ăn, chỉ số cơ thể rồi mới trả lời — không bịa số.</span></li>
+          <li><span className="n">3</span><span><b>Hỏi lại bạn trước khi lưu.</b> Khi cần ghi bữa ăn, buổi tập hay mục tiêu, HeadBro chỉ đưa ra thẻ xác nhận — bạn bấm <b>Xác nhận</b> thì mới lưu.</span></li>
         </ol>
-        {data && (Object.entries(data) as [AgentKey, AgentInfo][]).map(([k, a]) => (
-          <div key={k} className="gd-ag">
-            <div className="gd-agh"><AgentAvatar agent={k} real /><p><b style={{ color: a.color }}>{a.name}</b><small>{a.title}</small></p></div>
-            <p>{a.domain}</p>
-            <p className="gd-fixh">Công cụ ({a.tools.length})</p>
-            <ul>{a.tools.map((t) => <li key={t.name}>{TOOL_LABELS[t.name] || t.name}</li>)}</ul>
-          </div>
-        ))}
-        <div className="gd-acts"><button type="button" className="btn btn-glass btn-sm" onClick={() => nav("/ai-log")}>Mở Nhật ký AI<ArrowRight className="ic" /></button></div>
+        <div className="gd-acts"><button type="button" className="btn btn-glass btn-sm" onClick={() => nav("/ai-log")}>Xem Nhật ký AI<ArrowRight className="ic" /></button></div>
       </Item>
     </section>
   );
@@ -191,7 +177,7 @@ function Inside() {
 const TOC = [
   ...CHAPTERS.map((c) => ({ id: c.id, title: c.title })),
   { id: "loi", title: "Lỗi & khắc phục" },
-  { id: "ben-trong", title: "Bên trong FitBro" },
+  { id: "ben-trong", title: "HeadBro làm việc thế nào" },
 ];
 
 export default function MobileGuide() {

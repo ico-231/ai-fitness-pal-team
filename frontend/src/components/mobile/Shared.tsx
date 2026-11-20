@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { Minus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import clsx from "clsx";
 import { post } from "../../lib/api";
 import { fmt } from "../../lib/format";
 import { useAction, useApi } from "../../lib/hooks";
 import type { Readiness } from "../../lib/types";
 import { Sheet } from "./Sheet";
+import { DecimalInput } from "../ui";
 import { Rings, vars } from "./V1";
 
 /** Công tắc đoạn V1 (thấu kính trượt). `value` = vị trí đang chọn (0..n-1). */
@@ -52,6 +53,27 @@ export function ReadinessSheet({ open, onClose, r, onCheckin }: { open: boolean;
   );
 }
 
+/** Ô tự nhập lượng nước (như bản máy tính): gõ số ml (10–2000) rồi bấm + (thêm) hoặc − (bớt). */
+function WaterCustom({ busy, max, onAdd }: { busy: boolean; max: number; onAdd: (ml: number) => void }) {
+  const [ml, setMl] = useState<number | null>(null);
+  const ok = ml != null && ml >= 10 && ml <= 2000;
+  const apply = (sign: 1 | -1) => {
+    if (!ok || ml == null) return;
+    onAdd(sign === 1 ? Math.round(ml) : -Math.min(Math.round(ml), max));
+    setMl(null);
+  };
+  return (
+    <div className="wcust">
+      <div className="input-unit">
+        <DecimalInput className="input n" aria-label="Số ml nước tự nhập" placeholder="Tự nhập" value={ml ?? ""} onValue={(n) => setMl(n)} onKeyDown={(e) => e.key === "Enter" && apply(1)} />
+        <span>ml</span>
+      </div>
+      <button type="button" className="btn chipg" aria-label="Bớt số ml đã nhập" disabled={!ok || busy || max <= 0} onClick={() => apply(-1)}><Minus className="ic" /></button>
+      <button type="button" className="btn btn-primary" aria-label="Thêm số ml đã nhập" disabled={!ok || busy} onClick={() => apply(1)}><Plus className="ic" /></button>
+    </div>
+  );
+}
+
 interface WaterDaily { water_ml: number; water_target_ml: number }
 
 /**
@@ -83,6 +105,7 @@ export function WaterTile({ steps }: { steps?: boolean }) {
         <button type="button" className="btn chipg" aria-label={`Bớt ${step} ml`} disabled={data.water_ml <= 0 || water.isPending} onClick={() => water.mutate(-Math.min(step, data.water_ml))}><Minus className="ic" /></button>
         <button type="button" className="btn btn-primary" disabled={water.isPending} onClick={() => water.mutate(step)}>+ {step} ml</button>
       </div>
+      {steps && <WaterCustom busy={water.isPending} max={data.water_ml} onAdd={(ml) => water.mutate(ml)} />}
     </section>
   );
 }

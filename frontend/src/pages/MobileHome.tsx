@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Bike, BarChart3, ChevronRight, Moon, Play, Sun, Utensils, Dumbbell } from "lucide-react";
 import clsx from "clsx";
@@ -6,7 +6,8 @@ import type { Insight, ScheduleDay } from "../lib/types";
 import { fmt, greeting, todayISO } from "../lib/format";
 import { useApi } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
-import type { Report } from "../components/ReportDetail";
+import { clickable } from "../components/ui";
+import type { DetailKind, Report } from "../components/ReportDetail";
 import { useAI } from "../components/AIProvider";
 import { useTodayAdvice } from "../components/WorkoutExtras";
 import { InstallHint } from "../components/InstallHint";
@@ -21,6 +22,7 @@ import { Rings, vars } from "../components/mobile/V1";
  * Thứ tự: lời chào + chip sẵn sàng → gợi ý cài app → thẻ buổi tập → dinh dưỡng 4 vòng → sẵn sàng / mục tiêu
  * → HeadBro nhắn → tuần này → làm nhanh. Không hình người, không khối cầu; điểm sẵn sàng luôn nhỏ.
  */
+const ReportSheet = lazy(() => import("../components/mobile/ReportSheet"));
 const WEEK_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 /** Bỏ phần số bài / phút / điểm sẵn sàng mà thẻ đã hiện ở chỗ khác, chỉ giữ lời khuyên. */
 function trimReason(s: string) {
@@ -54,6 +56,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
   const { data: sch } = useApi<{ today: ScheduleDay; days: ScheduleDay[]; has_schedule: boolean }>(["schedule"], "/api/schedule");
   const { data: month } = useApi<Report>(["report", "month"], "/api/dashboard/report?period=month");
   const [sheet, setSheet] = useState(false);
+  const [detail, setDetail] = useState<DetailKind | null>(null);
   const [allTips, setAllTips] = useState(false);
   const t = ov.today;
   const r = t.readiness;
@@ -237,10 +240,10 @@ export function MobileHome({ ov }: { ov: Overview }) {
             </>
           )}
           <dl className="stats c2 mt" style={{ rowGap: 12 }}>
-            <div><dt>30 ngày</dt><dd>{s30 ? fmt(s30.sessions) : "—"}<small>buổi</small></dd></div>
-            <div><dt>Khối lượng</dt><dd>{s30 ? fmt(s30.total_volume) : "—"}<small>kg</small></dd></div>
-            <div><dt>PR mới</dt><dd>{s30 ? fmt(s30.pr_count) : "—"}</dd></div>
-            <div><dt>Cân nặng</dt><dd>{weightNow != null ? fmt(weightNow, 1) : "—"}<small>kg</small></dd></div>
+            <div {...clickable(() => setDetail("sessions"))} aria-label="Chi tiết buổi tập 30 ngày"><dt>30 ngày</dt><dd>{s30 ? fmt(s30.sessions) : "—"}<small>buổi</small></dd></div>
+            <div {...clickable(() => setDetail("volume"))} aria-label="Chi tiết khối lượng tập"><dt>Khối lượng</dt><dd>{s30 ? fmt(s30.total_volume) : "—"}<small>kg</small></dd></div>
+            <div {...clickable(() => setDetail("prs"))} aria-label="Chi tiết kỷ lục mới"><dt>PR mới</dt><dd>{s30 ? fmt(s30.pr_count) : "—"}</dd></div>
+            <div {...clickable(() => setDetail("weight"))} aria-label="Chi tiết cân nặng"><dt>Cân nặng</dt><dd>{weightNow != null ? fmt(weightNow, 1) : "—"}<small>kg</small></dd></div>
           </dl>
         </section>
       </div>
@@ -255,6 +258,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
         <Link className="chip" to="/report"><BarChart3 className="ic" />Báo cáo</Link>
       </div>
 
+      {detail && <Suspense fallback={null}><ReportSheet kind={detail} report={month} targets={tg} onClose={() => setDetail(null)} /></Suspense>}
       <ReadinessSheet open={sheet} onClose={() => setSheet(false)} r={r} onCheckin={() => { setSheet(false); nav("/daily"); }} />
     </div>
   );

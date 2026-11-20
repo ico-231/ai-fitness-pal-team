@@ -3,7 +3,7 @@
  * Trình duyệt tự dựng PDF ("In" → "Lưu dưới dạng PDF") nên chữ nét, tiếng Việt chuẩn, không cần thư viện tạo PDF.
  * Luôn hiển thị nền sáng (giấy trắng) dù app đang ở chế độ tối.
  */
-import { useEffect, useLayoutEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useApi, useMedia } from "../lib/hooks";
@@ -12,7 +12,7 @@ import { Seg } from "../components/mobile/Shared";
 import { vars } from "../components/mobile/V1";
 import { fmt, prDetail, prValue, shortDate } from "../lib/format";
 import type { Targets } from "../lib/types";
-import type { Report } from "../components/ReportDetail";
+import type { DetailKind, Report } from "../components/ReportDetail";
 import { BarSeries } from "../components/Charts";
 import { Button, Segmented, Spinner } from "../components/ui";
 
@@ -253,6 +253,8 @@ export default function PrintReport() {
   );
 }
 
+const ReportSheet = lazy(() => import("../components/mobile/ReportSheet"));
+
 /* =====================================================================================
    Báo cáo — bản đọc trên điện thoại (V1 "Kính lỏng"). Cùng dữ liệu với tờ A4; bấm "In / Lưu PDF" thì in tờ A4.
    ===================================================================================== */
@@ -265,15 +267,16 @@ function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
   const days = r.series.length * r.bucket_days;
   const pct = (v: number | null, t?: number | null) => (v != null && t ? `${Math.round((v / t) * 100)}% mục tiêu` : undefined);
   const per = r.bucket_days > 1 ? "tuần" : "ngày";
-  const tiles: { k: string; v: string; u?: string; sub?: string; ic: typeof Gauge; c?: string }[] = [
-    { k: "Buổi tập", v: fmt(s.sessions), u: "buổi", sub: `${fmt(s.total_minutes)} phút`, ic: Dumbbell },
-    { k: "Khối lượng", v: fmt(s.total_volume), u: "kg", sub: prs.length ? `${prs.length} bài có kỷ lục mới` : "Chưa có kỷ lục mới", ic: Dumbbell },
+  const [detail, setDetail] = useState<DetailKind | null>(null);
+  const tiles: { k: string; v: string; u?: string; sub?: string; ic: typeof Gauge; c?: string; d?: DetailKind }[] = [
+    { k: "Buổi tập", v: fmt(s.sessions), u: "buổi", sub: `${fmt(s.total_minutes)} phút`, ic: Dumbbell, d: "sessions" },
+    { k: "Khối lượng", v: fmt(s.total_volume), u: "kg", sub: prs.length ? `${prs.length} bài có kỷ lục mới` : "Chưa có kỷ lục mới", ic: Dumbbell, d: "volume" },
     { k: "Điểm form TB", v: s.avg_form_score != null ? fmt(s.avg_form_score) : "—", u: s.avg_form_score != null ? "/100" : undefined, sub: "Từ Camera AI", ic: Gauge },
-    { k: "Sẵn sàng TB", v: s.avg_readiness != null ? fmt(s.avg_readiness) : "—", u: s.avg_readiness != null ? "/100" : undefined, sub: "Check-in buổi sáng", ic: HeartPulse },
-    { k: `Calo TB / ${per === "tuần" ? "ngày" : "ngày"}`, v: s.avg_calories != null ? fmt(s.avg_calories) : "—", u: "kcal", sub: pct(s.avg_calories, tg.calories) || `${s.meal_logged_days} ngày có ghi bữa`, ic: Flame, c: "var(--m-calories)" },
-    { k: "Đạm TB / ngày", v: s.avg_protein != null ? fmt(s.avg_protein) : "—", u: "g", sub: pct(s.avg_protein, tg.protein), ic: Flame, c: "var(--m-protein)" },
+    { k: "Sẵn sàng TB", v: s.avg_readiness != null ? fmt(s.avg_readiness) : "—", u: s.avg_readiness != null ? "/100" : undefined, sub: "Check-in buổi sáng", ic: HeartPulse, d: "readiness" },
+    { k: `Calo TB / ${per === "tuần" ? "ngày" : "ngày"}`, v: s.avg_calories != null ? fmt(s.avg_calories) : "—", u: "kcal", sub: pct(s.avg_calories, tg.calories) || `${s.meal_logged_days} ngày có ghi bữa`, ic: Flame, c: "var(--m-calories)", d: "nutrition" },
+    { k: "Đạm TB / ngày", v: s.avg_protein != null ? fmt(s.avg_protein) : "—", u: "g", sub: pct(s.avg_protein, tg.protein), ic: Flame, c: "var(--m-protein)", d: "nutrition" },
     { k: "Nước TB / ngày", v: data.water.avg_ml != null ? fmt(data.water.avg_ml / 1000, 2) : "—", u: "L", sub: pct(data.water.avg_ml, data.water.target_ml), ic: Droplet, c: "var(--m-water)" },
-    { k: "Cân nặng", v: s.weight_change != null ? `${s.weight_change > 0 ? "+" : ""}${fmt(s.weight_change, 1)}` : "—", u: "kg", sub: "Thay đổi trong kỳ", ic: Scale, c: "var(--m-weight)" },
+    { k: "Cân nặng", v: s.weight_change != null ? `${s.weight_change > 0 ? "+" : ""}${fmt(s.weight_change, 1)}` : "—", u: "kg", sub: "Thay đổi trong kỳ", ic: Scale, c: "var(--m-weight)", d: "weight" },
   ];
   return (
     <div className="v1 rp-screen" style={{ padding: "calc(12px + env(safe-area-inset-top)) var(--gut) 40px" }}>
@@ -293,13 +296,16 @@ function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
 
       <h3 className="rp-h">Tóm tắt</h3>
       <div className="rp-tiles">
-        {tiles.map((t) => (
-          <div className="g tile" key={t.k}>
-            <span className="tk"><t.ic className="ic" style={t.c ? { color: t.c } : undefined} />{t.k}</span>
-            <span className="tv n">{t.v}{t.u && <small> {t.u}</small>}</span>
-            {t.sub && <span className="ts">{t.sub}</span>}
-          </div>
-        ))}
+        {tiles.map((t) => {
+          const inner = (
+            <>
+              <span className="tk"><t.ic className="ic" style={t.c ? { color: t.c } : undefined} />{t.k}</span>
+              <span className="tv n">{t.v}{t.u && <small> {t.u}</small>}</span>
+              {t.sub && <span className="ts">{t.sub}</span>}
+            </>
+          );
+          return t.d ? <button type="button" className="g tile" key={t.k} aria-haspopup="dialog" onClick={() => setDetail(t.d!)}>{inner}</button> : <div className="g tile" key={t.k}>{inner}</div>;
+        })}
       </div>
 
       <h3 className="rp-h">Nhận xét</h3>
@@ -344,6 +350,7 @@ function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
         </div>
       ) : <p className="t-small" style={{ padding: "0 6px" }}>Chưa có kỷ lục mới trong kỳ.</p>}
       <p className="rp-src">{prs.some((p) => p.kind === "weight") && "Bài tạ so theo 1RM ước tính (Epley). "}{prs.length > 6 && `… và ${prs.length - 6} bài khác.`}</p>
+      {detail && <Suspense fallback={null}><ReportSheet kind={detail} report={r} targets={tg} onClose={() => setDetail(null)} /></Suspense>}
       <p className="rp-src">Số liệu tự ghi trong FitBro AI · Khối lượng = Σ (mức tạ × số rep) · Calo/macro là ước tính. Xuất lúc {data.generated_at.slice(11, 16)} {fullDate(data.generated_at.slice(0, 10))}.</p>
     </div>
   );

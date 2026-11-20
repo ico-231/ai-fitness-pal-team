@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, BookOpen, Brain, Check, CheckCircle2, Leaf, ListPlus, Plus, Star, X, XCircle, Utensils } from "lucide-react";
 import { post } from "../../lib/api";
-import { useInvalidateAll } from "../../lib/hooks";
+import { useDesktop, useInvalidateAll } from "../../lib/hooks";
 import { MEAL_TYPES } from "../../lib/constants";
 import type { Card as CardT, Food, MealPlanItem } from "../../lib/types";
 import { dayLabel, fmt } from "../../lib/format";
@@ -11,6 +11,10 @@ import { useAllergy } from "../../lib/allergy";
 import { Progress } from "../ui";
 import { ExerciseCard, ExerciseModal, PlanCard } from "../Exercise";
 import { Badge, Button, Modal, confirmDialog, toast } from "../ui";
+
+// Điện thoại: chi tiết bài tập / món dùng Sheet V1 (tải khi cần; lazy cũng tránh vòng import với ChatCards)
+const ExerciseSheet = lazy(() => import("../mobile/WorkoutParts").then((m) => ({ default: m.ExerciseSheet })));
+const FoodSheetV1 = lazy(() => import("../mobile/FoodSheetV1"));
 
 export function FavStar({ on, onClick, label = true, size = "sm" }: { on: boolean; onClick: () => void; label?: boolean; size?: "sm" | "md" }) {
   return (
@@ -202,7 +206,12 @@ export function FoodSheet({ name, image, emoji, tags, macros, comment, commentTi
   );
 }
 
-export function FoodDetail({ f, open, onClose }: { f: Food; open: boolean; onClose: () => void }) {
+export function FoodDetail(props: { f: Food; open: boolean; onClose: () => void }) {
+  const desktop = useDesktop();
+  return desktop ? <FoodDetailDesktop {...props} /> : <Suspense fallback={null}><FoodSheetV1 {...props} /></Suspense>;
+}
+
+function FoodDetailDesktop({ f, open, onClose }: { f: Food; open: boolean; onClose: () => void }) {
   const [servings, setServings] = useState(1);
   const [mealType, setMealType] = useState(guessMealType);
   const [busy, setBusy] = useState(false);
@@ -437,6 +446,7 @@ function ConfirmCard({ card, onStatus }: { card: Extract<CardT, { kind: "confirm
 
 export function ChatCards({ cards, onCardStatus, compact }: { cards: CardT[]; onCardStatus: (actionId: string, s: string) => void; compact?: boolean }) {
   const [exId, setExId] = useState<string | null>(null);
+  const desktop = useDesktop();
   const nav = useNavigate();
   const invalidate = useInvalidateAll();
   if (!cards.length) return null;
@@ -527,7 +537,7 @@ export function ChatCards({ cards, onCardStatus, compact }: { cards: CardT[]; on
           );
         return null;
       })}
-      <ExerciseModal id={exId} onClose={() => setExId(null)} />
+      {desktop ? <ExerciseModal id={exId} onClose={() => setExId(null)} /> : <Suspense fallback={null}><ExerciseSheet id={exId} onClose={() => setExId(null)} /></Suspense>}
     </div>
   );
 }
