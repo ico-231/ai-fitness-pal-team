@@ -9,7 +9,7 @@ import { MobileMenuButton } from "./MobileMenu";
  * Khung chung điện thoại (< 1024px) — bản thiết kế V1 "Kính lỏng":
  *  - MobileTopBar: thanh trên cố định (công tắc Tổng quan | Hôm nay hoặc tiêu đề trang) + avatar mở menu.
  *  - MobileDock: thanh dưới 4 mục + nút HeadBro; cuộn xuống thì thu thành một nút và nút HeadBro bung thành ô "Hỏi HeadBro…".
- * Cả hai chỉ hiện dưới 1024px (lg:hidden) nên giao diện máy tính không đổi.
+ * Layout chỉ gắn (mount) hai thành phần này khi KHÔNG phải máy tính (useDesktop), nên giao diện máy tính không đổi.
  */
 
 /** Nét vẽ dấu HeadBro: hai cặp tạ, nhịp tim có đỉnh chạm ngôi sao 4 cánh, thêm sao nhỏ (vẽ theo ai-avatar.png). */
@@ -101,7 +101,7 @@ export function MobileDock() {
   useScrollCollapse(loc.pathname);
 
   return (
-    <nav aria-label="Điều hướng chính" className="fb-dock no-print lg:hidden">
+    <nav aria-label="Điều hướng chính" className="fb-dock no-print">
       <div
         className={clsx("mg fb-tabs", idx < 0 && "none")}
         style={{ "--i": Math.max(0, idx) } as React.CSSProperties}
@@ -144,8 +144,8 @@ export function MobileTopBar() {
 
   return (
     <>
-      <div aria-hidden className="fb-top-fade no-print lg:hidden" />
-      <header className="fb-top no-print lg:hidden">
+      <div aria-hidden className="fb-top-fade no-print" />
+      <header className="fb-top no-print">
         {isSub ? (
           <>
             <div className="mg subtabs" role="tablist" aria-label="Tổng quan hoặc Hôm nay" style={{ "--i": i } as React.CSSProperties}>

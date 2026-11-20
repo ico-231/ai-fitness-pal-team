@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { WifiOff, BookOpen, CalendarCheck, Dumbbell, LayoutDashboard, LogOut, MessagesSquare, Moon, Scale, Settings, Sun, Utensils } from "lucide-react";
 import { put } from "../lib/api";
 import { applyTheme, useAuth } from "../lib/auth";
+import { useDesktop } from "../lib/viewport";
 import { voice } from "../lib/media";
 import { Spinner } from "./ui";
 import { MobileDock, MobileTopBar } from "./MobileShell";
@@ -153,7 +154,7 @@ function OfflineBanner() {
   }, []);
   if (!on) return null;
   return (
-    <div role="status" className="v1 no-print fixed inset-x-3 z-40 lg:hidden" style={{ top: "calc(env(safe-area-inset-top) + 64px)" }}>
+    <div role="status" className="v1 no-print fixed inset-x-3 z-40" style={{ top: "calc(env(safe-area-inset-top) + 64px)" }}>
       <div className="g flex items-center gap-3 px-4 py-3">
         <span className="d-ic red"><WifiOff className="ic ic-lg" aria-hidden /></span>
         <div className="min-w-0"><b className="block text-[15px]">Đang mất kết nối</b><span className="text-[13px] opacity-75">Dữ liệu đã tải vẫn xem được; thao tác lưu cần có mạng.</span></div>
@@ -204,6 +205,7 @@ function useReminders() {
 }
 
 export function Layout() {
+  const desktop = useDesktop();
   const { user, signOut } = useAuth();
   const loc = useLocation();
   useReminders();
@@ -309,8 +311,8 @@ export function Layout() {
 
       {/* Điện thoại: thanh trên cố định (công tắc Tổng quan | Hôm nay hoặc tiêu đề + avatar) — chỉ ở các trang có thanh trên.
           Trang Chat và buổi tập tự lo phần đầu trang; dải nền che vùng tai thỏ khi cuộn. */}
-      <OfflineBanner />
-      {topBar ? <MobileTopBar /> : <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl lg:hidden" />}
+      {!desktop && <OfflineBanner />}
+      {!desktop && (topBar ? <MobileTopBar /> : <div aria-hidden className="no-print fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)] bg-bg/85 backdrop-blur-xl" />)}
 
       <main className={clsx("vt-page relative z-10 lg:pl-[92px]", fullBleed ? "pt-[env(safe-area-inset-top)] lg:pt-0" : focusTask ? "pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+7.5rem)] lg:pb-24 lg:pt-0" : "pt-[calc(env(safe-area-inset-top)+56px)] pb-[calc(var(--bottombar-h)+1.5rem)] lg:pb-24 lg:pt-0")}>
         {/* Suspense riêng cho nội dung trang: khi đang tải code trang mới, thanh điều hướng vẫn hiện (không nháy trắng cả màn) */}
@@ -324,7 +326,7 @@ export function Layout() {
       </main>
 
       {/* Thanh dưới điện thoại + nút HeadBro (ẩn khi đang trong buổi tập) */}
-      {!focusTask && !fullBleed && <MobileDock />}
+      {!desktop && !focusTask && !fullBleed && <MobileDock />}
     </div>
   );
 }

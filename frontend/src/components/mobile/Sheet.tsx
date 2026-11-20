@@ -2,13 +2,9 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import clsx from "clsx";
+import { useModalA11y } from "./modalA11y";
 
-/* Ngăn xếp các sheet đang mở (sheet chồng sheet): Esc chỉ đóng sheet trên cùng; khoá cuộn trang đếm theo số sheet đang mở. */
-const stack: string[] = [];
-let locks = 0;
-export const lockScroll = () => { if (locks++ === 0) document.body.style.overflow = "hidden"; };
-export const unlockScroll = () => { if (--locks <= 0) { locks = 0; document.body.style.overflow = ""; } };
-const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+export { lockScroll, unlockScroll } from "./modalA11y";
 
 /**
  * Bottom sheet V1 (kính, tay nắm, nền mờ). Mở/đóng có chuyển động trượt; Esc, bấm nền mờ hoặc nút ✕ để đóng.
@@ -23,7 +19,7 @@ export function Sheet({ open, onClose, title, sub, full, actions, children, clas
   const box = useRef<HTMLDivElement>(null);
   const uid = useId();
   const titleId = `sheet-t-${uid.replace(/:/g, "")}`;
-  const closeRef = useRef(onClose); // onClose có thể đổi mỗi lần render → giữ qua ref để không chạy lại hiệu ứng khoá cuộn / focus
+  const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
   useEffect(() => {
@@ -37,34 +33,7 @@ export function Sheet({ open, onClose, title, sub, full, actions, children, clas
     return () => window.clearTimeout(t);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.activeElement as HTMLElement | null;
-    stack.push(uid);
-    lockScroll();
-    const onKey = (e: KeyboardEvent) => {
-      if (stack[stack.length - 1] !== uid) return; // chỉ sheet trên cùng nhận phím
-      if (e.key === "Escape") { e.stopPropagation(); closeRef.current(); return; }
-      if (e.key === "Tab" && box.current) {
-        // giữ focus trong sheet: Tab ở phần tử cuối → quay về đầu, Shift+Tab ở đầu → xuống cuối
-        const els = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null);
-        if (!els.length) { e.preventDefault(); return; }
-        const a = els[0], z = els[els.length - 1], cur = document.activeElement;
-        if (e.shiftKey && (cur === a || cur === box.current)) { e.preventDefault(); z.focus(); }
-        else if (!e.shiftKey && cur === z) { e.preventDefault(); a.focus(); }
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    const f = window.setTimeout(() => box.current?.focus({ preventScroll: true }), 60);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.clearTimeout(f);
-      const i = stack.lastIndexOf(uid);
-      if (i >= 0) stack.splice(i, 1);
-      unlockScroll();
-      prev?.focus?.();
-    };
-  }, [open]);
+  useModalA11y(open, box, () => closeRef.current());
 
   if (!mounted) return null;
   return createPortal(
