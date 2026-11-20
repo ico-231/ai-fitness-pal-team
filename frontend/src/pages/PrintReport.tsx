@@ -6,7 +6,10 @@
 import { useEffect, useLayoutEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
-import { useApi } from "../lib/hooks";
+import { useApi, useMedia } from "../lib/hooks";
+import { Droplet, Dumbbell, Flame, Gauge, HeartPulse, Scale, Target } from "lucide-react";
+import { Seg } from "../components/mobile/Shared";
+import { vars } from "../components/mobile/V1";
 import { fmt, prDetail, prValue, shortDate } from "../lib/format";
 import type { Targets } from "../lib/types";
 import type { Report } from "../components/ReportDetail";
@@ -56,11 +59,13 @@ function Section({ title, children, className = "" }: { title: string; children:
 export default function PrintReport() {
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
+  const phone = useMedia("(max-width: 1023px)");
   const period = sp.get("period") === "month" ? "month" : "week";
   const { data, isFetching } = useApi<PrintData>(["print-report", period], `/api/dashboard/print?period=${period}`, { keepPrevious: true });
 
   // Báo cáo là "tờ giấy": luôn nền sáng, trả lại giao diện cũ khi rời trang
   useLayoutEffect(() => {
+    if (phone) return; // điện thoại: giữ giao diện sáng/tối của app; bản in dùng tờ A4 riêng (luôn nền sáng)
     const el = document.documentElement;
     const prev = el.dataset.theme;
     el.dataset.theme = "light";
@@ -69,7 +74,7 @@ export default function PrintReport() {
       if (prev) el.dataset.theme = prev;
       el.classList.remove("print-page");
     };
-  }, []);
+  }, [phone]);
   useEffect(() => {
     if (data) document.title = `FitBro - Báo cáo ${data.user.name} ${shortDate(data.report.start)}-${shortDate(data.report.end)}`;
     return () => { document.title = "FitBro AI"; };
@@ -91,7 +96,7 @@ export default function PrintReport() {
   for (const p of r.prs) if (!firstPrev.has(p.exercise_id)) firstPrev.set(p.exercise_id, p.previous);
   const prs = Object.values(Object.fromEntries(r.prs.map((p) => [p.exercise_id, { ...p, previous: firstPrev.get(p.exercise_id) }])));
 
-  return (
+  const sheet = (
     <div className="min-h-dvh bg-[#f3f4f6] py-6 text-[#111827] print:bg-white print:py-0">
       {/* Thanh công cụ — không in */}
       <div className="no-print mx-auto mb-4 flex w-full max-w-[210mm] flex-wrap items-center gap-2 px-4 sm:px-0">
@@ -237,6 +242,109 @@ export default function PrintReport() {
           <span>fitbro-vn.vercel.app</span>
         </footer>
       </article>
+    </div>
+  );
+  if (!phone) return sheet;
+  return (
+    <>
+      <div className="print:hidden"><MobileReport data={data} period={period} setPeriod={(v) => setSp({ period: v }, { replace: true })} busy={isFetching} rows={rows} prs={prs as Report["prs"]} onBack={() => (window.history.length > 1 ? nav(-1) : nav("/"))} /></div>
+      <div className="hidden print:block">{sheet}</div>
+    </>
+  );
+}
+
+/* =====================================================================================
+   Báo cáo — bản đọc trên điện thoại (V1 "Kính lỏng"). Cùng dữ liệu với tờ A4; bấm "In / Lưu PDF" thì in tờ A4.
+   ===================================================================================== */
+type Row = { kind: "gym"; date: string; s: Report["sessions"][number] } | { kind: "act"; date: string; a: NonNullable<PrintData["activities"]>[number] };
+
+function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
+  data: PrintData; period: "week" | "month"; setPeriod: (v: string) => void; busy: boolean; rows: Row[]; prs: Report["prs"]; onBack: () => void;
+}) {
+  const r = data.report, s = r.summary, tg = data.targets, prof = data.profile;
+  const days = r.series.length * r.bucket_days;
+  const pct = (v: number | null, t?: number | null) => (v != null && t ? `${Math.round((v / t) * 100)}% mục tiêu` : undefined);
+  const per = r.bucket_days > 1 ? "tuần" : "ngày";
+  const tiles: { k: string; v: string; u?: string; sub?: string; ic: typeof Gauge; c?: string }[] = [
+    { k: "Buổi tập", v: fmt(s.sessions), u: "buổi", sub: `${fmt(s.total_minutes)} phút`, ic: Dumbbell },
+    { k: "Khối lượng", v: fmt(s.total_volume), u: "kg", sub: prs.length ? `${prs.length} bài có kỷ lục mới` : "Chưa có kỷ lục mới", ic: Dumbbell },
+    { k: "Điểm form TB", v: s.avg_form_score != null ? fmt(s.avg_form_score) : "—", u: s.avg_form_score != null ? "/100" : undefined, sub: "Từ Camera AI", ic: Gauge },
+    { k: "Sẵn sàng TB", v: s.avg_readiness != null ? fmt(s.avg_readiness) : "—", u: s.avg_readiness != null ? "/100" : undefined, sub: "Check-in buổi sáng", ic: HeartPulse },
+    { k: `Calo TB / ${per === "tuần" ? "ngày" : "ngày"}`, v: s.avg_calories != null ? fmt(s.avg_calories) : "—", u: "kcal", sub: pct(s.avg_calories, tg.calories) || `${s.meal_logged_days} ngày có ghi bữa`, ic: Flame, c: "var(--m-calories)" },
+    { k: "Đạm TB / ngày", v: s.avg_protein != null ? fmt(s.avg_protein) : "—", u: "g", sub: pct(s.avg_protein, tg.protein), ic: Flame, c: "var(--m-protein)" },
+    { k: "Nước TB / ngày", v: data.water.avg_ml != null ? fmt(data.water.avg_ml / 1000, 2) : "—", u: "L", sub: pct(data.water.avg_ml, data.water.target_ml), ic: Droplet, c: "var(--m-water)" },
+    { k: "Cân nặng", v: s.weight_change != null ? `${s.weight_change > 0 ? "+" : ""}${fmt(s.weight_change, 1)}` : "—", u: "kg", sub: "Thay đổi trong kỳ", ic: Scale, c: "var(--m-weight)" },
+  ];
+  return (
+    <div className="v1 rp-screen" style={{ padding: "calc(12px + env(safe-area-inset-top)) var(--gut) 40px" }}>
+      <div className="rp-bar rp-noprint">
+        <button type="button" className="icon-btn" aria-label="Quay lại" onClick={onBack}><ArrowLeft className="ic" /></button>
+        <b>Báo cáo</b>
+        <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => window.print()}><Printer className="ic" />In / Lưu PDF</button>
+      </div>
+      <Seg label="Khoảng thời gian" options={["7 ngày", "30 ngày"]} value={period === "week" ? 0 : 1} onChange={(i) => setPeriod(i === 0 ? "week" : "month")} />
+
+      <section className="rp-doc" style={{ marginTop: 18 }}>
+        <p className="k">FitBro AI</p>
+        <h2>Báo cáo {period === "week" ? "tuần" : "tháng"}</h2>
+        <p className="who">{data.user.name} <span>{fullDate(r.start)} – {fullDate(r.end)} · {days} ngày</span></p>
+        <p className="goal">Mục tiêu: {prof.goal_vi}{prof.age ? ` · ${prof.age} tuổi` : ""}{prof.height_cm ? ` · ${fmt(prof.height_cm)} cm` : ""}{prof.weight_kg ? ` · ${fmt(prof.weight_kg, 1)} kg` : ""} · {prof.training_days} buổi/tuần</p>
+      </section>
+
+      <h3 className="rp-h">Tóm tắt</h3>
+      <div className="rp-tiles">
+        {tiles.map((t) => (
+          <div className="g tile" key={t.k}>
+            <span className="tk"><t.ic className="ic" style={t.c ? { color: t.c } : undefined} />{t.k}</span>
+            <span className="tv n">{t.v}{t.u && <small> {t.u}</small>}</span>
+            {t.sub && <span className="ts">{t.sub}</span>}
+          </div>
+        ))}
+      </div>
+
+      <h3 className="rp-h">Nhận xét</h3>
+      {data.notes.length ? <ul className="g rp-notes">{data.notes.map((n, i) => <li key={i}>{n}</li>)}</ul> : <p className="t-small" style={{ padding: "0 6px" }}>Chưa đủ dữ liệu để nhận xét.</p>}
+
+      <h3 className="rp-h">Mục tiêu đang theo đuổi</h3>
+      {data.goals.length ? (
+        <section className="g rp-goal"><div className="bars">
+          {data.goals.slice(0, 4).map((g) => (
+            <div className="bar" key={g.id}>
+              <span className="t"><span style={{ color: "var(--fg)", fontWeight: 600 }}>{g.title}</span><b>{g.progress_pct}%</b></span>
+              <span className="track"><i style={vars({ "--v": Math.min(1, g.progress_pct / 100) })} /></span>
+              {g.days_left != null && <span className="t" style={{ fontSize: 12 }}><span>{g.days_left >= 0 ? `còn ${g.days_left} ngày` : "quá hạn"}</span></span>}
+            </div>
+          ))}
+          {data.goals.length > 4 && <p className="t-small">… và {data.goals.length - 4} mục tiêu khác</p>}
+        </div></section>
+      ) : <p className="t-small" style={{ padding: "0 6px" }}>Chưa đặt mục tiêu.</p>}
+
+      <h3 className="rp-h">Calo theo {per}</h3>
+      <section className="g rp-chart"><BarSeries data={r.series} dataKey="calories" unit="kcal" label="Calo" color="var(--m-calories)" height={150} target={r.bucket_days === 1 ? tg.calories : undefined} /></section>
+      <h3 className="rp-h">Khối lượng tập theo {per}</h3>
+      <section className="g rp-chart"><BarSeries data={r.series} dataKey="volume" unit="kg" label="Khối lượng" color="var(--lime)" height={150} /></section>
+
+      <h3 className="rp-h">Buổi tập ({r.sessions.length}){data.activities?.length ? ` & hoạt động khác (${data.activities.length})` : ""}</h3>
+      {rows.length ? (
+        <div className="g list rp-sess">
+          {rows.map((x) => x.kind === "gym" ? (
+            <div className="li" key={x.s.id}><span className="li-main"><b>{x.s.name}</b><small>{shortDate(x.s.date)} · {x.s.minutes}′ · {x.s.sets} set{x.s.form != null ? ` · form ${x.s.form}` : ""}</small></span><span className="li-end"><span className="v n">{x.s.volume > 0 ? `${fmt(x.s.volume)} kg` : "—"}</span></span></div>
+          ) : (
+            <div className="li" key={x.a.id}><span className="li-main"><b>{x.a.name}</b><small>{shortDate(x.a.date)} · {Math.round(x.a.duration_min)}′ · {x.a.intensity_vi.toLowerCase()}{x.a.distance_km ? ` · ${fmt(x.a.distance_km, 1)} km` : ""}</small></span><span className="li-end"><span className="v n">≈ {fmt(x.a.kcal_gross)} kcal</span></span></div>
+          ))}
+        </div>
+      ) : <p className="t-small" style={{ padding: "0 6px" }}>Chưa có buổi tập nào trong kỳ.</p>}
+
+      <h3 className="rp-h">Kỷ lục mới ({prs.length} bài)</h3>
+      {prs.length ? (
+        <div className="g list rp-pr">
+          {prs.slice(0, 6).map((p) => (
+            <div className="li" key={p.exercise_id}><span className="li-ic lime"><Target className="ic" /></span><span className="li-main"><b>{p.exercise_name}</b><small>{shortDate(p.date)} · {p.previous != null ? `${prValue(p, p.previous)} → ` : ""}{prValue(p)} · {prDetail(p)}</small></span></div>
+          ))}
+        </div>
+      ) : <p className="t-small" style={{ padding: "0 6px" }}>Chưa có kỷ lục mới trong kỳ.</p>}
+      <p className="rp-src">{prs.some((p) => p.kind === "weight") && "Bài tạ so theo 1RM ước tính (Epley). "}{prs.length > 6 && `… và ${prs.length - 6} bài khác.`}</p>
+      <p className="rp-src">Số liệu tự ghi trong FitBro AI · Khối lượng = Σ (mức tạ × số rep) · Calo/macro là ước tính. Xuất lúc {data.generated_at.slice(11, 16)} {fullDate(data.generated_at.slice(0, 10))}.</p>
     </div>
   );
 }

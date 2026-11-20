@@ -317,7 +317,7 @@ export function Layout() {
         {fullBleed ? (
           <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
         ) : (
-          <div key={loc.pathname} className="page-main v1-skin stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
+          <div key={loc.pathname} className="page-main stagger mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:pl-2 lg:pr-6">
             <Suspense fallback={<PageSpinner />}><Outlet /></Suspense>
           </div>
         )}

@@ -13,6 +13,8 @@ import { CHAPTERS, HIGHLIGHTS, INTRO, TROUBLE_GROUPS, TROUBLES, type GuideCard, 
 import { AgentAvatar } from "../components/AgentAvatar";
 import { useAI } from "../components/AIProvider";
 import { Card, PageHeader, toast } from "../components/ui";
+import { useMedia } from "../lib/hooks";
+import MobileGuide from "./MobileGuide";
 
 const ICONS: Record<string, LucideIcon> = {
   rocket: Rocket, sparkles: Sparkles, layout: LayoutGrid, sunrise: Sunrise, dumbbell: Dumbbell, camera: Camera,
@@ -318,7 +320,7 @@ const TOC: { id: string; title: string; icon: LucideIcon }[] = [
   { id: "ben-trong", title: "Bên trong FitBro", icon: Cpu },
 ];
 
-export default function Guide() {
+function GuideDesktop() {
   const ai = useAI();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -534,4 +536,9 @@ export default function Guide() {
       )}
     </div>
   );
+}
+
+export default function Guide() {
+  const desktop = useMedia("(min-width: 1024px)");
+  return desktop ? <GuideDesktop /> : <MobileGuide />;
 }

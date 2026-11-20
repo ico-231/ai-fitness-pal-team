@@ -6,6 +6,12 @@ import { useApi } from "../lib/hooks";
 import { AGENTS, TOOL_LABELS } from "../lib/constants";
 import type { AgentKey } from "../lib/types";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Segmented, Spinner, Stat } from "../components/ui";
+import { useMedia } from "../lib/hooks";
+import { Sheet } from "../components/mobile/Sheet";
+import { Seg } from "../components/mobile/Shared";
+import { vars } from "../components/mobile/V1";
+import { Link } from "react-router-dom";
+import { ChevronRight, MessageSquare } from "lucide-react";
 
 interface TraceBrief {
   id: string;
@@ -317,7 +323,7 @@ function Overview({ onOpen }: { onOpen: (id: string) => void }) {
   );
 }
 
-export default function AiLog() {
+function AiLogDesktop() {
   const [params, setParams] = useSearchParams();
   const id = params.get("id");
   return (
@@ -326,4 +332,145 @@ export default function AiLog() {
       {id ? <Detail id={id} onBack={() => setParams({})} /> : <Overview onOpen={(tid) => setParams({ id: tid })} />}
     </div>
   );
+}
+
+/* =====================================================================================
+   Nhật ký AI — V1 "Kính lỏng" (điện thoại). Trang quan sát hệ thống: GIỮ tên agent thật.
+   ===================================================================================== */
+const sNum = (n: number) => n.toLocaleString("vi-VN");
+const secF = (ms: number | null | undefined) => (ms == null ? { v: "—", u: "" } : ms < 1000 ? { v: String(ms), u: " ms" } : { v: (ms / 1000).toFixed(1).replace(".", ","), u: " s" });
+
+function TraceSheet({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const { data: t, isLoading } = useApi<TraceDetail>(["trace", id], `/api/traces/${id}`, { enabled: !!id });
+  const rows = (t?.spans || []).filter((s) => s.kind !== "agent" || s.ms > 0);
+  const max = Math.max(t?.total_ms || 0, ...rows.map((s) => s.start_ms + s.ms), 1);
+  return (
+    <Sheet open={!!id} onClose={onClose} full title={t ? t.question || "(ảnh)" : "Chi tiết lượt xử lý"}>
+      <div className="sheet-body">
+        {isLoading || !t ? <span className="sk sk-block" style={{ height: 220 }} /> : (
+          <>
+            <div className="al-top">
+              {t.sample && <span className="tag gold">Mẫu</span>}
+              <span className={clsx("tag", t.status === "ok" ? "lime" : t.status === "error" ? "red" : "orange")}>{t.status === "blocked" ? `Chặn · ${GUARD_LABEL[t.guard || ""] || t.guard}` : t.status === "error" ? "Lỗi" : "OK"}</span>
+              <span className="meta">{time(t.created_at)} · {t.agents.map(agentName).join(" + ") || "—"} · route: {t.route_method || "—"}</span>
+            </div>
+            {t.error && <p style={{ color: "var(--red-t)", fontSize: 14 }}>{t.error}</p>}
+            <dl className="al-nums chipg">
+              <div><dt>Tổng thời gian</dt><dd className="n">{secF(t.total_ms).v}<small>{secF(t.total_ms).u}</small></dd></div>
+              <div><dt>Tới chữ đầu tiên</dt><dd className="n">{secF(t.ttft_ms).v}<small>{secF(t.ttft_ms).u}</small></dd></div>
+              <div><dt>LLM / công cụ</dt><dd className="n">{t.llm_calls} / {t.tool_calls}{t.tool_errors ? <small>{t.tool_errors} lỗi</small> : null}</dd></div>
+              <div><dt>Token vào → ra</dt><dd className="n">{sNum(t.tokens_in)} → {sNum(t.tokens_out)}</dd></div>
+            </dl>
+            {!!t.output_flags?.length && <p className="t-small" style={{ display: "flex", gap: 6, alignItems: "center" }}><ShieldCheck className="ic ic-sm" />Guard đầu ra đã thêm lưu ý: {t.output_flags.map((f) => FLAG_LABEL[f.kind] || f.kind).join(", ")}</p>}
+            <div>
+              <h4 className="al-tlh">Dòng thời gian xử lý</h4>
+              <p>Mỗi thanh là một bước; độ dài = thời gian chạy.</p>
+              <div className="al-tl">
+                {rows.map((s, i) => (
+                  <div className="al-step" key={i}>
+                    <div className="r"><span>{s.error && <AlertTriangle className="ic ic-sm" style={{ color: "var(--red-t)", marginRight: 4, verticalAlign: "-2px" }} />}{spanLabel(s)}</span><span className="n">{sec(s.ms)}</span></div>
+                    <span className={clsx("al-lane", s.kind === "llm" && "llm", (s.kind === "tool" || s.kind === "rag") && "tool")}><i style={vars({ "--s": s.start_ms / max, "--w": s.ms / max })} /></span>
+                    {spanDetail(s) && <small>{spanDetail(s)}</small>}
+                    {s.error && <small style={{ color: "var(--red-t)" }}>{s.error}</small>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+function MobileAiLog() {
+  const [params, setParams] = useSearchParams();
+  const days = params.get("days") || "7";
+  const id = params.get("id");
+  const { data: st } = useApi<Stats>(["trace-stats", days], `/api/traces/stats?days=${days}`);
+  const { data: list, isLoading } = useApi<{ items: TraceBrief[] }>(["traces"], "/api/traces?limit=60");
+  const dIdx = ["1", "7", "30"].indexOf(days);
+  const topModels = useMemo(() => Object.entries(st?.llm.by_model || {}).slice(0, 4), [st]);
+  const lbl = ["24 giờ", "7 ngày", "30 ngày"][Math.max(0, dIdx)];
+  const p50 = secF(st?.latency.p50), p95 = secF(st?.latency.p95);
+  const maxTool = Math.max(1, ...(st?.tools || []).map((t) => t.calls));
+  const setId = (v: string | null) => { const n = new URLSearchParams(params); if (v) n.set("id", v); else n.delete("id"); setParams(n); };
+  const empty = st && st.count === 0 && !isLoading && !list?.items.length;
+
+  return (
+    <div className="v1">
+      <p className="al-intro">Mỗi câu hỏi đã đi qua Safety Guard, định tuyến, chuyên mục, model và công cụ nào, mất bao lâu.</p>
+      <Seg label="Khoảng thời gian" className="al-range" options={["24 giờ", "7 ngày", "30 ngày"]} value={dIdx} onChange={(i) => { const n = new URLSearchParams(params); n.set("days", ["1", "7", "30"][i]); setParams(n); }} />
+
+      {empty ? (
+        <section className="g empty al-empty" aria-label="Chưa có lượt chat">
+          <span className="empty-ic"><Gauge className="ic" /></span><b>Chưa có lượt chat nào</b>
+          <p>Hỏi Trợ lý AI một câu, rồi quay lại đây để xem hệ thống đã xử lý thế nào.</p>
+          <Link className="btn btn-primary" to="/chat">Hỏi HeadBro</Link>
+        </section>
+      ) : (
+        <>
+          <div className="al-tiles">
+            {!st ? [0, 1, 2, 3].map((i) => <span key={i} className="sk sk-block" style={{ height: 104 }} />) : (
+              <>
+                <div className="g tile"><span className="tk"><MessageSquare className="ic" />Lượt chat</span><span className="tv n">{st.count}</span><span className="ts">{st.blocked} bị Safety Guard chặn</span></div>
+                <div className="g tile"><span className="tk"><Clock className="ic" />Độ trễ p50</span><span className="tv n">{p50.v}<small>{p50.u}</small></span><span className="ts">p95 {p95.v}{p95.u} · chữ đầu {secF(st.ttft.p50).v}{secF(st.ttft.p50).u}</span></div>
+                <div className="g tile"><span className="tk"><AlertTriangle className="ic" />Tỉ lệ lỗi</span><span className="tv n">{Math.round(st.error_rate * 100)}<small>%</small></span><span className="ts">{st.llm.fallbacks} lần chuyển model dự phòng</span></div>
+                <div className="g tile"><span className="tk"><Cpu className="ic" />Token vào → ra</span><span className="tv sm n">{sNum(st.tokens.in)}<small> vào</small></span><span className="ts">{sNum(st.tokens.out)} ra</span></div>
+              </>
+            )}
+          </div>
+
+          {st && st.count > 0 && (
+            <>
+              <h2 className="sec">Agent &amp; model<span>{lbl}</span></h2>
+              <div className="g list al-list">
+                {Object.entries(st.agents).map(([a, n]) => <div className="li" key={a}><span className="li-main"><b>{agentName(a)}</b></span><span className="li-end"><span className="v n">{n}</span></span></div>)}
+                {topModels.map(([m, n]) => <div className="li" key={m}><span className="li-main"><b style={{ fontWeight: 500, color: "var(--mute)" }}>{m}</b></span><span className="li-end"><span className="v n">{n}</span></span></div>)}
+              </div>
+
+              <h2 className="sec">Công cụ hay dùng<span>số lần gọi</span></h2>
+              <div className="g al-tools"><div className="bars">
+                {st.tools.slice(0, 7).map((t) => (
+                  <div className="bar" key={t.name}>
+                    <span className="t"><span>{TOOL_LABELS[t.name] || t.name}</span><b className="al-bar-v">{t.calls}<small style={{ fontWeight: 500, color: "var(--mute)", fontSize: 12 }}> · {sec(t.p50_ms)}{t.errors ? ` · ${t.errors} lỗi` : ""}</small></b></span>
+                    <span className="track"><i style={vars({ "--v": t.calls / maxTool })} /></span>
+                  </div>
+                ))}
+                {!st.tools.length && <p className="t-small">Chưa có</p>}
+              </div></div>
+
+              <h2 className="sec">An toàn &amp; RAG<span>trong kỳ</span></h2>
+              <div className="g list al-list">
+                {!Object.keys(st.guard).length && !Object.keys(st.output_flags).length && <div className="li"><span className="li-ic lime"><ShieldCheck className="ic" /></span><span className="li-main"><b>Chưa có sự cố</b><small>Safety Guard không chặn lượt nào</small></span></div>}
+                {Object.entries(st.guard).map(([k, n]) => <div className="li" key={k}><span className="li-ic orange"><ShieldCheck className="ic" /></span><span className="li-main"><b>{GUARD_LABEL[k] || k}</b></span><span className="li-end"><span className="v n">{n}</span></span></div>)}
+                {Object.entries(st.output_flags).map(([k, n]) => <div className="li" key={k}><span className="li-main"><b>Đầu ra: {FLAG_LABEL[k] || k}</b></span><span className="li-end"><span className="v n">{n}</span></span></div>)}
+                {Object.entries(st.rag).map(([k, n]) => <div className="li" key={k}><span className="li-ic"><BookOpen className="ic" /></span><span className="li-main"><b>RAG {k}</b><small>HeadBro trích dẫn khi trả lời kiến thức</small></span><span className="li-end"><span className="v n">{n}</span></span></div>)}
+              </div>
+            </>
+          )}
+
+          <h2 className="sec">Các lượt gần đây<span>bấm để xem từng bước</span></h2>
+          {isLoading ? <span className="sk sk-block" style={{ height: 180 }} /> : (
+            <div className="g list al-recent">
+              {(list?.items || []).map((t) => (
+                <button key={t.id} type="button" className="li" onClick={() => setId(t.id)}>
+                  <span className="li-main"><b>{t.question || "(ảnh)"}</b><small>{time(t.created_at)} · {t.agents.map(agentName).join(" + ") || "—"} · {t.llm_calls} LLM · {t.tool_calls} công cụ{t.rag ? ` · RAG ${t.rag}` : ""}{t.output_flags.length ? " · có lưu ý an toàn" : ""}</small></span>
+                  <span className="li-end"><span className="t n">{sec(t.total_ms)}</span>
+                    <span className={clsx("tag", t.status === "ok" ? "lime" : t.status === "error" ? "red" : "orange")}>{t.status === "blocked" ? "Chặn" : t.status === "error" ? "Lỗi" : t.sample ? "Mẫu" : "OK"}</span>
+                    <ChevronRight className="ic" /></span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <TraceSheet id={id} onClose={() => setId(null)} />
+    </div>
+  );
+}
+
+export default function AiLog() {
+  const desktop = useMedia("(min-width: 1024px)");
+  return desktop ? <AiLogDesktop /> : <MobileAiLog />;
 }
