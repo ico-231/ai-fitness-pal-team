@@ -216,7 +216,7 @@ function DailyDesktop() {
         actions={<Button icon={<Sparkles size={15} />} onClick={askCoach}>Hôm nay nên tập gì?</Button>}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] xl:gap-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:items-start xl:gap-8">
         {/* Check-in / điểm sẵn sàng */}
         <Card className="flex flex-col p-6 sm:p-7">
           <div className="mb-5 flex items-start justify-between gap-3">

@@ -97,7 +97,7 @@ export function TodayAdviceCard({ className, hero }: { className?: string; hero?
         </div>
         <h2 className="mt-4 text-[24px] font-semibold leading-tight tracking-[-0.025em] sm:text-[28px]">{a.headline}</h2>
         <p className="mt-2 max-w-xl text-sm text-muted">{a.reason}</p>
-        <div className="mt-auto flex flex-wrap gap-2 pt-6">
+        <div className="mt-6 flex flex-wrap gap-2">
           {a.action && (
             <button type="button" onClick={() => nav(a.action!.to)}
               className="inline-flex h-11 items-center gap-2 rounded-full bg-volt px-6 text-sm font-semibold text-on-volt shadow-[0_8px_24px_-8px_rgb(132_204_22/0.7)] transition hover:brightness-105 active:scale-[0.98]">

@@ -453,9 +453,9 @@ function NutritionDesktop() {
           {isLoading || !data ? <Spinner /> : (
             <div className="flex flex-col gap-7 sm:flex-row sm:items-center">
               <div className="flex items-center gap-5">
-                <Ring value={data.totals.calories} max={data.targets.calories || 1} size={156} stroke={13} color="var(--nutri)" track="var(--track, var(--surface-3))">
+                <Ring value={data.totals.calories} max={data.targets.calories || 1} size={196} stroke={15} color="var(--nutri)" track="var(--track, var(--surface-3))">
                   <div>
-                    <p className="num text-[40px] font-semibold leading-none">{fmt(data.totals.calories)}</p>
+                    <p className="num text-[46px] font-semibold leading-none">{fmt(data.totals.calories)}</p>
                     <p className="mt-1 text-[11px] text-muted">/ {fmt(data.targets.calories)} kcal</p>
                   </div>
                 </Ring>
