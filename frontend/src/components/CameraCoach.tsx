@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, Loader2, RotateCcw } from "lucide-react";
 import { EXERCISES, LandmarkSmoother, loadLandmarker, RepCounter, scoreLevel, SEGMENTS, type Level, type LM, type Seg } from "../lib/pose";
 import { beep, voice } from "../lib/media";
 import { MAX_COUNT, PRAISE } from "../lib/speech";
 import { Button } from "./ui";
+import { useDesktop } from "../lib/viewport";
+
+// Bản điện thoại tải khi cần (cũng tránh vòng import: CameraCoachV1 dùng lại useCameraCoach từ file này)
+const CameraCoachV1 = lazy(() => import("./mobile/CameraCoachV1"));
 
 /** Lỗi camera → câu tiếng Việt người dùng làm theo được (thay vì thông báo kỹ thuật tiếng Anh của trình duyệt). */
 function cameraError(e: Error): string {
@@ -25,7 +29,7 @@ function cameraError(e: Error): string {
 }
 
 /** 3 mức: xanh = đúng form, vàng = lệch nhẹ nên chỉnh, đỏ = sai rõ. */
-const SEG_COLOR = { 0: "#22c55e", 1: "#facc15", 2: "#ef4444", idle: "#94a3b8" } as const;
+export const SEG_COLOR = { 0: "#22c55e", 1: "#facc15", 2: "#ef4444", idle: "#94a3b8" } as const;
 const SEG_HOLD_MS = 600;
 
 export interface CameraResult {
@@ -34,11 +38,7 @@ export interface CameraResult {
   holdSec: number;
 }
 
-/**
- * Camera AI: vẽ khung xương lên video, đếm rep, chấm điểm form, nhắc lỗi bằng chữ + giọng nói.
- * Toàn bộ xử lý chạy trên máy người dùng — video không gửi lên server.
- */
-export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = true, active = true, idleLabel }: {
+export interface CoachProps {
   exerciseKey: string;
   targetReps?: number;
   onUpdate?: (r: CameraResult) => void;
@@ -50,7 +50,13 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
   active?: boolean;
   /** dòng chữ hiển thị khi chưa đếm (vd "Chuẩn bị · 8 giây") */
   idleLabel?: string;
-}) {
+}
+
+/**
+ * Camera AI: vẽ khung xương lên video, đếm rep, chấm điểm form, nhắc lỗi bằng chữ + giọng nói.
+ * Toàn bộ xử lý chạy trên máy người dùng — video không gửi lên server.
+ */
+export function useCameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = true, active = true, idleLabel }: CoachProps) {
   const def = EXERCISES[exerciseKey];
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +75,7 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
   const lastHoldSent = useRef(-1);
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [err, setErr] = useState("");
+  const [errName, setErrName] = useState("");
   const [reps, setReps] = useState(0);
   const [score, setScore] = useState<number | null>(null);
   const [issue, setIssue] = useState<{ msg: string; level: Level } | null>(null);
@@ -215,6 +222,7 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
   const start = useCallback(async () => {
     const id = ++runId.current;
     setErr("");
+    setErrName("");
     setStatus("loading");
     let stream: MediaStream | null = null;
     try {
@@ -241,6 +249,7 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
       (stream as MediaStream | null)?.getTracks().forEach((t) => t.stop()); // camera mở được nhưng mô hình AI lỗi
       if (id !== runId.current) return;
       setErr(cameraError(e as Error));
+      setErrName((e as Error).name);
       setStatus("error");
     }
   }, [def, loop]);
@@ -286,6 +295,16 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
     onUpdate?.({ reps: 0, avgScore: null, holdSec: 0 });
   };
 
+  return {
+    def, videoRef, canvasRef, counterRef, status, errName, err, reps, score, issue, ready, holdSec, lastRep, aspect,
+    start, stop, reset, targetReps, active, idleLabel,
+  };
+}
+
+
+/** Bản máy tính: giữ nguyên giao diện cũ (khung 4:3, nhãn nổi, thanh nút dưới). */
+function CameraCoachDesktop(props: CoachProps) {
+  const { def, videoRef, canvasRef, counterRef, status, err, reps, score, issue, ready, holdSec, lastRep, aspect, start, stop, reset, targetReps, active, idleLabel } = useCameraCoach(props);
   if (!def) return null;
   return (
     <div className="overflow-hidden rounded-[inherit] bg-black">
@@ -372,4 +391,29 @@ export function CameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = tru
       )}
     </div>
   );
+}
+
+/** Tiêu đề ngắn cho từng loại lỗi camera (bản điện thoại hiện cạnh hướng dẫn chi tiết của cameraError). */
+export function cameraErrorTitle(name: string): string {
+  switch (name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return "Chưa có quyền camera";
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return "Không tìm thấy camera";
+    case "NotReadableError":
+    case "AbortError":
+      return "Camera đang bận";
+    case "InsecureError":
+      return "Cần mở bằng https";
+    default:
+      return "Chưa tải được mô hình AI";
+  }
+}
+
+/** Chỉ dựng MỘT bản: điện thoại (V1, CameraCoachV1) hoặc máy tính (bản cũ). Cùng một hook logic `useCameraCoach`. */
+export function CameraCoach(props: CoachProps) {
+  const desktop = useDesktop();
+  return desktop ? <CameraCoachDesktop {...props} /> : <Suspense fallback={null}><CameraCoachV1 {...props} /></Suspense>;
 }

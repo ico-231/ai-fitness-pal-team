@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useDesktop } from "../lib/viewport";
+// bản điện thoại tải khi cần (MobileCamera dùng lại useCameraPage từ file này → tránh vòng import)
+const MobileCamera = lazy(() => import("./MobileCamera"));
 import { ArrowLeft, Save } from "lucide-react";
 import { post } from "../lib/api";
 import { exName } from "../lib/format";
@@ -10,7 +13,8 @@ import { CameraCoach, type CameraResult } from "../components/CameraCoach";
 import { Button, Card, Field, PageHeader, Spinner, toast, DecimalInput } from "../components/ui";
 import { ExerciseImage } from "../components/Exercise";
 
-export default function CameraPage() {
+/** Logic của trang Camera AI dùng chung bản máy tính và điện thoại: tải bài, kết quả set, mức tạ, lưu vào lịch sử. */
+export function useCameraPage() {
   const [sp] = useSearchParams();
   const nav = useNavigate();
   const invalidate = useInvalidateAll();
@@ -19,11 +23,10 @@ export default function CameraPage() {
   const [res, setRes] = useState<CameraResult>({ reps: 0, avgScore: null, holdSec: 0 });
   const [weight, setWeight] = useState(0);
   const [saving, setSaving] = useState(false);
-
-  if (!ex) return <Spinner />;
-  const key = ex.camera && EXERCISES[ex.camera] ? ex.camera : null;
+  const key = ex ? (ex.camera && EXERCISES[ex.camera] ? ex.camera : null) : null;
 
   const save = async () => {
+    if (!ex) return;
     if (!res.reps && !res.holdSec) return toast("Chưa có rep nào được ghi nhận", "error");
     setSaving(true);
     try {
@@ -41,6 +44,12 @@ export default function CameraPage() {
       setSaving(false);
     }
   };
+  return { nav, ex, key, res, setRes, weight, setWeight, saving, save };
+}
+
+function CameraPageDesktop() {
+  const { nav, ex, key, res, setRes, weight, setWeight, saving, save } = useCameraPage();
+  if (!ex) return <Spinner />;
 
   return (
     <div>
@@ -86,4 +95,10 @@ export default function CameraPage() {
       )}
     </div>
   );
+}
+
+/** Chỉ dựng MỘT bản: điện thoại (V1) hoặc máy tính. */
+export default function CameraPage() {
+  const desktop = useDesktop();
+  return desktop ? <CameraPageDesktop /> : <Suspense fallback={null}><MobileCamera /></Suspense>;
 }
