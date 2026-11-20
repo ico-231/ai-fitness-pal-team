@@ -3,6 +3,7 @@ import type { Targets } from "../../lib/types";
 import { BarSeries, LineSeries } from "../Charts";
 import type { DetailKind, Report } from "../ReportDetail";
 import { Sheet } from "./Sheet";
+import { baseOf, METRIC } from "../../lib/palette";
 import { vars } from "./V1";
 
 const TITLES: Record<DetailKind, string> = {
@@ -54,8 +55,8 @@ export default function ReportSheet({ kind, report, onClose, targets }: { kind: 
           report.weights.length ? (
             <>
               <div className="rd-box"><LineSeries data={report.weights} height={220} lines={[
-                { key: "weight", color: "var(--m-weight)", label: "Cân nặng (kg)" },
-                { key: "body_fat_pct", color: "var(--m-calories)", label: "% mỡ", yAxis: "right" },
+                { key: "weight", color: baseOf(METRIC.weight), label: "Cân nặng (kg)" },
+                { key: "body_fat_pct", color: baseOf(METRIC.calories), label: "% mỡ", yAxis: "right" },
               ]} /></div>
               {last && (
                 <dl className="kv rd-kv">
@@ -69,9 +70,9 @@ export default function ReportSheet({ kind, report, onClose, targets }: { kind: 
         ) : kind === "nutrition" ? (
           <>
             <p className="t-label" style={{ fontWeight: 700, color: "var(--fg)" }}>Calo (kcal)</p>
-            <div className="rd-box"><BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color="var(--m-calories)" height={170} target={report.bucket_days === 1 ? (report.summary.avg_target_calories ?? targets?.calories) : undefined} /></div>
+            <div className="rd-box"><BarSeries data={report.series} dataKey="calories" unit="kcal" label="Calo" color={baseOf(METRIC.calories)} height={170} target={report.bucket_days === 1 ? (report.summary.avg_target_calories ?? targets?.calories) : undefined} /></div>
             <p className="t-label" style={{ fontWeight: 700, color: "var(--fg)" }}>Đạm (g)</p>
-            <div className="rd-box"><BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color="var(--m-protein)" height={150} target={report.bucket_days === 1 ? targets?.protein : undefined} /></div>
+            <div className="rd-box"><BarSeries data={report.series} dataKey="protein" unit="g" label="Đạm" color={baseOf(METRIC.protein)} height={150} target={report.bucket_days === 1 ? targets?.protein : undefined} /></div>
             <p className="t-small">Có ghi bữa ăn {report.summary.meal_logged_days} ngày{unitDays}.</p>
           </>
         ) : (

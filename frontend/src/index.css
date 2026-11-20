@@ -846,21 +846,21 @@ body {
     --bgg: linear-gradient(180deg, #f6f8f7 0%, #eceff0 100%);
     --scrim: rgb(8 12 10 / 0.28);
     /* màu chỉ số — giống bản máy tính (calo cam, đạm hồng đỏ, tinh bột xanh trời, chất béo vàng, nước xanh ngọc, cân xanh dương, mục tiêu tím) */
-    --m-calories: #f97316;
-    --m-protein: #e11d48;
-    --m-carbs: #0ea5e9;
-    --m-fat: #eab308;
-    --m-water: #0891b2;
-    --m-weight: #2563eb;
-    --m-goal: #7c3aed;
+    --m-calories: var(--orange);
+    --m-protein: var(--rose);
+    --m-carbs: var(--sky);
+    --m-fat: var(--gold);
+    --m-water: var(--teal);
+    --m-weight: var(--blue);
+    --m-goal: var(--violet);
     /* chữ tô màu đủ tương phản (≥ 4.5:1) */
-    --m-calories-t: #9a3412;
-    --m-protein-t: #be123c;
-    --m-carbs-t: #075985;
-    --m-fat-t: #854d0e;
-    --m-water-t: #0e7490;
-    --m-weight-t: #1d4ed8;
-    --m-goal-t: #6d28d9;
+    --m-calories-t: var(--orange-t);
+    --m-protein-t: var(--rose-t);
+    --m-carbs-t: var(--sky-t);
+    --m-fat-t: var(--gold-t);
+    --m-water-t: var(--teal-t);
+    --m-weight-t: var(--blue-t);
+    --m-goal-t: var(--violet-t);
     --lime-t: #3f6212;
   }
   [data-theme="dark"] {
@@ -877,20 +877,20 @@ body {
     --bg-top: #101213;
     --bgg: linear-gradient(180deg, #101213 0%, #07080a 100%);
     --scrim: rgb(0 0 0 / 0.55);
-    --m-calories: #fb923c;
-    --m-protein: #fb7185;
-    --m-carbs: #38bdf8;
-    --m-fat: #facc15;
-    --m-water: #22d3ee;
-    --m-weight: #60a5fa;
-    --m-goal: #a78bfa;
-    --m-calories-t: #fdba74;
-    --m-protein-t: #fda4af;
-    --m-carbs-t: #7dd3fc;
-    --m-fat-t: #fde047;
-    --m-water-t: #67e8f9;
-    --m-weight-t: #93c5fd;
-    --m-goal-t: #c4b5fd;
+    --m-calories: var(--orange);
+    --m-protein: var(--rose);
+    --m-carbs: var(--sky);
+    --m-fat: var(--gold);
+    --m-water: var(--teal);
+    --m-weight: var(--blue);
+    --m-goal: var(--violet);
+    --m-calories-t: var(--orange-t);
+    --m-protein-t: var(--rose-t);
+    --m-carbs-t: var(--sky-t);
+    --m-fat-t: var(--gold-t);
+    --m-water-t: var(--teal-t);
+    --m-weight-t: var(--blue-t);
+    --m-goal-t: var(--violet-t);
     --lime-t: #d9f99d;
   }
   /* nền sạch: bỏ lớp nền phẳng của .aurora để lộ chuyển sắc nhẹ của body (mảng màu/hạt nhiễu đã ẩn sẵn) */
@@ -1078,6 +1078,7 @@ body {
     --lime: #84cc16; --lime-hi: #bef264; --orange: #f97316; --sky: #0ea5e9; --violet: #7c3aed; --gold: #eab308; --red: #dc2626; --on-red: #fff;
     --rose: #e11d48; --blue: #2563eb; --teal: #0891b2;
     --rose-lo: #fda4af; --blue-lo: #93c5fd; --teal-lo: #67e8f9;
+    --orange-lo: #fdba74; --sky-lo: #7dd3fc; --gold-lo: #fde047; --violet-lo: #c4b5fd;
     --rose-t: #be123c; --blue-t: #1d4ed8; --teal-t: #0e7490; --orange-t: #9a3412; --sky-t: #075985; --violet-t: #6d28d9; --gold-t: #854d0e; --red-t: #991b1b;
   }
   [data-theme="dark"] {
@@ -1085,6 +1086,7 @@ body {
     --lime: #a3e635; --lime-hi: #d9f99d; --orange: #fb923c; --sky: #38bdf8; --violet: #a78bfa; --gold: #facc15; --red: #f87171; --on-red: #1a0606;
     --rose: #fb7185; --blue: #60a5fa; --teal: #22d3ee;
     --rose-lo: #fecdd3; --blue-lo: #bfdbfe; --teal-lo: #a5f3fc;
+    --orange-lo: #fdba74; --sky-lo: #7dd3fc; --gold-lo: #fde047; --violet-lo: #c4b5fd;
     --rose-t: #fda4af; --blue-t: #93c5fd; --teal-t: #67e8f9; --orange-t: #fdba74; --sky-t: #7dd3fc; --violet-t: #c4b5fd; --gold-t: #fde047; --red-t: #fca5a5;
   }
   .v1 { font-family: var(--sans); }

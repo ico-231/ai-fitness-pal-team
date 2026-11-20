@@ -6,9 +6,10 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
-import { useApi, useMedia } from "../lib/hooks";
+import { useApi, useDesktop } from "../lib/hooks";
 import { Droplet, Dumbbell, Flame, Gauge, HeartPulse, Scale, Target } from "lucide-react";
 import { Seg } from "../components/mobile/Shared";
+import { baseOf, METRIC } from "../lib/palette";
 import { vars } from "../components/mobile/V1";
 import { fmt, prDetail, prValue, shortDate } from "../lib/format";
 import type { Targets } from "../lib/types";
@@ -59,7 +60,7 @@ function Section({ title, children, className = "" }: { title: string; children:
 export default function PrintReport() {
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
-  const phone = useMedia("(max-width: 1023px)");
+  const phone = !useDesktop();
   const period = sp.get("period") === "month" ? "month" : "week";
   const { data, isFetching } = useApi<PrintData>(["print-report", period], `/api/dashboard/print?period=${period}`, { keepPrevious: true });
 
@@ -273,10 +274,10 @@ function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
     { k: "Khối lượng", v: fmt(s.total_volume), u: "kg", sub: prs.length ? `${prs.length} bài có kỷ lục mới` : "Chưa có kỷ lục mới", ic: Dumbbell, d: "volume" },
     { k: "Điểm form TB", v: s.avg_form_score != null ? fmt(s.avg_form_score) : "—", u: s.avg_form_score != null ? "/100" : undefined, sub: "Từ Camera AI", ic: Gauge },
     { k: "Sẵn sàng TB", v: s.avg_readiness != null ? fmt(s.avg_readiness) : "—", u: s.avg_readiness != null ? "/100" : undefined, sub: "Check-in buổi sáng", ic: HeartPulse, d: "readiness" },
-    { k: `Calo TB / ${per === "tuần" ? "ngày" : "ngày"}`, v: s.avg_calories != null ? fmt(s.avg_calories) : "—", u: "kcal", sub: pct(s.avg_calories, tg.calories) || `${s.meal_logged_days} ngày có ghi bữa`, ic: Flame, c: "var(--m-calories)", d: "nutrition" },
-    { k: "Đạm TB / ngày", v: s.avg_protein != null ? fmt(s.avg_protein) : "—", u: "g", sub: pct(s.avg_protein, tg.protein), ic: Flame, c: "var(--m-protein)", d: "nutrition" },
-    { k: "Nước TB / ngày", v: data.water.avg_ml != null ? fmt(data.water.avg_ml / 1000, 2) : "—", u: "L", sub: pct(data.water.avg_ml, data.water.target_ml), ic: Droplet, c: "var(--m-water)" },
-    { k: "Cân nặng", v: s.weight_change != null ? `${s.weight_change > 0 ? "+" : ""}${fmt(s.weight_change, 1)}` : "—", u: "kg", sub: "Thay đổi trong kỳ", ic: Scale, c: "var(--m-weight)", d: "weight" },
+    { k: `Calo TB / ${per === "tuần" ? "ngày" : "ngày"}`, v: s.avg_calories != null ? fmt(s.avg_calories) : "—", u: "kcal", sub: pct(s.avg_calories, tg.calories) || `${s.meal_logged_days} ngày có ghi bữa`, ic: Flame, c: baseOf(METRIC.calories), d: "nutrition" },
+    { k: "Đạm TB / ngày", v: s.avg_protein != null ? fmt(s.avg_protein) : "—", u: "g", sub: pct(s.avg_protein, tg.protein), ic: Flame, c: baseOf(METRIC.protein), d: "nutrition" },
+    { k: "Nước TB / ngày", v: data.water.avg_ml != null ? fmt(data.water.avg_ml / 1000, 2) : "—", u: "L", sub: pct(data.water.avg_ml, data.water.target_ml), ic: Droplet, c: baseOf(METRIC.water) },
+    { k: "Cân nặng", v: s.weight_change != null ? `${s.weight_change > 0 ? "+" : ""}${fmt(s.weight_change, 1)}` : "—", u: "kg", sub: "Thay đổi trong kỳ", ic: Scale, c: baseOf(METRIC.weight), d: "weight" },
   ];
   return (
     <div className="v1 rp-screen" style={{ padding: "calc(12px + env(safe-area-inset-top)) var(--gut) 40px" }}>
@@ -326,7 +327,7 @@ function MobileReport({ data, period, setPeriod, busy, rows, prs, onBack }: {
       ) : <p className="t-small" style={{ padding: "0 6px" }}>Chưa đặt mục tiêu.</p>}
 
       <h3 className="rp-h">Calo theo {per}</h3>
-      <section className="g rp-chart"><BarSeries data={r.series} dataKey="calories" unit="kcal" label="Calo" color="var(--m-calories)" height={150} target={r.bucket_days === 1 ? tg.calories : undefined} /></section>
+      <section className="g rp-chart"><BarSeries data={r.series} dataKey="calories" unit="kcal" label="Calo" color={baseOf(METRIC.calories)} height={150} target={r.bucket_days === 1 ? tg.calories : undefined} /></section>
       <h3 className="rp-h">Khối lượng tập theo {per}</h3>
       <section className="g rp-chart"><BarSeries data={r.series} dataKey="volume" unit="kg" label="Khối lượng" color="var(--lime)" height={150} /></section>
 

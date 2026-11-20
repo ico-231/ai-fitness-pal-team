@@ -8,6 +8,7 @@ import type { Readiness } from "../../lib/types";
 import { Sheet } from "./Sheet";
 import { DecimalInput } from "../ui";
 import { Rings, vars } from "./V1";
+import { METRIC } from "../../lib/palette";
 
 /** Công tắc đoạn V1 (thấu kính trượt). `value` = vị trí đang chọn (0..n-1). */
 export function Seg({ options, value, onChange, ink, sm, label, className }: {
@@ -116,10 +117,10 @@ interface MacroTotals { calories: number; protein: number; carbs: number; fat: n
 export function MacroRings({ totals, targets, onPick }: { totals: MacroTotals; targets: MacroTotals; onPick?: () => void }) {
   const left = targets.calories - totals.calories;
   const rows = [
-    { key: "Calo", color: "orange" as const, v: totals.calories, max: targets.calories, unit: "kcal" },
-    { key: "Đạm", color: "rose" as const, v: totals.protein, max: targets.protein, unit: "g" },
-    { key: "Tinh bột", color: "sky" as const, v: totals.carbs, max: targets.carbs, unit: "g" },
-    { key: "Chất béo", color: "gold" as const, v: totals.fat, max: targets.fat, unit: "g" },
+    { key: "Calo", color: METRIC.calories, v: totals.calories, max: targets.calories, unit: "kcal" },
+    { key: "Đạm", color: METRIC.protein, v: totals.protein, max: targets.protein, unit: "g" },
+    { key: "Tinh bột", color: METRIC.carbs, v: totals.carbs, max: targets.carbs, unit: "g" },
+    { key: "Chất béo", color: METRIC.fat, v: totals.fat, max: targets.fat, unit: "g" },
   ];
   const p = (v: number, m: number) => (m > 0 ? Math.max(0, v / m) : 0);
   return (

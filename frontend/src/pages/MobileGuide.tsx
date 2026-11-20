@@ -8,6 +8,7 @@ import { HEAT_COLORS } from "../lib/constants";
 import { CHAPTERS, HIGHLIGHTS, INTRO, TROUBLE_GROUPS, TROUBLES, type GuideCard, type Trouble, type Visual } from "../content/guide";
 import { useAI } from "../components/AIProvider";
 import { toast } from "../components/ui";
+import { baseOf, METRIC } from "../lib/palette";
 import { HeadBroSvg } from "../components/MobileShell";
 
 /* =====================================================================================
@@ -44,7 +45,7 @@ function Vis({ v }: { v: Visual }) {
   if (v === "macros")
     return (
       <div className="gd-vis gd-macros">
-        {([["Đạm", "var(--rose)", 70], ["Tinh bột", "var(--sky)", 45], ["Chất béo", "var(--gold)", 85]] as const).map(([l, c, p]) => (
+        {([["Đạm", baseOf(METRIC.protein), 70], ["Tinh bột", baseOf(METRIC.carbs), 45], ["Chất béo", baseOf(METRIC.fat), 85]] as const).map(([l, c, p]) => (
           <div key={l}>
             <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" fill="none" stroke="var(--track)" strokeWidth="4" /><circle cx="18" cy="18" r="15" fill="none" stroke={c} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(p / 100) * 94.2} 94.2`} transform="rotate(-90 18 18)" /></svg>
             <b>{l}</b><small>{p}% mục tiêu</small>

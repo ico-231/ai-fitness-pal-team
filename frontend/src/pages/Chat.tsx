@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { CalendarDays, ChevronDown, ChevronLeft, Dumbbell, History, MessageSquarePlus, Pencil, Plus, Salad, Search, Target, Trash2, TrendingUp } from "lucide-react";
 import { del, api } from "../lib/api";
-import { useApi, useInvalidateAll, useMedia } from "../lib/hooks";
+import { useApi, useInvalidateAll, useDesktop } from "../lib/hooks";
 import { greeting, timeAgo } from "../lib/format";
 import { useAuth } from "../lib/auth";
 import type { AgentKey, Conversation } from "../lib/types";
@@ -214,7 +214,7 @@ export default function Chat() {
   const viewKey = id && id === created.current ? "new" : id || "new";
   if (!id) created.current = null;
   const ask = (text: string) => setPick({ text, autoSend: true });
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   const [hist, setHist] = useState(false);
   const vv = useVisualViewport();
 

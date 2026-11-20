@@ -5,7 +5,7 @@ import {
   AlertTriangle, ArrowRight, Camera, Check, ChevronDown, Cpu, Dumbbell, Gauge, Info, LayoutGrid, Lightbulb, Link2, Rocket,
   Salad, Scale, Search, Settings, Sparkles, Sunrise, X, type LucideIcon,
 } from "lucide-react";
-import { useApi } from "../lib/hooks";
+import { useApi, useDesktop } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { HEAT_COLORS, TOOL_LABELS } from "../lib/constants";
 import type { AgentKey } from "../lib/types";
@@ -13,7 +13,6 @@ import { CHAPTERS, HIGHLIGHTS, INTRO, TROUBLE_GROUPS, TROUBLES, type GuideCard, 
 import { AgentAvatar } from "../components/AgentAvatar";
 import { useAI } from "../components/AIProvider";
 import { Card, PageHeader, toast } from "../components/ui";
-import { useMedia } from "../lib/hooks";
 import MobileGuide from "./MobileGuide";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -539,6 +538,6 @@ function GuideDesktop() {
 }
 
 export default function Guide() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   return desktop ? <GuideDesktop /> : <MobileGuide />;
 }

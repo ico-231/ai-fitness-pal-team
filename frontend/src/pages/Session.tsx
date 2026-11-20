@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { del, get, post, put } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useInvalidateAll, useMedia } from "../lib/hooks";
+import { useInvalidateAll, useDesktop } from "../lib/hooks";
 import { beep, voice } from "../lib/media";
 import { exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import { restLine, setLine, setsLine, spokenExercise } from "../lib/speech";
@@ -202,7 +202,7 @@ export default function Session() {
   const [voiceOn, setVoiceOn] = useState(voice.enabled);
   const [error, setError] = useState("");
   // Điện thoại (< 1024px): dựng bản V1 "Kính lỏng"; logic (đồng hồ, camera, ghi set) dùng chung với bản máy tính
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   const [editSet, setEditSet] = useState<LoggedSet | null>(null);
   const [esW, setEsW] = useState(0);
   const [esR, setEsR] = useState(0);

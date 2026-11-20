@@ -1,17 +1,8 @@
 import { useId, type CSSProperties, type ReactNode } from "react";
 
-/** Màu chỉ số → cặp (đầu, cuối) của dải màu vòng. Khớp token V1 (calo cam, đạm hồng đỏ, tinh bột xanh trời, chất béo vàng...). */
-export const RING_COLORS = {
-  lime: ["var(--lime-hi)", "var(--lime)"],
-  orange: ["#fdba74", "var(--orange)"],
-  sky: ["#7dd3fc", "var(--sky)"],
-  gold: ["#fde047", "var(--gold)"],
-  violet: ["#c4b5fd", "var(--violet)"],
-  rose: ["var(--rose-lo)", "var(--rose)"],
-  blue: ["var(--blue-lo)", "var(--blue)"],
-  teal: ["var(--teal-lo)", "var(--teal)"],
-} as const;
-export type MetricColor = keyof typeof RING_COLORS;
+import { gradientOf, type MetricColor } from "../../lib/palette";
+export type { MetricColor };
+
 
 /**
  * Vòng đồng tâm V1: mỗi phần tử `rings` là một vòng (ngoài → trong), `value` là tỉ lệ 0..1.
@@ -29,8 +20,8 @@ export function Rings({ rings, size = 118, sw = 13, gap = 4, children, label }: 
         <defs>
           {rings.map((r, i) => (
             <linearGradient key={i} id={`${id}${i}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" style={{ stopColor: RING_COLORS[r.color][0] }} />
-              <stop offset="1" style={{ stopColor: RING_COLORS[r.color][1] }} />
+              <stop offset="0" style={{ stopColor: gradientOf(r.color)[0] }} />
+              <stop offset="1" style={{ stopColor: gradientOf(r.color)[1] }} />
             </linearGradient>
           ))}
         </defs>

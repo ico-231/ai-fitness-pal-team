@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CircleHelp, Loader2, X } from "lucide-react";
 import { withTransition } from "../lib/transition";
+import { useDesktopSync } from "../lib/viewport";
 import { V1Dialog } from "./mobile/Dialog";
 
 /** Bấm được bằng chuột, Enter và Space — cho mọi khối div có onClick. */
@@ -521,11 +522,7 @@ export function DialogHost() {
   useEffect(() => {
     if (req?.kind === "prompt") setVal(req.initial);
   }, [req]);
-  // (không import useMedia từ lib/hooks: hooks.ts đã import ui.tsx → tránh vòng phụ thuộc)
-  const mobile = useSyncExternalStore(
-    (cb) => { const mq = window.matchMedia("(max-width: 1023px)"); mq.addEventListener("change", cb); return () => mq.removeEventListener("change", cb); },
-    () => window.matchMedia("(max-width: 1023px)").matches,
-  );
+  const mobile = !useDesktopSync(); // từ lib/viewport (không import lib/hooks: hooks.ts đã import ui.tsx)
   if (!req) return null;
   // Điện thoại: hộp thoại kính V1 (bản máy tính giữ Modal cũ)
   if (mobile)

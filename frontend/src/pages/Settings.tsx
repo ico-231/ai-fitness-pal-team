@@ -10,7 +10,7 @@ import { getUiZoom, setUiZoom, type UiZoom } from "../lib/zoom";
 import type { Profile, Settings as S } from "../lib/types";
 import { Button, Card, CardHeader, Field, Modal, PageHeader, Segmented, Toggle, toast, confirmDialog, DecimalInput } from "../components/ui";
 import { MemoryCard } from "../components/MemoryCard";
-import { useMedia } from "../lib/hooks";
+import { useDesktop } from "../lib/hooks";
 import MobileSettings from "./MobileSettings";
 
 function SettingsDesktop() {
@@ -311,6 +311,6 @@ function VoicePackField({ onUsing }: { onUsing: (on: boolean) => void }) {
 }
 
 export default function Settings() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   return desktop ? <SettingsDesktop /> : <MobileSettings />;
 }

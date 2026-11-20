@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Activity, ArrowRight, Bike, CheckCircle2, Circle, Dumbbell, Pause, Printer, Scale, Sparkles, Sunrise, Trophy, Utensils, Volume2, Weight } from "lucide-react";
 import { get } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useApi, useMedia } from "../lib/hooks";
+import { DESKTOP_QUERY } from "../lib/viewport";
+import { useApi, useDesktop } from "../lib/hooks";
 import { fmt, greeting, minutes, shortDate } from "../lib/format";
 import { voice } from "../lib/media";
 import type { Insight, MuscleVolume } from "../lib/types";
@@ -197,7 +198,7 @@ function DashboardDesktop() {
   useEffect(() => {
     const l = leftCol.current, r = rightCol.current;
     if (!l || !r) return;
-    const mq = window.matchMedia("(min-width: 1024px)");
+    const mq = window.matchMedia(DESKTOP_QUERY);
     const sync = () => { r.style.minHeight = mq.matches ? `${l.offsetHeight}px` : ""; };
     const ro = new ResizeObserver(sync);
     ro.observe(l);
@@ -452,7 +453,7 @@ function MobileAppCard() {
 
 /** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính) — không mount cả hai rồi ẩn bằng CSS (tốn bộ nhớ, hook, gọi API thừa). */
 export default function Dashboard() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   const { data: ov, isLoading } = useApi<Overview>(["dashboard"], "/api/dashboard");
   if (desktop) return <DashboardDesktop />;
   if (isLoading || !ov) return <MobileHomeSkeleton />;

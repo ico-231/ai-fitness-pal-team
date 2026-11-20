@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Link } from "react-router-dom";
 import { Bike, Camera, ChevronLeft, ChevronRight, Dumbbell, History, Leaf, Library, Loader2, Moon, PencilLine, Plus, Repeat, Search, Sparkles, Star, Trash2, Type, Utensils, X } from "lucide-react";
 import { del, post, put } from "../lib/api";
-import { useAction, useApi, useInvalidateAll, useMedia } from "../lib/hooks";
+import { useAction, useApi, useInvalidateAll, useDesktop } from "../lib/hooks";
 import { MEAL_TYPES } from "../lib/constants";
 import { addDays, dayLabel, fmt, todayISO } from "../lib/format";
 import { fileToDataUrl } from "../lib/media";
@@ -647,5 +647,5 @@ function NutritionDesktop() {
 
 /** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
 export default function Nutrition() {
-  return useMedia("(min-width: 1024px)") ? <NutritionDesktop /> : <MobileNutrition />;
+  return useDesktop() ? <NutritionDesktop /> : <MobileNutrition />;
 }

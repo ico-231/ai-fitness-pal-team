@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { Activity, Award, Beef, CalendarDays, Crown, Droplets, Dumbbell, Flag, Flame, Goal, Info, Minus, Play, Plus, RotateCcw, Ruler, Sparkles, StretchHorizontal, Sunrise, Target, Timer, Trophy, Utensils, Weight, Zap, type LucideIcon } from "lucide-react";
 import { del, post } from "../lib/api";
-import { useAction, useApi, useMedia } from "../lib/hooks";
+import { useAction, useApi, useDesktop } from "../lib/hooks";
 import { exName, shortDate, fmt } from "../lib/format";
 import type { Plan, Readiness } from "../lib/types";
 import { useAI } from "../components/AIProvider";
@@ -448,7 +448,7 @@ function StreakCalendar({ days }: { days: CalendarDay[] }) {
 
 /** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
 export default function Daily() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   const { data, isLoading } = useApi<DailyData>(["daily"], "/api/daily/today");
   if (desktop) return <DailyDesktop />;
   if (isLoading || !data) return <MobileDailySkeleton />;

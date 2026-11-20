@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { get } from "./api";
 import { toast } from "../components/ui";
@@ -66,19 +66,4 @@ export function useInvalidateAll() {
   return () => invalidateData(qc);
 }
 
-/** Theo dõi một media query (vd "(max-width: 639px)") — dùng để đổi bố cục trên điện thoại. */
-export function useMedia(query: string) {
-  const [match, setMatch] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setMatch(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, [query]);
-  return match;
-}
-
-/** Máy tính (≥ 1024px, mốc `lg` của Tailwind). Dưới mốc này là điện thoại/máy tính bảng → giao diện V1. */
-export const DESKTOP_QUERY = "(min-width: 1024px)";
-export const useDesktop = () => useMedia(DESKTOP_QUERY);
+export { useMedia, useDesktop, DESKTOP_QUERY } from "./viewport";

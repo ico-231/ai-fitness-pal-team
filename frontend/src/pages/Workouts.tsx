@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bike, CalendarDays, Camera, ChevronDown, ChevronRight, ClipboardList, Dumbbell, History, LayoutGrid, LineChart, Loader2, PersonStanding, Play, Plus, Search, Sparkles, Trash2, Trophy, Wrench, X } from "lucide-react";
 import { del, get, post } from "../lib/api";
-import { useAction, useApi, useInvalidateAll, useMedia } from "../lib/hooks";
+import { useAction, useApi, useInvalidateAll, useDesktop } from "../lib/hooks";
 import { FOCUS, MUSCLES } from "../lib/constants";
 import { dayLabel, exName, fmt, mmss, prLabel, prValue } from "../lib/format";
 import type { Exercise, Plan, PR, WorkoutSession } from "../lib/types";
@@ -496,5 +496,5 @@ function WorkoutsDesktop() {
 
 /** Chỉ dựng MỘT bản giao diện (điện thoại hoặc máy tính). */
 export default function Workouts() {
-  return useMedia("(min-width: 1024px)") ? <WorkoutsDesktop /> : <MobileWorkouts />;
+  return useDesktop() ? <WorkoutsDesktop /> : <MobileWorkouts />;
 }

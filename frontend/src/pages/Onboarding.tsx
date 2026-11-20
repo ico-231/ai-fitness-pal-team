@@ -9,7 +9,7 @@ import type { Targets } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, DecimalInput } from "../components/ui";
 import { useQuery } from "@tanstack/react-query";
-import { useMedia } from "../lib/hooks";
+import { useDesktop } from "../lib/hooks";
 import { MobileOnboarding } from "./MobileAuth";
 
 function Choice({ options, value, onChange }: { options: Record<string, string>; value: string; onChange: (v: string) => void }) {
@@ -198,6 +198,6 @@ function OnboardingDesktop() {
 }
 
 export default function Onboarding() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   return desktop ? <OnboardingDesktop /> : <MobileOnboarding />;
 }

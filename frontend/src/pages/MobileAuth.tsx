@@ -8,6 +8,7 @@ import { ACTIVITY, EQUIPMENT, GOALS, LEVELS } from "../lib/constants";
 import { fmt } from "../lib/format";
 import type { Targets, User } from "../lib/types";
 import { DecimalInput, toast } from "../components/ui";
+import { METRIC } from "../lib/palette";
 import { HeadBroSvg } from "../components/MobileShell";
 import { Rings, vars } from "../components/mobile/V1";
 import { Seg } from "../components/mobile/Shared";
@@ -327,20 +328,20 @@ export function MobileOnboarding() {
             <div className="ob-body">
               <section className="g ob-ringcard" aria-label="Mục tiêu calo và ba chất sinh năng lượng">
                 <Rings size={168} sw={9} gap={3} label={`${fmt(pv.calories)} kcal mỗi ngày`}
-                  rings={[{ value: 1, color: "orange" }, { value: pv.calories ? (pv.protein * 4) / pv.calories : 0, color: "rose" }, { value: pv.calories ? (pv.carbs * 4) / pv.calories : 0, color: "sky" }, { value: pv.calories ? (pv.fat * 9) / pv.calories : 0, color: "gold" }]}>
+                  rings={[{ value: 1, color: METRIC.calories }, { value: pv.calories ? (pv.protein * 4) / pv.calories : 0, color: METRIC.protein }, { value: pv.calories ? (pv.carbs * 4) / pv.calories : 0, color: METRIC.carbs }, { value: pv.calories ? (pv.fat * 9) / pv.calories : 0, color: METRIC.fat }]}>
                   <div><b className="n">{fmt(pv.calories)}</b><small>kcal / ngày</small></div>
                 </Rings>
                 <div className="ob-macros">
-                  <div><small><span className="dot rose" />Đạm</small><b className="n">{pv.protein}<span> g</span></b><span className="pc">{pc(pv.protein, 4)}% calo</span></div>
-                  <div><small><span className="dot sky" />Tinh bột</small><b className="n">{pv.carbs}<span> g</span></b><span className="pc">{pc(pv.carbs, 4)}% calo</span></div>
-                  <div><small><span className="dot gold" />Chất béo</small><b className="n">{pv.fat}<span> g</span></b><span className="pc">{pc(pv.fat, 9)}% calo</span></div>
+                  <div><small><span className={`dot ${METRIC.protein}`} />Đạm</small><b className="n">{pv.protein}<span> g</span></b><span className="pc">{pc(pv.protein, 4)}% calo</span></div>
+                  <div><small><span className={`dot ${METRIC.carbs}`} />Tinh bột</small><b className="n">{pv.carbs}<span> g</span></b><span className="pc">{pc(pv.carbs, 4)}% calo</span></div>
+                  <div><small><span className={`dot ${METRIC.fat}`} />Chất béo</small><b className="n">{pv.fat}<span> g</span></b><span className="pc">{pc(pv.fat, 9)}% calo</span></div>
                 </div>
                 <p className="ob-cap">Vòng ngoài (cam) là calo. Ba vòng trong là phần calo đến từ đạm, tinh bột và chất béo.</p>
               </section>
 
               <div className="ob-tiles">
                 <div className="g ob-tile"><div><span className="k"><Droplet className="ic" />Nước</span><span className="v n">{fmt(pv.water_ml / 1000, 1)}<small> L</small></span><span className="s">mỗi ngày</span></div>
-                  <span className="vessel ob-cup" aria-hidden="true"><span className="liq teal" style={vars({ "--v": 0.62 })} /></span></div>
+                  <span className="vessel ob-cup" aria-hidden="true"><span className={`liq ${METRIC.water}`} style={vars({ "--v": 0.62 })} /></span></div>
                 <div className="g ob-tile"><div><span className="k"><Zap className="ic" />Tiêu hao</span><span className="v n">{fmt(pv.tdee)}<small> kcal</small></span><span className="s">đốt mỗi ngày</span></div></div>
               </div>
 

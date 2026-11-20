@@ -12,6 +12,7 @@ import { Sheet } from "../components/mobile/Sheet";
 import { HeadBroSvg } from "../components/MobileShell";
 import type { Overview } from "../components/Widgets";
 import { Rings, vars } from "../components/mobile/V1";
+import { baseOf, textOf, type MetricColor } from "../lib/palette";
 import { ReadinessSheet, Seg, WaterTile } from "../components/mobile/Shared";
 
 /**
@@ -38,10 +39,7 @@ const BADGE: Record<string, [LucideIcon, string]> = {
   checkin_7: [Sun, "gold"], first_meal: [Utensils, "orange"], protein_7: [Beef, "rose"],
   volume_10t: [Weight, "sky"], form_90: [Target, "sky"], first_inbody: [Ruler, "blue"], first_goal: [Goal, "violet"],
 };
-const MEDAL_VARS: Record<string, [string, string]> = {
-  lime: ["var(--lime-t)", "var(--lime)"], gold: ["var(--gold-t)", "var(--gold)"], sky: ["var(--sky-t)", "var(--sky)"], violet: ["var(--violet-t)", "var(--violet)"],
-  orange: ["var(--orange-t)", "var(--orange)"], rose: ["var(--rose-t)", "var(--rose)"], blue: ["var(--blue-t)", "var(--blue)"], teal: ["var(--teal-t)", "var(--teal)"],
-};
+const MEDAL_VARS = (c: MetricColor): [string, string] => [textOf(c), baseOf(c)];
 const SCALES = [
   { k: "sleep_quality", flip: false, title: "Chất lượng giấc ngủ", short: "Giấc ngủ", labels: ["Rất tệ", "Tệ", "Ổn", "Ngon", "Rất ngon"] },
   { k: "fatigue", flip: true, title: "Năng lượng", short: "Năng lượng", labels: ["Kiệt sức", "Mệt", "Vừa", "Khoẻ", "Sung sức"] },
@@ -91,7 +89,7 @@ export function MobileDaily({ data }: { data: DailyData }) {
     const [Icon, c] = BADGE[b.id] ?? [Award, "lime"];
     return (
       <div key={b.id} className={clsx("medal", b.achieved && "on")} data-c={c}>
-        <i style={vars({ "--c": MEDAL_VARS[c][0], "--c2": MEDAL_VARS[c][1] })}><Icon className="ic" /></i>{b.label}
+        <i style={vars({ "--c": MEDAL_VARS(c as MetricColor)[0], "--c2": MEDAL_VARS(c as MetricColor)[1] })}><Icon className="ic" /></i>{b.label}
       </div>
     );
   };

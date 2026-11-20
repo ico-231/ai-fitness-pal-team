@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Activity, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, ImagePlus, Loader2, Mic, MicOff, Pencil, RotateCcw, Send, ShieldCheck, Square, Volume2, Wrench, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useChat } from "../../lib/chat";
-import { useMedia } from "../../lib/hooks";
+import { useDesktop } from "../../lib/hooks";
 import { BubbleV1 } from "../mobile/ChatV1";
 import { TOOL_LABELS } from "../../lib/constants";
 import { createRecognizer, fileToDataUrl, voice } from "../../lib/media";
@@ -191,7 +191,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
   const recRef = useRef<ReturnType<typeof createRecognizer>>(null);
   const sentInitial = useRef<string | null>(null);
   // Điện thoại (< 1024px): bản V1 "Kính lỏng" (bong bóng .msg, ô soạn kính, gợi ý .qr); logic gửi/nhận dùng chung
-  const mobile = useMedia("(max-width: 1023px)");
+  const mobile = !useDesktop();
 
   useEffect(() => {
     if (!initial) {

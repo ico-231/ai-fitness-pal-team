@@ -2,7 +2,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useSta
 import { useLocation, useNavigate } from "react-router-dom";
 import { Activity, Apple, Beef, CalendarDays, ClipboardList, Dumbbell, Maximize2, MessageSquarePlus, Moon, Scale, Target, TrendingUp, UtensilsCrossed, X, type LucideIcon } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
-import { useMedia } from "../lib/hooks";
+import { useDesktop } from "../lib/hooks";
 import { Sheet } from "./mobile/Sheet";
 
 import type { AgentKey } from "../lib/types";
@@ -77,7 +77,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ open, close }), [open, close]);
 
   const onChatPage = loc.pathname.startsWith("/chat");
-  const mobile = useMedia("(max-width: 1023px)");
+  const mobile = !useDesktop();
 
   return (
     <Ctx.Provider value={value}>

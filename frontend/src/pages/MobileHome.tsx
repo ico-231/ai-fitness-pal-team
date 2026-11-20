@@ -15,6 +15,7 @@ import { ReadinessSheet, WaterTile } from "../components/mobile/Shared";
 import type { Overview } from "../components/Widgets";
 import { HeadBroSvg } from "../components/MobileShell";
 import { Rings, vars } from "../components/mobile/V1";
+import { METRIC } from "../lib/palette";
 
 /**
  * Tổng quan điện thoại — V1 "Kính lỏng" (design-lab/.../v1/screens/dashboard.html).
@@ -70,10 +71,10 @@ export function MobileHome({ ov }: { ov: Overview }) {
   const tg = t.targets;
   const kcalLeft = tg.calories - n.calories;
   const macros = [
-    { key: "Calo", color: "orange" as const, v: n.calories, max: tg.calories, unit: "kcal" },
-    { key: "Đạm", color: "rose" as const, v: n.protein, max: tg.protein, unit: "g" },
-    { key: "Tinh bột", color: "sky" as const, v: n.carbs, max: tg.carbs, unit: "g" },
-    { key: "Chất béo", color: "gold" as const, v: n.fat, max: tg.fat, unit: "g" },
+    { key: "Calo", color: METRIC.calories, v: n.calories, max: tg.calories, unit: "kcal" },
+    { key: "Đạm", color: METRIC.protein, v: n.protein, max: tg.protein, unit: "g" },
+    { key: "Tinh bột", color: METRIC.carbs, v: n.carbs, max: tg.carbs, unit: "g" },
+    { key: "Chất béo", color: METRIC.fat, v: n.fat, max: tg.fat, unit: "g" },
   ];
 
   // mục tiêu cân nặng (nếu có) — nếu chưa có thì hiện số cân gần nhất

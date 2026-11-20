@@ -5,7 +5,7 @@ import { useAuth } from "../lib/auth";
 import type { User } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, Segmented } from "../components/ui";
-import { useMedia } from "../lib/hooks";
+import { useDesktop } from "../lib/hooks";
 import { MobileLogin } from "./MobileAuth";
 
 declare global {
@@ -170,6 +170,6 @@ function LoginDesktop() {
 }
 
 export default function Login() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   return desktop ? <LoginDesktop /> : <MobileLogin />;
 }

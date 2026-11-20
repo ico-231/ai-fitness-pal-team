@@ -2,11 +2,10 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Activity, AlertTriangle, ArrowLeft, BookOpen, Clock, Cpu, Gauge, ShieldCheck, Wrench, Zap } from "lucide-react";
-import { useApi } from "../lib/hooks";
+import { useApi, useDesktop } from "../lib/hooks";
 import { AGENTS, TOOL_LABELS } from "../lib/constants";
 import type { AgentKey } from "../lib/types";
 import { Badge, Button, Card, CardHeader, Empty, PageHeader, Segmented, Spinner, Stat } from "../components/ui";
-import { useMedia } from "../lib/hooks";
 import { Sheet } from "../components/mobile/Sheet";
 import { Seg } from "../components/mobile/Shared";
 import { vars } from "../components/mobile/V1";
@@ -471,6 +470,6 @@ function MobileAiLog() {
 }
 
 export default function AiLog() {
-  const desktop = useMedia("(min-width: 1024px)");
+  const desktop = useDesktop();
   return desktop ? <AiLogDesktop /> : <MobileAiLog />;
 }
