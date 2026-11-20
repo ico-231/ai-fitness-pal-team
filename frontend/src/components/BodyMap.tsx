@@ -346,10 +346,12 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
     return { ...p, text, w, x: left ? -gap - w : W + gap };
   });
   let vb = `0 0 ${W} ${H}`;
+  let vbAspect = W / H;
   if (pinBoxes.length) {
     const minX = Math.min(0, ...pinBoxes.map((b) => b.x - 4 * S));
     const maxX = Math.max(W, ...pinBoxes.map((b) => b.x + b.w + 4 * S));
     vb = `${minX} 0 ${maxX - minX} ${H}`;
+    vbAspect = (maxX - minX) / H;
   }
 
   const hoverSets = hover && data ? data[hover]?.sets ?? 0 : null;
@@ -364,8 +366,12 @@ function Figure({ view, data, onSelect, paintOf, selected, big, pins, pinSide }:
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center">
       <svg ref={svgRef} viewBox={vb} overflow="visible" role="img" aria-label={LABEL[view]}
+        style={{ "--ar": vbAspect } as React.CSSProperties}
         className={clsx(
           "h-auto w-full",
+          // iOS Safari: max-height trên <svg overflow=visible> chỉ cắt hộp chứ không thu nhỏ hình → bàn chân tràn xuống đè nhãn "Mặt trước/Mặt sau".
+          // Điện thoại giới hạn theo chiều RỘNG (= 300px × tỉ lệ khung) để hộp luôn khít với hình; từ sm trở lên giữ max-h như cũ.
+          "max-sm:max-w-[calc(300px*var(--ar))]",
           big || pins ? "max-h-[300px] sm:max-h-[440px] xl:max-h-[520px]" : "max-h-[300px] sm:max-h-[360px]",
           selecting && hover && "cursor-pointer",
         )}

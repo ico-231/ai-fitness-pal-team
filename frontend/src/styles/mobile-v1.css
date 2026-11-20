@@ -989,7 +989,9 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
   .v1 .ss-next .li-main small { font-size: 12px; }
   .v1 .ss-pr { display: flex; gap: 12px; align-items: flex-start; }
   .v1 .ss-pr p { font-size: 14px; margin-top: 2px; }
-  .v1 .ss-map { max-height: 300px; overflow: hidden; display: grid; place-items: center; }
+  /* Không đặt max-height + overflow:hidden: bản đồ cơ gồm hình + nhãn "Mặt trước/Mặt sau" + dòng tên cơ; cắt cao sẽ xén nửa dưới nhãn (lỗi trên iPhone). Cỡ hình do BodyMap tự giới hạn. */
+  .v1 .ss-map { display: grid; place-items: center; padding-bottom: 4px; }
+  .v1 .ss-map + .chips { margin-top: 12px !important; }
   .v1 .ss-row.off { opacity: 0.5; }
   .v1 .ss-row .check { flex: none; }
   .v1 .li-ic.gold { background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold-t); }
