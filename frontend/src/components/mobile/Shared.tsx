@@ -54,23 +54,27 @@ export function ReadinessSheet({ open, onClose, r, onCheckin }: { open: boolean;
   );
 }
 
-/** Ô tự nhập lượng nước (như bản máy tính): gõ số ml (10–2000) rồi bấm + (thêm) hoặc − (bớt). */
+const WATER_MIN = 50, WATER_MAX = 2000;
+
+/** Hàng nhập lượng nước tự chọn (mở bằng nút "Khác"): ô số có đơn vị ml + nút bớt + nút "Thêm" teal. Giới hạn 50–2000 ml. */
 function WaterCustom({ busy, max, onAdd }: { busy: boolean; max: number; onAdd: (ml: number) => void }) {
   const [ml, setMl] = useState<number | null>(null);
-  const ok = ml != null && ml >= 10 && ml <= 2000;
+  const ok = ml != null && ml >= WATER_MIN && ml <= WATER_MAX;
   const apply = (sign: 1 | -1) => {
     if (!ok || ml == null) return;
     onAdd(sign === 1 ? Math.round(ml) : -Math.min(Math.round(ml), max));
-    setMl(null);
   };
   return (
-    <div className="wcust">
+    <div className="wcust" role="group" aria-label="Nhập lượng nước tự chọn">
       <div className="input-unit">
-        <DecimalInput className="input n" aria-label="Số ml nước tự nhập" placeholder="Tự nhập" value={ml ?? ""} onValue={(n) => setMl(n)} onKeyDown={(e) => e.key === "Enter" && apply(1)} />
+        <DecimalInput className="input n" autoFocus aria-label={`Số ml nước (${WATER_MIN}–${WATER_MAX})`} placeholder="Số ml" aria-invalid={ml != null && !ok ? true : undefined}
+          value={ml ?? ""} onValue={(n) => setMl(n)} onKeyDown={(e) => e.key === "Enter" && apply(1)} />
         <span>ml</span>
       </div>
-      <button type="button" className="btn chipg" aria-label="Bớt số ml đã nhập" disabled={!ok || busy || max <= 0} onClick={() => apply(-1)}><Minus className="ic" /></button>
-      <button type="button" className="btn btn-primary" aria-label="Thêm số ml đã nhập" disabled={!ok || busy} onClick={() => apply(1)}><Plus className="ic" /></button>
+      <div className="pm">
+        <button type="button" className="btn chipg" aria-label="Bớt số ml đã nhập" disabled={!ok || busy || max <= 0} onClick={() => apply(-1)}><Minus className="ic" /></button>
+        <button type="button" className="btn btn-water" disabled={!ok || busy} onClick={() => apply(1)}><Plus className="ic" />Thêm</button>
+      </div>
     </div>
   );
 }
@@ -84,7 +88,8 @@ interface WaterDaily { water_ml: number; water_target_ml: number }
 export function WaterTile({ steps }: { steps?: boolean }) {
   const { data } = useApi<WaterDaily>(["daily"], "/api/daily/today");
   const [si, setSi] = useState(1);
-  const step = steps ? [150, 250, 500][si] : 250;
+  const custom = !!steps && si === 3; // "Khác": mở hàng nhập gọn bên dưới
+  const step = steps && si < 3 ? [150, 250, 500][si] : 250;
   const water = useAction<number, unknown, WaterDaily>((delta_ml) => post("/api/daily/water", { delta_ml }), {
     optimistic: { key: ["daily"], update: (d, delta) => ({ ...d, water_ml: Math.max(0, d.water_ml + delta) }) },
   });
@@ -101,12 +106,15 @@ export function WaterTile({ steps }: { steps?: boolean }) {
         </span>
         <p className="bigv w"><span>{cur.toFixed(1).replace(".", ",")}</span><small>/ {fmt(goal, 1)} L</small></p>
       </div>
-      {steps && <Seg sm options={["150", "250", "500"]} value={si} onChange={setSi} label="Mỗi lần thêm hoặc bớt (ml)" className="seg3" />}
-      <div className="pm">
+      {steps && (
+        <div className="wsteps" role="group" aria-label="Mỗi lần thêm hoặc bớt (ml)">
+          {["150", "250", "500", "Khác"].map((o, i) => <button key={o} type="button" className={clsx("chip", i === si && "on")} aria-pressed={i === si} onClick={() => setSi(i)}>{o}</button>)}
+        </div>
+      )}
+      {custom ? <WaterCustom busy={water.isPending} max={data.water_ml} onAdd={(ml) => { water.mutate(ml); setSi(1); }} /> : <div className="pm">
         <button type="button" className="btn chipg" aria-label={`Bớt ${step} ml`} disabled={data.water_ml <= 0 || water.isPending} onClick={() => water.mutate(-Math.min(step, data.water_ml))}><Minus className="ic" /></button>
         <button type="button" className="btn btn-primary" disabled={water.isPending} onClick={() => water.mutate(step)}>+ {step} ml</button>
-      </div>
-      {steps && <WaterCustom busy={water.isPending} max={data.water_ml} onAdd={(ml) => water.mutate(ml)} />}
+      </div>}
     </section>
   );
 }

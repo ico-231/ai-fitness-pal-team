@@ -1416,9 +1416,13 @@ html[data-theme="dark"] .v1 .ob-err{--g-fill:rgb(38 28 28 / .96)}
   .v1 .rp-chart .recharts-text { font-size: 12px; }
   .v1 .gd-tabs { --g-fill: rgb(255 255 255 / 0.92); }
   html[data-theme="dark"] .v1 .gd-tabs { --g-fill: rgb(28 31 33 / 0.94); }
-  .v1 .wcust { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; margin-top: 10px; }
-  .v1 .wcust .input-unit { grid-column: 1 / -1; }
-  .v1 .wcust .btn { padding: 0; width: 100%; height: 48px; }
+  .v1 .wcust { display: grid; gap: 8px; }
+  .v1 .wcust .input { height: 44px; font-size: 16px; }
+  .v1 .wcust .input-unit > span { font-size: 13px; }
+  .v1 .btn-water { background: var(--teal); color: #041f26; box-shadow: none; gap: 6px; }
+  .v1 .btn-water:disabled { opacity: 0.45; }
+  .v1 .wsteps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v1 .wsteps .chip { justify-content: center; height: 44px; padding: 0; font-size: 14px; }
 .v1 .rd-main{transition:filter .3s,opacity .3s}
 .v1 .rd-main.dim{filter:blur(3px);opacity:.55}
 .v1 .rd-doc{padding:0 4px;display:grid;gap:2px}
