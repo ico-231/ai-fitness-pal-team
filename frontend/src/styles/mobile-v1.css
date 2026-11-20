@@ -18,6 +18,9 @@
     --maxw: 520px;
     --safe-t: env(safe-area-inset-top, 0px);
     --safe-b: env(safe-area-inset-bottom, 0px);
+    /* Khoảng cách thanh nổi tới đáy: chỉ né vạch Home vừa đủ. Safari ẩn thanh công cụ khi cuộn xuống làm safe-area đáy nhảy 0 → ~34px;
+       cộng thẳng 12px + safe-area thì dải điều hướng bị đẩy vọt lên — dùng max() để chỉ nhích ~8px. */
+    --float-b: max(12px, calc(var(--safe-b) - 14px));
     /* kính */
     --faint: rgb(11 22 17 / 0.07);
     --line: rgb(11 22 17 / 0.16);
@@ -174,8 +177,9 @@
     position: fixed; z-index: 40;
     left: max(14px, calc(50% - var(--maxw) / 2 + 6px));
     right: max(14px, calc(50% - var(--maxw) / 2 + 6px));
-    bottom: calc(12px + var(--safe-b));
+    bottom: var(--float-b);
     display: flex; gap: 10px; align-items: flex-end;
+    transition: bottom 0.25s var(--ez);
     --dur: 0.65s; --ez-s: cubic-bezier(0.65, 0, 0.35, 1);
   }
   .fb-tabs {
@@ -940,7 +944,7 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
 
 @media (max-width: 1023px) {
   .v1 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .fb-actionbar { position: fixed; z-index: 40; left: max(12px, calc(50% - var(--maxw) / 2 + 4px)); right: max(12px, calc(50% - var(--maxw) / 2 + 4px)); bottom: calc(12px + var(--safe-b)); padding: 8px; border-radius: 99px; display: flex; gap: 8px; align-items: center; }
+  .fb-actionbar { position: fixed; z-index: 40; left: max(12px, calc(50% - var(--maxw) / 2 + 4px)); right: max(12px, calc(50% - var(--maxw) / 2 + 4px)); bottom: var(--float-b); padding: 8px; border-radius: 99px; display: flex; gap: 8px; align-items: center; }
   .fb-actionbar .btn { flex: 1; min-width: 0; height: 56px; padding: 0 14px; font-size: 15px; white-space: normal; line-height: 1.2; }
   .fb-actionbar .btn-glass { flex: 0 0 auto; padding: 0 18px; }
   .v1 .ss-top { display: flex; padding-top: 4px; }
