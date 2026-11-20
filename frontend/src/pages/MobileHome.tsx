@@ -1,9 +1,9 @@
 import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Bike, BarChart3, ChevronRight, Moon, Play, Sun, Utensils, Dumbbell, X } from "lucide-react";
+import { ArrowRight, Bike, BarChart3, ChevronRight, Moon, Play, Sun, Utensils, Dumbbell, Scale, X } from "lucide-react";
 import clsx from "clsx";
 import type { Insight, ScheduleDay } from "../lib/types";
-import { addDays, fmt, greeting, todayISO } from "../lib/format";
+import { addDays, dayLabel, fmt, greeting, todayISO } from "../lib/format";
 import { useApi } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { clickable } from "../components/ui";
@@ -98,6 +98,15 @@ export function MobileHome({ ov }: { ov: Overview }) {
   const goalDone = wGoal && weightNow != null && wGoal.start_value != null ? Math.abs(wGoal.start_value - weightNow) : null;
   const goalTotal = wGoal && wGoal.start_value != null && wGoal.target_value != null ? Math.abs(wGoal.start_value - wGoal.target_value) : null;
 
+  // dòng nhịp độ: cần giảm / tăng bao nhiêu kg mỗi tuần để kịp hạn (chỉ khi mục tiêu có hạn và còn ≥ 7 ngày)
+  const daysLeft = wGoal?.days_left ?? null;
+  const paceLine = goalLeft != null && goalLeft > 0 && daysLeft != null && daysLeft > 0
+    ? (daysLeft >= 7
+      ? `Hạn còn ${daysLeft} ngày · cần ${wGoal!.target_value! < weightNow! ? "giảm" : "tăng"} ${fmt(goalLeft / (daysLeft / 7), 1)} kg/tuần`
+      : `Hạn còn ${daysLeft} ngày`)
+    : goalLeft === 0 ? "Đã đạt mục tiêu" : null;
+  const lastWeigh = ov.latest_body.weight_kg?.date ?? null;
+
   const tips: Insight[] = ov.insights || [];
   const shownTips = allTips ? tips : tips.slice(0, 2);
   const ask = (text: string) => ai.open({ text });
@@ -181,21 +190,28 @@ export function MobileHome({ ov }: { ov: Overview }) {
         {/* Nước (thay ô Điểm sẵn sàng thứ hai: điểm đã có chip ở đầu trang) */}
         <WaterTile />
 
-        {/* Mục tiêu / cân nặng */}
-        <Link to="/inbody" className="g wd goalw" aria-label="Mục tiêu cân nặng, mở Tiến độ">
-          <div className="h" style={{ width: "100%" }}><b>Mục tiêu</b>{goalLeft != null && <span>còn {fmt(goalLeft, 1)} kg</span>}</div>
-          {weightNow != null ? (
-            <>
-              <b className="n gv">{fmt(weightNow, 1)}<small> kg</small></b>
-              {wGoal ? (
-                <>
-                  <span className="track violet"><i style={vars({ "--v": (wGoal.progress_pct ?? 0) / 100 })} /></span>
-                  <small className="gs">{goalDone != null && goalTotal != null ? `Đã ${wGoal.target_value! < wGoal.start_value! ? "giảm" : "tăng"} ${fmt(goalDone, 1)} / ${fmt(goalTotal, 1)} kg` : `${wGoal.progress_pct ?? 0}% mục tiêu`}</small>
-                </>
-              ) : <small className="gs">Chưa đặt mục tiêu</small>}
-            </>
-          ) : <small className="gs">Chưa có số cân. Nhập ở Tiến độ.</small>}
-        </Link>
+        {/* Mục tiêu / cân nặng: nửa trên mở Tiến độ; nửa dưới có thông tin hạn + lần cân gần nhất và nút "Cân hôm nay" thẳng hàng đáy với nút của ô Nước */}
+        <section className="g wd goalw" aria-label="Mục tiêu cân nặng">
+          <Link to="/inbody" className="gtop" aria-label="Mục tiêu cân nặng, mở Tiến độ">
+            <div className="h"><b>Mục tiêu</b>{goalLeft != null && <span>còn {fmt(goalLeft, 1)} kg</span>}</div>
+            {weightNow != null ? (
+              <>
+                <b className="n gv">{fmt(weightNow, 1)}<small> kg</small></b>
+                {wGoal ? (
+                  <>
+                    <span className="track violet"><i style={vars({ "--v": (wGoal.progress_pct ?? 0) / 100 })} /></span>
+                    <small className="gs">{goalDone != null && goalTotal != null ? `Đã ${wGoal.target_value! < wGoal.start_value! ? "giảm" : "tăng"} ${fmt(goalDone, 1)} / ${fmt(goalTotal, 1)} kg` : `${wGoal.progress_pct ?? 0}% mục tiêu`}</small>
+                  </>
+                ) : <small className="gs">Chưa đặt mục tiêu</small>}
+              </>
+            ) : <small className="gs">Chưa có số cân. Nhập ở Tiến độ.</small>}
+          </Link>
+          <ul className="ginfo" aria-label="Thông tin mục tiêu">
+            {paceLine && <li>{paceLine}</li>}
+            {lastWeigh && <li>Cân gần nhất: <b>{dayLabel(lastWeigh).toLowerCase()}</b></li>}
+          </ul>
+          <Link to="/inbody?add=1" className="btn btn-primary gbtn"><Scale className="ic" />Cân hôm nay</Link>
+        </section>
 
         {/* HeadBro nhắn */}
         <section className="g chat span2" aria-label="Tin nhắn của HeadBro">

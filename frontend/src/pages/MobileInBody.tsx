@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bolt, Camera, Check, Droplet, Dumbbell, Flame, Gauge, Info, Pencil, Plus, Scale, Sparkles, Target, Trash2, type LucideIcon } from "lucide-react";
 import { del, post, put } from "../lib/api";
@@ -76,6 +77,9 @@ export function MobileInBody() {
   const { data: rows } = useApi<Metric[]>(["body-metrics"], "/api/body/metrics");
   const ai = useAI();
   const [metricSheet, setMetricSheet] = useState<{ editing: Metric | null } | null>(null);
+  // /inbody?add=1 (nút "Cân hôm nay" ở Tổng quan): mở sẵn sheet nhập chỉ số rồi bỏ tham số khỏi địa chỉ
+  const [sp, setSp] = useSearchParams();
+  useEffect(() => { if (sp.get("add") === "1") { setMetricSheet({ editing: null }); setSp({}, { replace: true }); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [goalSheet, setGoalSheet] = useState<{ goal: Goal | null } | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [chart, setChart] = useState(0);
