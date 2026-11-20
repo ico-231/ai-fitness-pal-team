@@ -5,6 +5,8 @@ import { useAuth } from "../lib/auth";
 import type { User } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, Segmented } from "../components/ui";
+import { useMedia } from "../lib/hooks";
+import { MobileLogin } from "./MobileAuth";
 
 declare global {
   interface Window {
@@ -20,7 +22,7 @@ declare global {
   }
 }
 
-function GoogleButton({ clientId, onCredential }: { clientId: string; onCredential: (c: string) => void }) {
+export function GoogleButton({ clientId, onCredential, width = 320 }: { clientId: string; onCredential: (c: string) => void; width?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const init = () => {
@@ -31,7 +33,7 @@ function GoogleButton({ clientId, onCredential }: { clientId: string; onCredenti
         auto_select: true, // lần sau tự đăng nhập bằng tài khoản Google đã chọn
         ux_mode: "popup",
       });
-      window.google.accounts.id.renderButton(ref.current, { theme: "outline", size: "large", width: 320, text: "continue_with", locale: "vi" });
+      window.google.accounts.id.renderButton(ref.current, { theme: "outline", size: "large", width, text: "continue_with", locale: "vi" });
       window.google.accounts.id.prompt();
     };
     if (window.google) return init();
@@ -40,7 +42,7 @@ function GoogleButton({ clientId, onCredential }: { clientId: string; onCredenti
     s.async = true;
     s.onload = init;
     document.head.appendChild(s);
-  }, [clientId, onCredential]);
+  }, [clientId, onCredential, width]);
   return <div ref={ref} className="flex justify-center" />;
 }
 
@@ -51,7 +53,7 @@ const FEATURES: [typeof Sparkles, string][] = [
   [Camera, "Camera chấm form"],
 ];
 
-export default function Login() {
+function LoginDesktop() {
   const { signIn, config } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -165,4 +167,9 @@ export default function Login() {
       </main>
     </div>
   );
+}
+
+export default function Login() {
+  const desktop = useMedia("(min-width: 1024px)");
+  return desktop ? <LoginDesktop /> : <MobileLogin />;
 }

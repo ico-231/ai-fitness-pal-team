@@ -9,6 +9,8 @@ import type { Targets } from "../lib/types";
 import { Backdrop, Logo } from "../components/Layout";
 import { Button, Field, DecimalInput } from "../components/ui";
 import { useQuery } from "@tanstack/react-query";
+import { useMedia } from "../lib/hooks";
+import { MobileOnboarding } from "./MobileAuth";
 
 function Choice({ options, value, onChange }: { options: Record<string, string>; value: string; onChange: (v: string) => void }) {
   return (
@@ -30,7 +32,7 @@ function Choice({ options, value, onChange }: { options: Record<string, string>;
   );
 }
 
-export default function Onboarding() {
+function OnboardingDesktop() {
   const { user, refresh, signOut } = useAuth();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -193,4 +195,9 @@ export default function Onboarding() {
       </div>
     </div>
   );
+}
+
+export default function Onboarding() {
+  const desktop = useMedia("(min-width: 1024px)");
+  return desktop ? <OnboardingDesktop /> : <MobileOnboarding />;
 }
