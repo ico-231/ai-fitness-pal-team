@@ -46,7 +46,7 @@ export function BubbleV1({ m, onCardStatus, compact, onFollowup, onRegenerate, o
 
   const typing = m.streaming && !m.content;
   return (
-    <div className="msg">
+    <div className={typing && !m.trace.length && !m.cards.length ? "msg typing-wait" : "msg"}>
       <span className="hb"><HeadBroSvg className="ic-ai" /></span>
       <div className="am-col">
         <div className={m.error ? "bub err" : "bub"}>

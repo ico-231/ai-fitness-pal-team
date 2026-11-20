@@ -54,6 +54,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet" />
     <title>FitBro AI</title>
     <script>
+      // màn khởi động khi mở từ màn hình chính: cố định theo chiều cao thật của màn hình (xem html.boot-fixed #boot)
+      (function () {
+        try {
+          if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
+            var r = document.documentElement;
+            r.classList.add("boot-fixed");
+            r.style.setProperty("--boot-h", Math.max(screen.width, screen.height) + "px");
+          }
+        } catch (e) {}
+      })();
       // áp dụng theme trước khi render để tránh nháy màn hình
       (function () {
         try {
@@ -78,7 +88,10 @@
       #boot { box-shadow: 0 240px 0 0 var(--bg); }
       html:has(#boot) { background: #f2f4f3; }
       @media (prefers-color-scheme: dark) { html:has(#boot) { background: #08090a; } }
-      #boot .b-stack { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: -4vh; }
+      #boot .b-stack { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: calc(var(--boot-h, 100vh) * -0.04); }
+      /* Mở từ màn hình chính (standalone): iOS báo chiều cao khung nhìn thấp hơn lúc vừa mở rồi mới cập nhật → căn giữa theo khung
+         nhìn làm logo tụt xuống ~13pt sau khi hiện. Căn theo chiều cao THẬT của màn hình (screen.height, đúng cỡ ảnh màn chờ). */
+      html.boot-fixed #boot { bottom: auto; height: var(--boot-h); }
       #boot .b-mark { position: relative; width: 92px; height: 92px; border-radius: 21px; overflow: hidden;
         box-shadow: 0 18px 36px -18px rgb(0 0 0 / 0.45), 0 2px 6px -2px rgb(0 0 0 / 0.18); }
       #boot .b-mark img { display: block; width: 100%; height: 100%; }

@@ -103,8 +103,10 @@ function Bubble({ m, onCardStatus, compact, onFollowup, onRegenerate, onEdit }: 
     );
   const agent = (m.agent || "headbro") as AgentKey;
   const showTyping = m.streaming && !m.content;
+  // chỉ có "đang gõ" (chưa chữ, chưa công cụ, chưa thẻ) → hiện sau ~0,4s cho tự nhiên; trả lời nhanh thì không nháy bong bóng chờ
+  const waitOnly = showTyping && !m.trace.length && !m.cards.length;
   return (
-    <div className="fade-in flex gap-3">
+    <div className={clsx(waitOnly ? "typing-wait" : "fade-in", "flex gap-3")}>
       <AgentAvatar agent={agent} />
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-2">
@@ -244,6 +246,19 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
     </div>
   );
 
+  // Dán ảnh (Ctrl/Cmd+V trên máy tính, giữ → Dán trên điện thoại): có ảnh trong bộ nhớ tạm → đính kèm; chỉ có chữ → dán chữ như thường
+  const onPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const item = [...e.clipboardData.items].find((i) => i.kind === "file" && i.type.startsWith("image/"));
+    const f = item?.getAsFile();
+    if (!f) return;
+    e.preventDefault();
+    try {
+      setImage(await fileToDataUrl(f));
+    } catch {
+      toast("Không đọc được ảnh vừa dán", "error");
+    }
+  };
+
   const toggleMic = () => {
     if (listening) {
       recRef.current?.stop();
@@ -305,6 +320,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
           value={text}
           autoFocus={showHero && !touch}
           onChange={(e) => setText(e.target.value)}
+          onPaste={onPaste}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -355,7 +371,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
         <div className="g composer">
           <button type="button" className="icon-btn sm" aria-label="Gửi ảnh (món ăn, phiếu InBody...)" onClick={() => fileRef.current?.click()}><ImagePlus className="ic" /></button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setImage(await fileToDataUrl(f)); e.target.value = ""; }} />
-          <textarea value={text} rows={1} aria-label="Tin nhắn cho HeadBro" placeholder={listening ? "Đang nghe..." : "Hỏi HeadBro..."}
+          <textarea value={text} rows={1} aria-label="Tin nhắn cho HeadBro" placeholder={listening ? "Đang nghe..." : "Hỏi HeadBro..."} onPaste={onPaste}
             onChange={(e) => setText(e.target.value)} style={{ fieldSizing: "content" } as React.CSSProperties}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !touch) { e.preventDefault(); submit(); } }} />
           <button type="button" className={clsx("icon-btn sm", listening && "rec")} aria-label={listening ? "Dừng nhập giọng nói" : "Nhập bằng giọng nói"} aria-pressed={listening} onClick={toggleMic}>{listening ? <MicOff className="ic" /> : <Mic className="ic" />}</button>
@@ -365,7 +381,6 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
             <button type="button" className="send" aria-label="Gửi tin nhắn" disabled={!text.trim() && !image} onClick={submit}><Send className="ic" /></button>
           )}
         </div>
-        {!compact && <p className="chat-foot">HeadBro có thể nhầm lẫn. Hỏi bác sĩ khi có vấn đề sức khoẻ.</p>}
       </div>
     );
     return (
@@ -385,6 +400,8 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
                   return () => send({ text: q.content, image: q.image, page, pageContext, replaceFrom: q.id });
                 })()} />
             ))}
+            {/* dòng nhắc nằm cuối nội dung (như Gemini), không chiếm chỗ dưới ô nhập → ô nhập hạ sát vạch Home */}
+            {!compact && messages.length > 0 && <p className="chat-foot">HeadBro có thể nhầm lẫn. Hỏi bác sĩ khi có vấn đề sức khoẻ.</p>}
           </div>
         </div>
         {composerV1}

@@ -453,6 +453,10 @@ body {
   stroke: var(--text);
 }
 
+/* Bong bóng "HeadBro đang gõ" hiện sau ~0,4s (trả lời nhanh thì không nháy bong bóng chờ) */
+.typing-wait { animation: typing-wait 0.22s ease 0.4s both; }
+@keyframes typing-wait { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .typing-wait { animation: typing-wait 0.01s linear 0.4s both; } }
 .fade-in {
   animation: fadeIn 0.25s ease both;
 }
