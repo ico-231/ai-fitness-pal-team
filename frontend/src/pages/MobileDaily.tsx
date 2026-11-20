@@ -106,7 +106,7 @@ export function MobileDaily({ data }: { data: DailyData }) {
 
       <div className="bento">
         <CheckinCard data={data} editing={editing} setEditing={setEditing} openSheet={() => setSheet(true)} onReset={askReset} />
-        <WaterTile steps />
+        <WaterTile />
         <WeightTile />
 
         {/* Buổi hôm nay */}

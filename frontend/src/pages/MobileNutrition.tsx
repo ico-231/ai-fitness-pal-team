@@ -189,7 +189,7 @@ export function MobileNutrition() {
       )}
       <button type="button" className="btn btn-primary btn-block mt" onClick={() => setLogSlot(isToday ? guess() : "lunch")}><Plus className="ic" />Ghi bữa</button>
 
-      {isToday && <div style={{ marginTop: 12 }}><WaterTile steps /></div>}
+      {isToday && <div style={{ marginTop: 12 }}><WaterTile /></div>}
 
       {isToday && t && tg && (
         <button type="button" className="g nt-ask" onClick={askMenu}>

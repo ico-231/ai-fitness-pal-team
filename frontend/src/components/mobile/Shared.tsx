@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, MoreHorizontal, Plus } from "lucide-react";
 import clsx from "clsx";
 import { post } from "../../lib/api";
 import { fmt } from "../../lib/format";
@@ -55,45 +55,58 @@ export function ReadinessSheet({ open, onClose, r, onCheckin }: { open: boolean;
 }
 
 const WATER_MIN = 50, WATER_MAX = 2000;
-
-/** Hàng nhập lượng nước tự chọn (mở bằng nút "Khác"): ô số có đơn vị ml + nút bớt + nút "Thêm" teal. Giới hạn 50–2000 ml. */
-function WaterCustom({ busy, max, onAdd }: { busy: boolean; max: number; onAdd: (ml: number) => void }) {
-  const [ml, setMl] = useState<number | null>(null);
-  const ok = ml != null && ml >= WATER_MIN && ml <= WATER_MAX;
-  const apply = (sign: 1 | -1) => {
-    if (!ok || ml == null) return;
-    onAdd(sign === 1 ? Math.round(ml) : -Math.min(Math.round(ml), max));
-  };
-  return (
-    <div className="wcust" role="group" aria-label="Nhập lượng nước tự chọn">
-      <div className="input-unit">
-        <DecimalInput className="input n" autoFocus aria-label={`Số ml nước (${WATER_MIN}–${WATER_MAX})`} placeholder="Số ml" aria-invalid={ml != null && !ok ? true : undefined}
-          value={ml ?? ""} onValue={(n) => setMl(n)} onKeyDown={(e) => e.key === "Enter" && apply(1)} />
-        <span>ml</span>
-      </div>
-      <div className="pm">
-        <button type="button" className="btn chipg" aria-label="Bớt số ml đã nhập" disabled={!ok || busy || max <= 0} onClick={() => apply(-1)}><Minus className="ic" /></button>
-        <button type="button" className="btn btn-water" disabled={!ok || busy} onClick={() => apply(1)}><Plus className="ic" />Thêm</button>
-      </div>
-    </div>
-  );
-}
+const WATER_STEPS = [150, 250, 500] as const; // chip chọn nhanh; chip thứ 4 là "Khác" (tự nhập)
+const WATER_DEFAULT = 250; // nút chính luôn thêm 250 ml (app chưa có cài đặt lượng mặc định)
 
 interface WaterDaily { water_ml: number; water_target_ml: number }
 
+/** Sheet "Thêm nước": chọn 150/250/500/Khác (chỉ một chip sáng), "Khác" hiện ô số 50–2000 ml; "Bớt lượng này" và "Thêm N ml" (teal). */
+function WaterSheet({ open, onClose, current, busy, onApply }: { open: boolean; onClose: () => void; current: number; busy: boolean; onApply: (delta: number) => void }) {
+  const [pick, setPick] = useState(1); // 0..2 = WATER_STEPS, 3 = Khác
+  const [ml, setMl] = useState<number | null>(null);
+  const custom = pick === 3;
+  const amount = custom ? (ml != null ? Math.round(ml) : null) : WATER_STEPS[pick];
+  const ok = amount != null && amount >= (custom ? WATER_MIN : 1) && amount <= WATER_MAX;
+  const done = (sign: 1 | -1) => {
+    if (!ok || amount == null) return;
+    onApply(sign === 1 ? amount : -Math.min(amount, current));
+    setMl(null);
+    setPick(1);
+    onClose();
+  };
+  return (
+    <Sheet open={open} onClose={onClose} title="Thêm nước" sub={`Chọn nhanh hoặc nhập lượng bạn vừa uống (${WATER_MIN}–${WATER_MAX} ml).`}
+      actions={<>
+        <button type="button" className="btn btn-glass btn-block" disabled={!ok || busy || current <= 0} onClick={() => done(-1)}><Minus className="ic" />Bớt lượng này</button>
+        <button type="button" className="btn btn-water btn-block" disabled={!ok || busy} onClick={() => done(1)}><Plus className="ic" />Thêm {amount != null ? `${fmt(amount)} ml` : "nước"}</button>
+      </>}>
+      <div className="sheet-body">
+        <div className="chips4" role="group" aria-label="Lượng nước">
+          {[...WATER_STEPS.map(String), "Khác"].map((o, i) => <button key={o} type="button" className={clsx("chip", i === pick && "on")} aria-pressed={i === pick} onClick={() => setPick(i)}>{o}</button>)}
+        </div>
+        {custom && (
+          <div className="input-unit">
+            <DecimalInput className="input n" autoFocus inputMode="numeric" aria-label={`Số ml nước (${WATER_MIN}–${WATER_MAX})`} placeholder="Nhập số ml" aria-invalid={ml != null && !ok ? true : undefined}
+              value={ml ?? ""} onValue={(n) => setMl(n)} onKeyDown={(e) => e.key === "Enter" && done(1)} />
+            <span>ml</span>
+          </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
 /**
- * Ô Nước (ly chất lỏng teal): bấm +/− cập nhật lạc quan, cùng nguồn ["daily"] với trang Hôm nay và Tổng quan.
- * `steps` = hiện công tắc 150/250/500 ml (trang Hôm nay); không có thì cố định 250 ml (Tổng quan).
+ * Ô Nước (ly chất lỏng teal): số lít + bình, một nút chính "+ 250 ml" và nút "⋯" mở sheet "Thêm nước" (chọn lượng, tự nhập, bớt).
+ * Cập nhật lạc quan, cùng nguồn ["daily"] với trang Hôm nay và Tổng quan.
  */
-export function WaterTile({ steps }: { steps?: boolean }) {
+export function WaterTile() {
   const { data } = useApi<WaterDaily>(["daily"], "/api/daily/today");
-  const [si, setSi] = useState(1);
-  const custom = !!steps && si === 3; // "Khác": mở hàng nhập gọn bên dưới
-  const step = steps && si < 3 ? [150, 250, 500][si] : 250;
+  const [open, setOpen] = useState(false);
   const water = useAction<number, unknown, WaterDaily>((delta_ml) => post("/api/daily/water", { delta_ml }), {
     optimistic: { key: ["daily"], update: (d, delta) => ({ ...d, water_ml: Math.max(0, d.water_ml + delta) }) },
   });
-  if (!data) return <span className="sk sk-block" style={{ height: steps ? 300 : 230 }} />;
+  if (!data) return <span className="sk sk-block" style={{ height: 230 }} />;
   const cur = data.water_ml / 1000;
   const goal = data.water_target_ml / 1000;
   const left = Math.max(0, goal - cur);
@@ -106,15 +119,12 @@ export function WaterTile({ steps }: { steps?: boolean }) {
         </span>
         <p className="bigv w"><span>{cur.toFixed(1).replace(".", ",")}</span><small>/ {fmt(goal, 1)} L</small></p>
       </div>
-      {steps && (
-        <div className="wsteps" role="group" aria-label="Mỗi lần thêm hoặc bớt (ml)">
-          {["150", "250", "500", "Khác"].map((o, i) => <button key={o} type="button" className={clsx("chip", i === si && "on")} aria-pressed={i === si} onClick={() => setSi(i)}>{o}</button>)}
-        </div>
-      )}
-      {custom ? <WaterCustom busy={water.isPending} max={data.water_ml} onAdd={(ml) => { water.mutate(ml); setSi(1); }} /> : <div className="pm">
-        <button type="button" className="btn chipg" aria-label={`Bớt ${step} ml`} disabled={data.water_ml <= 0 || water.isPending} onClick={() => water.mutate(-Math.min(step, data.water_ml))}><Minus className="ic" /></button>
-        <button type="button" className="btn btn-primary" disabled={water.isPending} onClick={() => water.mutate(step)}>+ {step} ml</button>
-      </div>}
+      <p className="whint">Chạm “…” để chọn lượng khác hoặc bớt.</p>
+      <div className="pm3">
+        <button type="button" className="btn btn-primary" disabled={water.isPending} onClick={() => water.mutate(WATER_DEFAULT)}>+ {WATER_DEFAULT} ml</button>
+        <button type="button" className="btn chipg" aria-label="Chọn lượng khác hoặc bớt" aria-haspopup="dialog" onClick={() => setOpen(true)}><MoreHorizontal className="ic" /></button>
+      </div>
+      <WaterSheet open={open} onClose={() => setOpen(false)} current={data.water_ml} busy={water.isPending} onApply={(d) => water.mutate(d)} />
     </section>
   );
 }
