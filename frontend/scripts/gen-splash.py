@@ -1,10 +1,22 @@
 """Tạo ảnh màn chờ iOS (apple-touch-startup-image) từ public/logo.png: logo giữa nền màu app, bản sáng + tối.
 Chạy: python scripts/gen-splash.py   (cần Pillow). In ra các thẻ <link> để dán vào index.html."""
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGO = Image.open(ROOT / "public" / "logo.png").convert("RGBA")
+
+
+def rounded(img: Image.Image, radius: float = 0.225) -> Image.Image:
+    """Bo góc logo kiểu icon iOS (bán kính ~22,5% cạnh), vẽ mặt nạ to gấp 4 rồi thu nhỏ cho mép mượt."""
+    s = img.size[0]
+    k = 4
+    m = Image.new("L", (s * k, s * k), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, s * k - 1, s * k - 1), radius=round(s * k * radius), fill=255)
+    m = m.resize((s, s), Image.LANCZOS)
+    out = img.copy()
+    out.putalpha(ImageChops.multiply(img.getchannel("A"), m))
+    return out
 OUT = ROOT / "public" / "splash"
 OUT.mkdir(exist_ok=True)
 
@@ -29,7 +41,7 @@ for name, w, h, r in DEVICES:
     for theme, bg in THEMES.items():
         im = Image.new("RGB", (W, H), bg)
         s = round(min(W, H) * 0.24)
-        logo = LOGO.resize((s, s), Image.LANCZOS)
+        logo = rounded(LOGO.resize((s, s), Image.LANCZOS))
         im.paste(logo, ((W - s) // 2, (H - s) // 2 - round(H * 0.02)), logo)
         f = OUT / f"{name}-{theme}.png"
         im.quantize(colors=64, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(f, optimize=True)

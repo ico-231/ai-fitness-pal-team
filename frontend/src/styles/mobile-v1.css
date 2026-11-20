@@ -176,7 +176,7 @@
     right: max(14px, calc(50% - var(--maxw) / 2 + 6px));
     bottom: calc(12px + var(--safe-b));
     display: flex; gap: 10px; align-items: flex-end;
-    --dur: 0.9s; --ez-s: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur: 0.65s; --ez-s: cubic-bezier(0.65, 0, 0.35, 1);
   }
   .fb-tabs {
     position: relative; flex: none; width: calc(100% - 74px); height: 64px; border-radius: 99px;
@@ -229,8 +229,8 @@
   .scrolled-down .fb-tabs.none a:first-of-type { flex: 1 1 0; opacity: 1; pointer-events: auto; }
   .scrolled-down .fb-tabs a span { opacity: 0; max-height: 0; }
   .scrolled-down .fb-ai { width: calc(100% - 74px); }
-  .scrolled-down .fb-ai .tx { opacity: 1; transform: none; transition: opacity 0.45s ease 0.4s, transform 0.6s var(--ez) 0.35s; }
-  .scrolled-down .fb-ai .mic { width: 44px; opacity: 1; transition: opacity 0.45s ease 0.5s; }
+  .scrolled-down .fb-ai .tx { opacity: 1; transform: none; transition: opacity 0.35s ease 0.28s, transform 0.45s var(--ez) 0.25s; }
+  .scrolled-down .fb-ai .mic { width: 44px; opacity: 1; transition: opacity 0.35s ease 0.36s; }
   /* màn hẹp (360px): thu lề và khoảng cách để nhãn "Dinh dưỡng" không bị cắt */
   @media (max-width: 380px) {
     .fb-dock { left: 10px; right: 10px; gap: 8px; }

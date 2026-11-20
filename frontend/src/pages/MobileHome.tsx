@@ -140,7 +140,7 @@ export function MobileHome({ ov }: { ov: Overview }) {
               {advice.secondary ? (
                 <Link className="lighter chipg" to={advice.secondary.to}>{advice.secondary.label}</Link>
               ) : advice.tone === "go" ? (
-                <Link className="lighter chipg" to="/workouts/session?plan=tpl_recovery">Hôm nay mệt? Đổi sang buổi nhẹ</Link>
+                <Link className="lighter chipg" to="/workouts/session?plan=tpl_recovery">Hôm nay mệt? Đổi sang tập nhẹ</Link>
               ) : null}
             </>
           )}
