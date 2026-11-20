@@ -826,6 +826,8 @@ html[data-theme="dark"] .v1 .sheet,html[data-theme="dark"] .v1 .dialog{--g-fill:
 .v1 .dialog .d-actions{display:grid;gap:8px}
   .v1 .scrim{z-index:70}.v1 .sheet,.v1 .dialog{z-index:71}
   .fb-top-actions{display:flex;gap:8px;align-items:center}.fb-top-actions:empty{display:none}
+  /* Toast "Có bản mới": nằm ngay trên thanh dưới (cao 64px, cách đáy --float-b), không đè nội dung chính. */
+  .update-toast { bottom: calc(var(--float-b) + 64px + 10px) !important; left: max(14px, calc(50% - var(--maxw) / 2 + 6px)); right: max(14px, calc(50% - var(--maxw) / 2 + 6px)); }
 }
 
 /* V1 — Dinh dưỡng (nutrition.html) */
