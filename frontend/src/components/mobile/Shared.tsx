@@ -5,7 +5,7 @@ import { post } from "../../lib/api";
 import { fmt } from "../../lib/format";
 import { useAction, useApi } from "../../lib/hooks";
 import type { Readiness } from "../../lib/types";
-import { Modal } from "../ui";
+import { Sheet } from "./Sheet";
 import { Rings, vars } from "./V1";
 
 /** Công tắc đoạn V1 (thấu kính trượt). `value` = vị trí đang chọn (0..n-1). */
@@ -25,8 +25,8 @@ export function Seg({ options, value, onChange, ink, sm, label, className }: {
 /** Chi tiết điểm sẵn sàng: thành phần, lời khuyên, cách tính. Dùng ở Tổng quan và Hôm nay. */
 export function ReadinessSheet({ open, onClose, r, onCheckin }: { open: boolean; onClose: () => void; r: Readiness | null; onCheckin: () => void }) {
   return (
-    <Modal open={open} onClose={onClose} title={r ? `Điểm sẵn sàng ${r.score} / 100` : "Điểm sẵn sàng"}>
-      <div className="v1">
+    <Sheet open={open} onClose={onClose} title={r ? `Điểm sẵn sàng ${r.score} / 100` : "Điểm sẵn sàng"}>
+      <div className="sheet-body">
         {r ? (
           <>
             <p className="sheet-s" style={{ marginTop: 0 }}><span className={clsx("tag", r.band === "low" || r.band === "moderate" ? "orange" : "lime")}>{r.label}</span> &nbsp;{r.advice}</p>
@@ -48,7 +48,7 @@ export function ReadinessSheet({ open, onClose, r, onCheckin }: { open: boolean;
         )}
         <button type="button" className="btn btn-primary btn-block" style={{ marginTop: 16 }} onClick={onCheckin}>{r ? "Sửa check-in" : "Check-in ngay"}</button>
       </div>
-    </Modal>
+    </Sheet>
   );
 }
 

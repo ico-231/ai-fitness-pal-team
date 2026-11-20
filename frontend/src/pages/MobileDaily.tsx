@@ -7,7 +7,8 @@ import { exName, fmt } from "../lib/format";
 import { useAction, useApi } from "../lib/hooks";
 import type { Plan, Readiness } from "../lib/types";
 import { useAI } from "../components/AIProvider";
-import { HelpButton, Modal, confirmDialog, parseDecimal } from "../components/ui";
+import { HelpButton, confirmDialog, parseDecimal } from "../components/ui";
+import { Sheet } from "../components/mobile/Sheet";
 import { HeadBroSvg } from "../components/MobileShell";
 import type { Overview } from "../components/Widgets";
 import { Rings, vars } from "../components/mobile/V1";
@@ -165,12 +166,12 @@ export function MobileDaily({ data }: { data: DailyData }) {
       </section>
 
       <ReadinessSheet open={sheet} onClose={() => setSheet(false)} r={r} onCheckin={() => { setSheet(false); setEditing(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
-      <Modal open={badgesOpen} onClose={() => setBadgesOpen(false)} title="Huy hiệu & cột mốc">
-        <div className="v1">
+      <Sheet open={badgesOpen} onClose={() => setBadgesOpen(false)} title="Huy hiệu & cột mốc" full>
+        <div className="sheet-body">
           <p className="sheet-s" style={{ marginTop: 0 }}>{got.length}/{data.badges.length} đã đạt · tính từ dữ liệu thật của bạn</p>
           <div className="bgrid" style={{ marginTop: 16 }}>{data.badges.map(medal)}</div>
         </div>
-      </Modal>
+      </Sheet>
     </div>
   );
 

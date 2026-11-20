@@ -10,8 +10,10 @@ import { getUiZoom, setUiZoom, type UiZoom } from "../lib/zoom";
 import type { Profile, Settings as S } from "../lib/types";
 import { Button, Card, CardHeader, Field, Modal, PageHeader, Segmented, Toggle, toast, confirmDialog, DecimalInput } from "../components/ui";
 import { MemoryCard } from "../components/MemoryCard";
+import { useMedia } from "../lib/hooks";
+import MobileSettings from "./MobileSettings";
 
-export default function Settings() {
+function SettingsDesktop() {
   const { user, refresh, signOut, config } = useAuth();
   const p = user!.profile!;
   const [f, setF] = useState({
@@ -306,4 +308,9 @@ function VoicePackField({ onUsing }: { onUsing: (on: boolean) => void }) {
       />
     </Field>
   );
+}
+
+export default function Settings() {
+  const desktop = useMedia("(min-width: 1024px)");
+  return desktop ? <SettingsDesktop /> : <MobileSettings />;
 }
