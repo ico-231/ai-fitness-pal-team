@@ -648,7 +648,7 @@ export default function Session() {
         <section className="g pad" style={{ marginTop: -6 }}>
           <div className="ss-map"><BodyMap highlight={hl} /></div>
           <div className="chips" style={{ justifyContent: "center", marginTop: 8 }}>
-            {Object.entries(summary.muscles).map(([k, v]) => <span key={k} className="tag lime">{MUSCLES[k] || v.label} {fmt(v.sets, 1)} set</span>)}
+            {Object.entries(summary.muscles).map(([k, v]) => <span key={k} className="tag lime">{MUSCLES[k] || v.label}</span>)}
           </div>
         </section>
         <h2 className="sec">Các bài<span>{Object.keys(groups).length} bài</span></h2>

@@ -85,8 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       get<AuthState["config"]>("/api/auth/config").then(setConfig).catch(() => setConfig({ google_client_id: null, ai_enabled: false, model: null }));
       await boot();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applyUser, signOut]);
+  }, [boot, signOut]);
 
   const signIn = useCallback(
     (token: string, u: User) => {

@@ -143,7 +143,6 @@ export function ThemeToggle({ full }: { full?: boolean }) {
   );
 }
 
-/** Nền toàn màn hình (aurora) — dùng cho khung app, trang đăng nhập, onboarding. */
 /** Điện thoại: dải báo mất mạng (kính V1). Dữ liệu đã tải vẫn xem được; thao tác ghi sẽ báo lỗi từng chỗ. */
 function OfflineBanner() {
   const [on, setOn] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
@@ -163,6 +162,7 @@ function OfflineBanner() {
   );
 }
 
+/** Nền toàn màn hình (aurora) — dùng cho khung app, trang đăng nhập, onboarding. */
 export function Backdrop() {
   return (
     <div className="aurora no-print" aria-hidden>

@@ -78,7 +78,7 @@ function SettingsDesktop() {
     <div className="space-y-8">
       <PageHeader lead="Cài đặt," help="cai-dat" title="theo cách của bạn" subtitle="Hồ sơ, mục tiêu dinh dưỡng, giọng PT, camera, giao diện, nhắc nhở và dữ liệu." />
       <Card>
-        <CardHeader title="Hồ sơ cá nhân" subtitle={<><span className="lg:hidden">HeadBro dùng thông tin này để cá nhân hoá lời khuyên</span><span className="max-lg:hidden">Các agent dùng thông tin này để cá nhân hoá lời khuyên</span></>} icon={<User size={16} />} />
+        <CardHeader title="Hồ sơ cá nhân" subtitle="HeadBro dùng thông tin này để cá nhân hoá lời khuyên" icon={<User size={16} />} />
         <div className="space-y-4 px-5 pb-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Field label="Tên"><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
@@ -203,7 +203,7 @@ function SettingsDesktop() {
       <Card>
         <CardHeader title="Trạng thái AI" icon={<Bot size={16} />} right={<Link to="/ai-log" className="-my-2 inline-flex min-h-10 items-center rounded-full px-2 text-sm font-medium text-primary-strong hover:underline">Nhật ký AI →</Link>} />
         <p className="px-5 pb-5 text-sm text-muted">
-          {config?.ai_enabled ? <>Đang dùng mô hình <b className="text-text">{config.model}</b>. <span className="max-lg:hidden">Bạn trò chuyện với HeadBro; phía sau, Router chuyển việc cho 2 agent chuyên môn (tập luyện, dinh dưỡng) cùng Safety Guard. Xem từng bước ở Nhật ký AI.</span><span className="lg:hidden">Bạn trò chuyện với HeadBro; xem từng bước xử lý ở Nhật ký AI.</span></> : "AI chưa được cấu hình trên server (thiếu LLM_API_KEY). Các tính năng không cần AI vẫn hoạt động bình thường."}
+          {config?.ai_enabled ? <>Đang dùng mô hình <b className="text-text">{config.model}</b>. Bạn trò chuyện với HeadBro; xem từng bước xử lý ở Nhật ký AI.</> : "AI chưa được cấu hình trên server (thiếu LLM_API_KEY). Các tính năng không cần AI vẫn hoạt động bình thường."}
         </p>
       </Card>
 

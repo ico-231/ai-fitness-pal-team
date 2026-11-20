@@ -109,9 +109,9 @@ export function Spinner({ label }: { label?: string }) {
 export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: string; text?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-10 text-center max-lg:items-start max-lg:px-5 max-lg:text-left">
-      {/* điện thoại: ô icon nằm CẠNH tiêu đề; máy tính: icon phía trên như cũ */}
-      <div className="flex items-center gap-3 max-lg:flex-row lg:flex-col">
-        {icon && <div className="mb-3 grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface-2 text-muted max-lg:mb-0 lg:bg-primary-soft lg:text-primary-strong">{icon}</div>}
+      {/* điện thoại: ô icon nằm CẠNH tiêu đề; máy tính: `contents` = không thêm khối nào, icon phía trên như cũ */}
+      <div className="contents max-lg:flex max-lg:items-center max-lg:gap-3">
+        {icon && <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-surface-2 text-muted max-lg:mb-0 max-lg:shrink-0 lg:bg-primary-soft lg:text-primary-strong">{icon}</div>}
         <p className="font-semibold">{title}</p>
       </div>
       {text && <p className="mt-1 max-w-sm text-sm text-muted max-lg:mt-2">{text}</p>}

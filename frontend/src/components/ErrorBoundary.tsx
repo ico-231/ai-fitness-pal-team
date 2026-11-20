@@ -27,15 +27,15 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
             </div>
           </div>
         </div>
-      <div className="grid min-h-full place-items-center p-6 max-lg:hidden">
+        <div className="grid min-h-full place-items-center p-6 max-lg:hidden">
           <div className="max-w-sm text-center">
-            <p className="flex items-center gap-2 text-lg font-semibold max-lg:justify-start lg:justify-center">Có lỗi khi hiển thị trang này</p>
+            <p className="text-lg font-semibold">Có lỗi khi hiển thị trang này</p>
             <p className="mt-1 text-sm text-muted">Dữ liệu của bạn không bị ảnh hưởng. Tải lại trang thường sẽ khắc phục được.</p>
             <div className="mt-4 flex justify-center gap-2">
-              <button type="button" onClick={() => location.reload()} className="h-10 rounded-full bg-ink px-5 max-lg:h-11 text-sm font-semibold text-on-ink">
+              <button type="button" onClick={() => location.reload()} className="h-10 rounded-full bg-ink px-5 text-sm font-semibold text-on-ink">
                 Tải lại trang
               </button>
-              <button type="button" onClick={() => { location.href = "/"; }} className="h-10 rounded-full bg-surface-2 px-5 max-lg:h-11 text-sm font-medium">
+              <button type="button" onClick={() => { location.href = "/"; }} className="h-10 rounded-full bg-surface-2 px-5 text-sm font-medium">
                 Về Tổng quan
               </button>
             </div>

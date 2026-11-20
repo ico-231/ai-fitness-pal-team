@@ -30,7 +30,7 @@ export default function App() {
         <Spinner label="Đang khởi động FitBro..." />
       </div>
     );
-  if (!user && unreachable) return <ConnectionLost onRetry={retry} busy={false} />;
+  if (!user && unreachable) return <ConnectionLost onRetry={retry} />;
   if (!user) return <Login />;
   if (!user.profile?.onboarded) return <Onboarding />;
   return (

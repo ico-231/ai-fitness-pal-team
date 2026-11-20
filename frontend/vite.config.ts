@@ -34,7 +34,7 @@ export default defineConfig({
             },
           },
           {
-            // Font Google + ảnh cơ thể + giọng PT thu sẵn: lưu dần khi dùng, có giới hạn số tệp
+            // Ảnh cơ thể + giọng PT thu sẵn: lưu dần khi dùng (cache-first), có giới hạn số tệp. Font Google có luật riêng bên dưới
             urlPattern: ({ url }) => /^\/(bodymap|voice)\//.test(url.pathname),
             handler: "CacheFirst",
             options: { cacheName: "fitbro-media", expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }, cacheableResponse: { statuses: [200] } },

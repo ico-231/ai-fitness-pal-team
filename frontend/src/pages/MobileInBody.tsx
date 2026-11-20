@@ -32,7 +32,7 @@ interface Summary {
 
 const FIELDS: [string, string, string][] = [
   ["weight_kg", "Cân nặng", "kg"], ["body_fat_pct", "Tỉ lệ mỡ", "%"], ["skeletal_muscle_kg", "Khối cơ xương", "kg"], ["body_fat_kg", "Khối mỡ", "kg"],
-  ["visceral_fat", "Mỡ nội tạng", "mức"], ["bmr_kcal", "BMR", "kcal"], ["waist_cm", "Vòng eo", "cm"], ["hip_cm", "Vòng mông", "cm"],
+  ["visceral_fat", "Mỡ nội tạng", "mức"], ["bmr_kcal", "Năng lượng nghỉ", "kcal"], ["waist_cm", "Vòng eo", "cm"], ["hip_cm", "Vòng mông", "cm"],
   ["chest_cm", "Vòng ngực", "cm"], ["arm_cm", "Vòng tay", "cm"], ["thigh_cm", "Vòng đùi", "cm"],
 ];
 const SEG: [string, string][] = [["left_arm", "Tay trái"], ["right_arm", "Tay phải"], ["trunk", "Thân"], ["left_leg", "Chân trái"], ["right_leg", "Chân phải"]];
