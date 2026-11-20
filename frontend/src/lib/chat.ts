@@ -18,6 +18,7 @@ interface ServerMessage {
   role: "user" | "assistant";
   agent: AgentKey | null;
   content: string;
+  created_at?: string;
   meta: { cards?: Card[]; trace?: TraceItem[]; image?: string; synthesis?: boolean; route?: string; error?: string; followups?: string[]; trace_id?: string; safety_flags?: string[] };
 }
 
@@ -65,10 +66,27 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
       return;
     }
     setLoading(true);
-    get<{ messages: ServerMessage[] }>(`/api/chat/conversations/${conversationId}`)
-      .then((d) => setMessages(d.messages.map(toLocal)))
+    let alive = true;
+    let timer = 0;
+    const url = `/api/chat/conversations/${conversationId}`;
+    // Tin cuối là của người dùng = HeadBro còn đang trả lời ở nơi khác (vd. vừa bấm phóng to từ khung chat nhỏ khi đang gõ):
+    // hiện "đang gõ" và hỏi lại máy chủ vài giây một lần tới khi câu trả lời được lưu (tối đa ~70 giây).
+    const show = (list: ServerMessage[], tries: number) => {
+      const local = list.map(toLocal);
+      const last = list[list.length - 1];
+      const age = last?.created_at ? Date.now() - Date.parse(last.created_at) : Infinity;
+      const waiting = last?.role === "user" && age < 75_000 && tries < 28; // chỉ chờ tin vừa gửi (lượt cũ bị lỗi thì thôi)
+      setMessages(waiting ? [...local, { id: "waiting-reply", role: "assistant", agent: "headbro", content: "", cards: [], trace: [], streaming: true }] : local);
+      if (waiting)
+        timer = window.setTimeout(() => {
+          get<{ messages: ServerMessage[] }>(url).then((d) => alive && show(d.messages, tries + 1)).catch(() => alive && show(list, tries + 1));
+        }, 2500);
+    };
+    get<{ messages: ServerMessage[] }>(url)
+      .then((d) => alive && show(d.messages, 0))
       .catch(() => setMessages([]))
       .finally(() => setLoading(false));
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [conversationId]);
 
   const patch = useCallback((id: string, fn: (m: ChatMessage) => ChatMessage) => {
@@ -81,13 +99,18 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
       setSending(true);
       setRouteInfo(null);
       const userMsg: ChatMessage = { id: tmpId(), role: "user", content: o.text.trim(), cards: [], trace: [], image: o.image || null };
+      // Bong bóng "HeadBro đang gõ…" hiện NGAY khi gửi (trước đây phải chờ máy chủ qua bước an toàn + định tuyến
+      // 1–3 giây, lâu hơn khi có ảnh, mới thấy gì) — sự kiện agent_start đầu tiên dùng lại bong bóng này.
+      const pendingId = tmpId();
+      const pendingMsg: ChatMessage = { id: pendingId, role: "assistant", agent: "headbro", content: "", cards: [], trace: [], streaming: true };
       setMessages((ms) => {
-        if (!o.replaceFrom) return [...ms, userMsg];
+        if (!o.replaceFrom) return [...ms, userMsg, pendingMsg];
         const i = ms.findIndex((m) => m.id === o.replaceFrom);
-        return [...(i >= 0 ? ms.slice(0, i) : ms), userMsg];
+        return [...(i >= 0 ? ms.slice(0, i) : ms), userMsg, pendingMsg];
       });
-      let current: string | null = null; // id tin nhắn agent đang stream
-      let currentAgent: string | null = null;
+      let current: string | null = pendingId; // id tin nhắn agent đang stream
+      let currentAgent: string | null = "headbro";
+      let pendingFree = true; // bong bóng chờ chưa được agent nào dùng
       let routeLocal: ChatMessage["route"] = null; // gắn lý do định tuyến vào agent đầu tiên của lượt
 
       const handle = (ev: Record<string, unknown>) => {
@@ -110,13 +133,17 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
             setRouteInfo(routeLocal);
             break;
           case "agent_start": {
-            const id = tmpId();
-            current = id;
             currentAgent = ev.agent as string;
-            setMessages((ms) => [
-              ...ms,
-              { id, role: "assistant", agent: ev.agent as AgentKey, content: "", cards: [], trace: [], streaming: true, synthesis: !!ev.synthesis, route: routeLocal },
-            ]);
+            const fresh = { agent: ev.agent as AgentKey, synthesis: !!ev.synthesis, route: routeLocal, streaming: true };
+            if (pendingFree) {
+              pendingFree = false;
+              current = pendingId;
+              patch(pendingId, (m) => ({ ...m, ...fresh }));
+            } else {
+              const id = tmpId();
+              current = id;
+              setMessages((ms) => [...ms, { id, role: "assistant", content: "", cards: [], trace: [], ...fresh }]);
+            }
             routeLocal = null;
             break;
           }
@@ -151,6 +178,12 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
             }
             break;
           case "agent_message":
+            pendingFree = false;
+            if (!current) { // câu trả lời không qua agent_start (vd. máy chủ báo quá giờ) → thêm bong bóng mới
+              current = tmpId();
+              const id0 = current;
+              setMessages((ms) => [...ms, { id: id0, role: "assistant", agent: (ev.agent as AgentKey) || "headbro", content: "", cards: [], trace: [], streaming: true }]);
+            }
             if (current) {
               const id = current;
               patch(id, (m) => ({
@@ -244,7 +277,12 @@ export function useChat(conversationId: string | null, onConversation?: (id: str
           { id: tmpId(), role: "assistant", agent: "headbro", content: (e as Error).message, cards: [], trace: [], error: "network" },
         ]);
       } finally {
-        setMessages((ms) => ms.map((m) => (m.streaming ? { ...m, streaming: false } : m)));
+        // bỏ bong bóng chờ chưa dùng; câu trả lời kết thúc mà rỗng (không chữ, không thẻ) → báo rõ thay vì để ô trống
+        setMessages((ms) => ms
+          .filter((m) => !(m.id === pendingId && pendingFree && !m.content && !m.cards.length))
+          .map((m) => (m.streaming ? { ...m, streaming: false } : m))
+          .map((m) => (m.role === "assistant" && !m.content.trim() && !m.cards.length && (m.id === pendingId || m.id.startsWith("tmp-"))
+            ? { ...m, content: "HeadBro chưa trả lời được lượt này. Bạn gửi lại giúp mình nhé.", error: "empty" } : m)));
         setSending(false);
         qc.invalidateQueries(); // agent có thể đã tạo plan / dữ liệu mới
       }

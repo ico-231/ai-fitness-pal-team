@@ -215,12 +215,34 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [messages, routeInfo]);
 
+  // Nhắn khi HeadBro đang trả lời: giữ câu mới trong hàng đợi và tự gửi khi lượt trước xong
+  // (trước đây ô nhập bị xoá nhưng send() bỏ qua vì đang bận → câu mới mất hẳn).
+  const [queued, setQueued] = useState<{ text: string; image: string | null } | null>(null);
+  useEffect(() => {
+    if (sending || !queued) return;
+    const q = queued;
+    setQueued(null);
+    send({ text: q.text, image: q.image, page, pageContext });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi lượt trước vừa xong hoặc có câu mới xếp hàng
+  }, [sending, queued]);
+
   const submit = () => {
     if (!text.trim() && !image) return;
-    send({ text, image, page, pageContext });
+    if (sending) {
+      if (queued) return; // đã có một câu chờ: giữ nguyên ô nhập, không ghi đè
+      setQueued({ text, image });
+    } else send({ text, image, page, pageContext });
     setText("");
     setImage(null);
   };
+
+  const queuedNote = queued && (
+    <div className="mb-2 flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-1.5 text-xs text-muted" role="status">
+      <span className="min-w-0 flex-1 truncate">Sẽ gửi khi HeadBro trả lời xong: <b className="text-text">{queued.text || "ảnh"}</b></span>
+      <button type="button" className="shrink-0 rounded-md px-1.5 py-1 font-semibold text-text hover:bg-surface-3"
+        onClick={() => { setText(queued.text); setImage(queued.image); setQueued(null); }}>Huỷ</button>
+    </div>
+  );
 
   const toggleMic = () => {
     if (listening) {
@@ -250,6 +272,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
       {config?.ai_enabled === false && (
         <p className="mb-2 rounded-lg bg-warn/10 px-3 py-1.5 text-xs text-warn-strong">AI chưa được cấu hình trên server — HeadBro sẽ chưa trả lời được.</p>
       )}
+      {queuedNote}
       {image && (
         <div className="relative mb-2 inline-block">
           <img src={image} className="h-20 rounded-lg border border-border" alt="" />
@@ -325,6 +348,7 @@ export function ChatView({ conversationId, onConversation, compact, page, pageCo
     const composerV1 = (
       <div className="chat-comp">
         {config?.ai_enabled === false && <div className="g alert warn" role="status"><span className="a-ic"><ShieldCheck className="ic" /></span><div><b>AI chưa được cấu hình trên server</b><p>HeadBro sẽ chưa trả lời được.</p></div></div>}
+        {queuedNote}
         {image && (
           <div className="chat-img"><img src={image} alt="Ảnh đính kèm" /><button type="button" className="icon-btn sm" aria-label="Bỏ ảnh" onClick={() => setImage(null)}><X className="ic ic-sm" /></button></div>
         )}

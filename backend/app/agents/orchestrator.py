@@ -39,6 +39,7 @@ log = logging.getLogger("fitbro.orchestrator")
 
 Emit = Callable[[dict], Awaitable[None]]
 MAX_TOOL_ROUNDS = 6
+TURN_BUDGET_S = 50  # Vercel maxDuration = 60s: chừa ~10s để lưu tin nhắn + trace
 HISTORY_LIMIT = 12
 
 
@@ -223,6 +224,7 @@ async def run_agent(
     use_tools = s.llm_supports_tools
     preload = None if use_tools else preload_context(ctx)
     model = s.vision_model if image else s.llm_model
+    vision_on = bool(image)  # chỉ vòng đầu gửi ảnh (xem bên dưới)
 
     user_content: object = text or "Hãy phân tích ảnh này."
     if image:
@@ -247,7 +249,7 @@ async def run_agent(
         tool_specs = [t.spec() for t in tools_for(agent)] if use_tools and rounds < MAX_TOOL_ROUNDS else None
         result = None
         try:
-            async for kind, payload in llm.stream(messages, tools=tool_specs, model=model, vision=bool(image)):
+            async for kind, payload in llm.stream(messages, tools=tool_specs, model=model, vision=vision_on):
                 if kind == "text":
                     _first_token()
                     await emit({"type": "token", "agent": agent, "delta": payload})
@@ -274,6 +276,14 @@ async def run_agent(
         if not result.tool_calls:
             break
 
+        if image and vision_on:
+            # Ảnh chỉ cần gửi ở vòng đầu: các vòng sau đã có kết quả công cụ (vd phân tích món) bằng chữ. Gửi lại ảnh
+            # mỗi vòng = mỗi vòng một lần gọi model đọc ảnh (10–20s) → cộng dồn vượt giới hạn 60s của Vercel, mất câu trả lời.
+            vision_on, model = False, s.llm_model
+            for m in messages:
+                if m.get("role") == "user" and isinstance(m.get("content"), list):
+                    m["content"] = (text or "") + "\n[Người dùng đã gửi kèm một ảnh — dùng kết quả công cụ bên dưới, không cần xem lại ảnh.]"
+
         messages.append({
             "role": "assistant", "content": result.text or None,
             "tool_calls": [
@@ -296,7 +306,7 @@ async def run_agent(
     # model chỉ gọi tool mà không viết câu trả lời → ép trả lời 1 lần không kèm tool
     if not error and not texts and trace:
         try:
-            async for kind, payload in llm.stream(messages, tools=None, model=model, vision=bool(image)):
+            async for kind, payload in llm.stream(messages, tools=None, model=model, vision=vision_on):
                 if kind == "text":
                     _first_token()
                     await emit({"type": "token", "agent": agent, "delta": payload})
@@ -357,8 +367,29 @@ async def handle_message(
     tr, token = tracing.start(user.id, conv.id, text or ("[ảnh]" if image else ""))
     state: dict = {}
     try:
-        await _handle(db, user, conv, text=text, image=image, image_thumb=image_thumb, page=page, page_context=page_context,
-                      forced_agent=forced_agent, emit=emit, state=state)
+        # Vercel cắt hàm ở 60s → tự dừng ở TURN_BUDGET_S để kịp lưu một câu trả lời (thay vì mất trắng cả lượt)
+        await asyncio.wait_for(
+            _handle(db, user, conv, text=text, image=image, image_thumb=image_thumb, page=page, page_context=page_context,
+                    forced_agent=forced_agent, emit=emit, state=state),
+            timeout=TURN_BUDGET_S,
+        )
+    except asyncio.TimeoutError:
+        tr.status, tr.error = "error", f"turn timeout {TURN_BUDGET_S}s"
+        try:
+            db.rollback()
+            msg = ("Mình xử lý hơi lâu nên tạm dừng ở đây (ảnh lớn hoặc máy chủ AI đang chậm). "
+                   "Bạn gửi lại giúp mình nhé — nếu là ảnh, thử ảnh nhỏ hơn hoặc chụp gần món hơn.")
+            cards = list(state.get("cards") or [])
+            m = Message(conversation_id=conv.id, role="assistant", agent="headbro", content=msg,
+                        meta={"error": "timeout", "cards": cards})
+            db.add(m)
+            db.commit()
+            state["last_msg"] = m
+            await emit({"type": "agent_message", "id": m.id, "agent": "headbro", "content": msg, "cards": cards, "trace": []})
+            state["done_pending"] = True
+        except Exception:
+            log.exception("save timeout message failed")
+            db.rollback()
     except Exception as e:
         tr.status, tr.error = "error", f"{type(e).__name__}: {str(e)[:300]}"
         raise
@@ -482,6 +513,7 @@ async def _handle(
         await emit({"type": "agent_start", "agent": "headbro"})
     for idx, agent in enumerate(agents):
         ctx = ToolContext(db=db, user=user, profile=prof, agent=agent, conversation_id=conv.id, question=text or "")
+        state["cards"] = ctx.cards  # hết giờ giữa chừng vẫn giữ được thẻ đã tạo (vd thẻ món từ ảnh)
         with tracing.stage(agent), tracing.span("agent", agent):
             out = await run_agent(
                 agent, ctx, history=history, text=text, image=image, page=page, page_context=page_context,

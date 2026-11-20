@@ -115,7 +115,7 @@ def client(key: str | None = None, base_url: str | None = None) -> AsyncOpenAI:
         loop_id = 0
     ck = (b, k, loop_id)
     if ck not in _clients:
-        _clients[ck] = _oa().AsyncOpenAI(api_key=k, base_url=b, timeout=s.llm_timeout, max_retries=1)
+        _clients[ck] = _oa().AsyncOpenAI(api_key=k, base_url=b, timeout=min(s.llm_timeout, 30.0), max_retries=0)  # 1 lần gọi treo ≤30s rồi chuyển endpoint dự phòng (cả lượt phải xong < 60s trên Vercel)
     return _clients[ck]
 
 
@@ -180,9 +180,23 @@ def _candidates(model: str, vision: bool = False) -> list[Endpoint]:
     return ready or [min(chain, key=lambda c: _cooldown.get(c, 0))]
 
 
+def _overloaded(e: Exception) -> bool:
+    """Treo / quá tải / lỗi máy chủ: lỗi của CẢ model (đổi key không giúp), khác hết hạn mức của riêng 1 key."""
+    if isinstance(e, (_oa().APITimeoutError, _oa().APIConnectionError)):
+        return True
+    return isinstance(e, _oa().APIStatusError) and e.status_code >= 500
+
+
 def _rest(ep: Endpoint, e: Exception) -> None:
     per_day = "perday" in str(e).lower().replace("_", "")
-    _cooldown[ep] = time.time() + (3600 if per_day else 60)
+    now = time.time()
+    if _overloaded(e):
+        # model đang treo/quá tải → nghỉ 5 phút trên MỌI key (trước đây thử lần lượt từng key, mỗi lần chờ hết thời gian)
+        for c in _chain(ep.model) + _secondary():
+            if c.base_url == ep.base_url and c.model == ep.model:
+                _cooldown[c] = now + 300
+        return
+    _cooldown[ep] = now + (3600 if per_day else 60)
 
 
 def _should_fallback(e: Exception) -> bool:
@@ -201,10 +215,13 @@ async def _create(kwargs: dict, vision: bool = False):
     last: Exception | None = None
     fails = 0
     refused: set[str] = set()
+    sick: set[tuple[str, str]] = set()  # (base_url, model) vừa treo/quá tải trong lần gọi này → bỏ qua các key khác
     for ep in _candidates(kwargs["model"], vision):
-        if ep.base_url in refused:
+        if ep.base_url in refused or (ep.base_url, ep.model) in sick:
             continue
         kw = {**kwargs, "model": ep.model}
+        # chờ phản hồi đầu tiên ngắn hơn với ảnh: model treo thì sớm chuyển sang model khác (cả lượt phải < 60s)
+        kw["timeout"] = 15.0 if vision else 25.0
         kw.pop("reasoning_effort", None)
         kw.pop("stream_options", None)
         if ep.effort and not _no_effort.get(ep.model):
@@ -247,6 +264,8 @@ async def _create(kwargs: dict, vision: bool = False):
                 raise
             log.warning("%s / %s lỗi (%s) → thử phương án dự phòng", ep.tag, ep.model, type(e).__name__)
             _rest(ep, e)
+            if _overloaded(e):
+                sick.add((ep.base_url, ep.model))
             last = e
             fails += 1
     if refused:
