@@ -1,3 +1,4 @@
+import { ConnectionLost } from "./components/ConnectionLost";
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
@@ -22,13 +23,14 @@ const AiLog = lazy(() => import("./pages/AiLog"));
 const PrintReport = lazy(() => import("./pages/PrintReport"));
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, unreachable, retry } = useAuth();
   if (loading)
     return (
       <div className="grid h-full place-items-center">
         <Spinner label="Đang khởi động FitBro..." />
       </div>
     );
+  if (!user && unreachable) return <ConnectionLost onRetry={retry} busy={false} />;
   if (!user) return <Login />;
   if (!user.profile?.onboarded) return <Onboarding />;
   return (

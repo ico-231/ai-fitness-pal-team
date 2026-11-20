@@ -1,12 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { get, setUnauthorizedHandler, tokenStore } from "./api";
+import { ApiError, get, setUnauthorizedHandler, tokenStore } from "./api";
 import { voice } from "./media";
 import type { User } from "./types";
 
 interface AuthState {
   user: User | null;
   loading: boolean;
+  /** có token nhưng chưa gọi được máy chủ (mất mạng / máy chủ lỗi) → KHÔNG đăng xuất, cho thử lại */
+  unreachable: boolean;
+  retry: () => void;
   config: { google_client_id: string | null; ai_enabled: boolean; model: string | null } | null;
   signIn: (token: string, user: User) => void;
   signOut: () => void;
@@ -28,6 +31,7 @@ export function applyTheme(theme: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [unreachable, setUnreachable] = useState(false);
   const [config, setConfig] = useState<AuthState["config"]>(null);
   const qc = useQueryClient();
 
@@ -59,19 +63,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applyUser]);
 
+  const boot = useCallback(async () => {
+    if (tokenStore.get()) {
+      try {
+        applyUser(await get<User>("/api/me")); // tự đăng nhập lại bằng token đã lưu
+        setUnreachable(false);
+      } catch (e) {
+        // 401 đã được xử lý (đăng xuất). Mất mạng / máy chủ lỗi (0, 5xx) → giữ token, cho thử lại; lỗi khác → bỏ token
+        const st = e instanceof ApiError ? e.status : 0;
+        if (st === 0 || st >= 500) setUnreachable(true);
+        else tokenStore.clear();
+      }
+    }
+    setLoading(false);
+  }, [applyUser]);
+  const retry = useCallback(() => { setLoading(true); void boot(); }, [boot]);
+
   useEffect(() => {
     setUnauthorizedHandler(signOut);
     (async () => {
       get<AuthState["config"]>("/api/auth/config").then(setConfig).catch(() => setConfig({ google_client_id: null, ai_enabled: false, model: null }));
-      if (tokenStore.get()) {
-        try {
-          applyUser(await get<User>("/api/me")); // tự đăng nhập lại bằng token đã lưu
-        } catch {
-          tokenStore.clear();
-        }
-      }
-      setLoading(false);
+      await boot();
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyUser, signOut]);
 
   const signIn = useCallback(
@@ -83,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyUser, qc],
   );
 
-  return <Ctx.Provider value={{ user, loading, config, signIn, signOut, refresh }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, loading, unreachable, retry, config, signIn, signOut, refresh }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

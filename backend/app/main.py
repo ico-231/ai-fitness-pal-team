@@ -112,6 +112,10 @@ if (DIST / "index.html").exists():
             return JSONResponse({"detail": "Not Found"}, status_code=404)
         f = DIST / full_path
         if full_path and f.is_file() and DIST in f.resolve().parents:
+            # service worker + manifest phải luôn được kiểm tra lại để bản mới được phát hiện
+            if full_path in ("sw.js", "manifest.webmanifest"):
+                return FileResponse(f, headers={"Cache-Control": "no-cache"},
+                                    media_type="application/manifest+json" if full_path.endswith("webmanifest") else None)
             return FileResponse(f)
         return FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})
 else:
