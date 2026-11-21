@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, Loader2, RotateCcw } from "lucide-react";
-import { EXERCISES, LandmarkSmoother, loadLandmarker, RepCounter, scoreLevel, SEGMENTS, type Level, type LM, type Seg } from "../lib/pose";
+import { aspectCorrect, EXERCISES, LandmarkSmoother, loadLandmarker, RepCounter, scoreLevel, SEGMENTS, type Level, type LM, type Seg } from "../lib/pose";
 import { beep, voice } from "../lib/media";
 import { MAX_COUNT, PRAISE } from "../lib/speech";
 import { Button } from "./ui";
@@ -131,7 +131,8 @@ export function useCameraCoach({ exerciseKey, targetReps, onUpdate, autoStart = 
           // làm mượt: người que không rung, góc khớp ổn định → ít báo lỗi "ảo"
           const img = smoothImg.current.apply(raw, now);
           const world = rawWorld ? smoothWorld.current.apply(rawWorld, now) : img;
-          const f = def.analyze(img, world);
+          // đo góc trên toạ độ đã chỉnh tỉ lệ khung (x, y cùng đơn vị) — không thì khung 4:3 đo lưng đổ nhỏ hơn thật
+          const f = def.analyze(aspectCorrect(img, c.width / (c.height || 1)), world);
           const counter = counterRef.current;
           const counting = activeRef.current;
           const { repDone, score: s } = counting ? counter.update(f, now) : { repDone: false, score: 100 };

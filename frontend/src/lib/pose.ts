@@ -90,6 +90,16 @@ function frontal(img: LM[], minRatio = 0.45): boolean {
   return shW / torso > minRatio;
 }
 
+/**
+ * MediaPipe trả toạ độ ảnh chuẩn hoá: x chia BỀ RỘNG, y chia BỀ CAO khung hình → trên khung 4:3 mọi đoạn nằm ngang bị "co" lại,
+ * góc nghiêng đo ra nhỏ hơn thật (lưng đổ 55° chỉ đo được ~47° → không bao giờ báo lỗi); khung dọc của điện thoại thì ngược lại.
+ * Nhân x với tỉ lệ khung (rộng / cao) để hai trục cùng đơn vị trước khi đo góc. Chỉ dùng cho PHÂN TÍCH — vẽ vẫn dùng toạ độ gốc.
+ */
+export function aspectCorrect(img: LM[], aspect: number): LM[] {
+  if (!aspect || aspect === 1) return img;
+  return img.map((p) => ({ ...p, x: p.x * aspect }));
+}
+
 export interface Frame {
   value: number; // giá trị dùng đếm rep (góc / khoảng cách)
   issues: Issue[]; // lỗi form ở khung hình này (kèm mức độ + bộ phận)
@@ -271,6 +281,8 @@ export const EXERCISES: Record<string, ExerciseDef> = {
 
 /** Lỗi phải kéo dài ít nhất chừng này mới bị trừ điểm và tô màu (khung xương rung 1–2 khung hình không phải lỗi form). */
 const ISSUE_MIN_MS = 250;
+/** Lỗi biến mất ngắn hơn chừng này (khung xương rung qua lại quanh ngưỡng) vẫn coi là liên tục — trước đây mỗi lần rung là đếm lại từ 0, lỗi không bao giờ đủ 250 ms. */
+const ISSUE_GAP_MS = 200;
 /** Điểm trừ mỗi khung hình theo mức lỗi đang diễn ra: vàng nhẹ, đỏ nặng. */
 const PENALTY: Record<Level, number> = { 1: 15, 2: 40 };
 /** Rep thiếu biên độ (không được đếm): mỗi rep trừ điểm form chung, tối đa PARTIAL_MAX_PENALTY. */
@@ -309,6 +321,7 @@ export class RepCounter {
   private nearTopSince = 0; // ở pha "peak" mà lơ lửng gần vùng start
   private nearTopLast = 0;
   private issueSince = new Map<string, number>(); // lỗi → thời điểm bắt đầu thấy liên tục
+  private issueSeen = new Map<string, { t: number; issue: Issue }>(); // lỗi → lần cuối còn thấy (kèm mức, bộ phận)
   /** số rep thiếu biên độ (không được đếm) */
   partialReps = 0;
   constructor(def: ExerciseDef) {
@@ -326,16 +339,23 @@ export class RepCounter {
     return this.romIssue && t - this.romIssue.at < 2500 ? this.romIssue.msg : null;
   }
 
-  /** Điểm khung hình: chỉ tính các lỗi đã kéo dài ≥ ISSUE_MIN_MS (cùng một câu nhắc đổi vàng ↔ đỏ vẫn tính liên tục). */
+  /**
+   * Điểm khung hình: chỉ tính các lỗi đã kéo dài ≥ ISSUE_MIN_MS (cùng một câu nhắc đổi vàng ↔ đỏ vẫn tính liên tục).
+   * Lỗi vừa "mất" < ISSUE_GAP_MS (rung quanh ngưỡng) vẫn tính tiếp ở mức gần nhất thay vì đếm lại từ đầu.
+   */
   private frameScore(f: Frame, t: number): { s: number; worst: 0 | Level } {
     const now = f.ready ? f.issues : [];
-    const keys = new Set(now.map((i) => i.msg));
-    for (const k of [...this.issueSince.keys()]) if (!keys.has(k)) this.issueSince.delete(k);
+    for (const i of now) {
+      const prev = this.issueSeen.get(i.msg);
+      if (!prev || t - prev.t > ISSUE_GAP_MS) this.issueSince.set(i.msg, t);
+      this.issueSeen.set(i.msg, { t, issue: i });
+    }
+    for (const [k, seen] of [...this.issueSeen]) if (t - seen.t > ISSUE_GAP_MS) (this.issueSeen.delete(k), this.issueSince.delete(k));
     this.lasting = [];
     let s = 100, worst: 0 | Level = 0;
-    for (const i of now) {
-      if (!this.issueSince.has(i.msg)) this.issueSince.set(i.msg, t);
-      if (t - this.issueSince.get(i.msg)! < ISSUE_MIN_MS) continue;
+    if (!f.ready) return { s, worst };
+    for (const [k, { issue: i }] of this.issueSeen) {
+      if (t - this.issueSince.get(k)! < ISSUE_MIN_MS) continue;
       this.lasting.push(i);
       s -= PENALTY[i.level];
       if (i.level > worst) worst = i.level;
@@ -382,7 +402,9 @@ export class RepCounter {
         this.away = true;
         if (prog != null) this.extreme = Math.max(this.extreme ?? 0, prog);
       }
-      if (this.reachedStart) this.frames.push(fs);
+      // khung đứng nghỉ SẠCH ở tư thế đầu không tính vào rep: trước đây 1–3 giây đứng chờ giữa các rep pha loãng lỗi
+      // (lưng đổ đỏ suốt phần đáy squat chỉ chiếm ~15% số khung → vẫn ra 89 xanh). Đứng nghỉ mà CÓ lỗi thì vẫn tính.
+      if (this.reachedStart && (!this.def.start(f.value) || fs.worst > 0)) this.frames.push(fs);
       if (this.reachedStart && this.def.peak(f.value)) {
         this.phase = "peak";
         this.nearTopSince = 0;
